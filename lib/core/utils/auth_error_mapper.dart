@@ -11,6 +11,8 @@ abstract final class AuthErrorMapper {
           return 'La IA está ocupada, probá en un minuto';
         case 'IMAGE_TOO_LARGE':
           return 'La imagen supera los 2 MB';
+        case 'AI_NOT_CONFIGURED':
+          return 'La IA no está configurada todavía (falta la clave)';
         case 'PLAN_EXPIRED':
           return 'Tu período de prueba o plan venció. '
               'Activá un plan para seguir publicando';

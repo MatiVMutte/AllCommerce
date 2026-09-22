@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:all_commerce/core/supabase/supabase_client_provider.dart';
+import 'package:all_commerce/core/utils/auth_error_mapper.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
 import 'package:all_commerce/features/product_upload/data/models/ai_product_suggestion.dart';
@@ -101,8 +102,8 @@ class ProductUploadController extends Notifier<ProductUploadState> {
       }
       state = state.copyWith(
         analyzing: false,
-        infoMessage: () =>
-            'La IA no pudo analizar la foto, completá los datos a mano',
+        infoMessage: () => AuthErrorMapper.toMessage(e),
+        error: () => e,
       );
     } catch (e) {
       state = state.copyWith(
