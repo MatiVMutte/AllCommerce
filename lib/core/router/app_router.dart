@@ -12,6 +12,7 @@ import 'package:all_commerce/features/auth/presentation/views/role_select_view.d
 import 'package:all_commerce/features/auth/presentation/views/welcome_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/catalog_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/product_detail_view.dart';
+import 'package:all_commerce/features/product_upload/presentation/views/product_upload_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/store_directory_view.dart';
 import 'package:all_commerce/features/store/presentation/views/business_onboarding_view.dart';
 import 'package:all_commerce/features/store/presentation/views/owner_home_view.dart';
@@ -89,6 +90,11 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
           builder: (BuildContext context, GoRouterState state) =>
               const OwnerHomeView(),
         ),
+        GoRoute(
+          path: '/owner/products/new',
+          builder: (BuildContext context, GoRouterState state) =>
+              const ProductUploadView(),
+        ),
       ],
       redirect: (BuildContext context, GoRouterState state) {
         final String loc = state.matchedLocation;
@@ -134,7 +140,9 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
           return (isAuthEntry || isOnboarding || loc == '/') ? '/owner' : null;
         }
         // customer
-        return (isAuthEntry || isOnboarding) ? '/' : null;
+        return (isAuthEntry || isOnboarding || loc.startsWith('/owner'))
+            ? '/'
+            : null;
       },
       errorBuilder: (BuildContext context, GoRouterState state) => Scaffold(
         body: Center(

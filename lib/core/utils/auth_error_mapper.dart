@@ -1,9 +1,23 @@
 import 'dart:io';
 
+import 'package:all_commerce/features/product_upload/data/services/ai_analyze_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract final class AuthErrorMapper {
   static String toMessage(Object error) {
+    if (error is AiAnalyzeException) {
+      switch (error.code) {
+        case 'AI_RATE_LIMITED':
+          return 'La IA está ocupada, probá en un minuto';
+        case 'IMAGE_TOO_LARGE':
+          return 'La imagen supera los 2 MB';
+        case 'PLAN_EXPIRED':
+          return 'Tu período de prueba o plan venció. '
+              'Activá un plan para seguir publicando';
+        default:
+          return 'La IA no pudo analizar la foto, completá los datos a mano';
+      }
+    }
     if (error is AuthException) {
       switch (error.code) {
         case 'invalid_credentials':
@@ -23,6 +37,13 @@ abstract final class AuthErrorMapper {
     }
     if (error is PostgrestException) {
       final String message = error.message;
+      if (message.contains('PLAN_EXPIRED')) {
+        return 'Tu período de prueba o plan venció. '
+            'Activá un plan para seguir publicando';
+      }
+      if (message.contains('PRODUCT_LIMIT_REACHED')) {
+        return 'Llegaste al máximo de productos de tu plan';
+      }
       if (message.contains('SLUG_TAKEN')) {
         return 'Ese nombre de link ya está en uso, elegí otro';
       }

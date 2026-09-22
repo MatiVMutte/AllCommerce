@@ -1,4 +1,5 @@
 import 'package:all_commerce/core/utils/auth_error_mapper.dart';
+import 'package:all_commerce/features/product_upload/data/services/ai_analyze_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -18,6 +19,42 @@ void main() {
         const PostgrestException(message: 'SLUG_TAKEN'),
       ),
       'Ese nombre de link ya está en uso, elegí otro',
+    );
+  });
+
+  test('maps PostgrestException plan errors', () {
+    expect(
+      AuthErrorMapper.toMessage(
+        const PostgrestException(message: 'PLAN_EXPIRED'),
+      ),
+      contains('plan venció'),
+    );
+    expect(
+      AuthErrorMapper.toMessage(
+        const PostgrestException(message: 'PRODUCT_LIMIT_REACHED'),
+      ),
+      'Llegaste al máximo de productos de tu plan',
+    );
+  });
+
+  test('maps AiAnalyzeException codes', () {
+    expect(
+      AuthErrorMapper.toMessage(
+        const AiAnalyzeException('AI_RATE_LIMITED', 'x'),
+      ),
+      'La IA está ocupada, probá en un minuto',
+    );
+    expect(
+      AuthErrorMapper.toMessage(
+        const AiAnalyzeException('IMAGE_TOO_LARGE', 'x'),
+      ),
+      'La imagen supera los 2 MB',
+    );
+    expect(
+      AuthErrorMapper.toMessage(
+        const AiAnalyzeException('AI_EMPTY', 'x'),
+      ),
+      'La IA no pudo analizar la foto, completá los datos a mano',
     );
   });
 

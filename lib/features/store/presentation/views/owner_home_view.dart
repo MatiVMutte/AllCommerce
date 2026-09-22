@@ -2,6 +2,7 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
+import 'package:all_commerce/features/product_upload/presentation/widgets/plan_blocked_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -54,10 +55,25 @@ class OwnerHomeView extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 24),
+                      FilledButton.icon(
+                        icon: const Icon(Icons.add_a_photo_outlined),
+                        label: const Text('Subir producto'),
+                        onPressed: tenant.canPublish
+                            ? () => context.go('/owner/products/new')
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
                       FilledButton(
                         onPressed: () => context.go('/s/${tenant.slug}'),
                         child: const Text('Ver mi catálogo'),
                       ),
+                      if (!tenant.canPublish) ...<Widget>[
+                        const SizedBox(height: 24),
+                        PlanBlockedCard(
+                          code: 'PLAN_EXPIRED',
+                          tenant: tenant,
+                        ),
+                      ],
                       TextButton(
                         onPressed: () => ref
                             .read(authControllerProvider.notifier)

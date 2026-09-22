@@ -5,6 +5,9 @@ abstract final class AppConfig {
   static String get supabaseAnonKey => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
   static String get publicBaseUrl => dotenv.env['PUBLIC_BASE_URL'] ?? '';
 
+  /// Support WhatsApp in E.164 without '+'.
+  static String get supportWhatsapp => dotenv.env['SUPPORT_WHATSAPP'] ?? '';
+
   /// Fixed slug for white-label per-store builds. Empty = multi-store app.
   static const String fixedTenantSlug =
       String.fromEnvironment('TENANT_SLUG');
