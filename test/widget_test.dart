@@ -1,5 +1,6 @@
 import 'package:all_commerce/core/constants/plans.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
+import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
 import 'package:all_commerce/features/catalog/presentation/views/store_directory_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

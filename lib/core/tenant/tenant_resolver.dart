@@ -3,14 +3,23 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_repository.dart';
 import 'package:all_commerce/core/tenant/tenant_strategy.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
 final Provider<TenantResolver> tenantResolverProvider =
     Provider<TenantResolver>((_) => const TenantResolver());
 
 /// Store chosen by the customer in the directory.
-final StateProvider<String?> selectedTenantSlugProvider =
-    StateProvider<String?>((_) => null);
+class SelectedTenantSlugNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void select(String? slug) => state = slug;
+}
+
+final NotifierProvider<SelectedTenantSlugNotifier, String?>
+    selectedTenantSlugProvider =
+    NotifierProvider<SelectedTenantSlugNotifier, String?>(
+  SelectedTenantSlugNotifier.new,
+);
 
 final Provider<TenantRepository> tenantRepositoryProvider =
     Provider<TenantRepository>(

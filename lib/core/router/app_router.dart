@@ -11,6 +11,7 @@ import 'package:all_commerce/features/auth/presentation/views/register_view.dart
 import 'package:all_commerce/features/auth/presentation/views/role_select_view.dart';
 import 'package:all_commerce/features/auth/presentation/views/welcome_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/catalog_view.dart';
+import 'package:all_commerce/features/catalog/presentation/views/product_detail_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/store_directory_view.dart';
 import 'package:all_commerce/features/store/presentation/views/business_onboarding_view.dart';
 import 'package:all_commerce/features/store/presentation/views/owner_home_view.dart';
@@ -39,6 +40,14 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
           path: '/s/:slug',
           builder: (BuildContext context, GoRouterState state) =>
               CatalogView(slug: state.pathParameters['slug'] ?? ''),
+        ),
+        GoRoute(
+          path: '/s/:slug/p/:id',
+          builder: (BuildContext context, GoRouterState state) =>
+              ProductDetailView(
+                slug: state.pathParameters['slug'] ?? '',
+                productId: state.pathParameters['id'] ?? '',
+              ),
         ),
         GoRoute(
           path: '/welcome',
