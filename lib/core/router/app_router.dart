@@ -1,5 +1,7 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
 import 'package:all_commerce/core/router/router_refresh.dart';
+import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/core/tenant/tenant_strategy.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/auth/presentation/views/customer_profile_view.dart';
@@ -104,12 +106,19 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
         final bool isAuthEntry = authEntryPaths.contains(loc);
         final bool isOnboarding = onboardingPaths.contains(loc);
 
+        // Build white-label (TENANT_SLUG fijo): la raíz es el catálogo del local.
+        final TenantResolver resolver = ref.read(tenantResolverProvider);
+        if (resolver.isWhiteLabel && loc == '/') {
+          return '/s/${resolver.fixedSlug}';
+        }
+
         final Session? session = ref.read(sessionProvider);
         if (session == null) return isPublic ? null : '/login';
 
         final AsyncValue<UserModel?> profileAsync =
             ref.read(currentProfileProvider);
-        if (profileAsync.isLoading) return null; // no data yet: don't redirect
+        // Sin datos todavía (cargando o error de red): no redirigir.
+        if (profileAsync.isLoading || profileAsync.hasError) return null;
         final UserModel? profile = profileAsync.value;
         if (profile == null) return isOnboarding ? null : '/select-role';
         if (profile.isOwner) {
