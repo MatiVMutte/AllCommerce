@@ -16,6 +16,16 @@ class TenantRepository {
     return TenantModel.fromJson(row);
   }
 
+  Future<TenantModel?> getById(String id) async {
+    final Map<String, dynamic>? row = await _client
+        .from('tenants')
+        .select()
+        .eq('id', id)
+        .maybeSingle();
+    if (row == null) return null;
+    return TenantModel.fromJson(row);
+  }
+
   Future<List<TenantModel>> listActive() async {
     final List<Map<String, dynamic>> rows = await _client
         .from('tenants')

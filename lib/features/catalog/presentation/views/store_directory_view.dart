@@ -1,6 +1,8 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/features/auth/data/models/user_model.dart';
+import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,7 +20,34 @@ class StoreDirectoryView extends ConsumerWidget {
     final AsyncValue<List<TenantModel>> tenants =
         ref.watch(activeTenantsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.appName)),
+      appBar: AppBar(
+        title: const Text(AppStrings.appName),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            onPressed: () {
+              final UserModel? profile =
+                  ref.read(currentProfileProvider).value;
+              if (profile != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content:
+                        Text('Sesión iniciada como ${profile.fullName}'),
+                    action: SnackBarAction(
+                      label: 'Salir',
+                      onPressed: () => ref
+                          .read(authControllerProvider.notifier)
+                          .signOut(),
+                    ),
+                  ),
+                );
+              } else {
+                context.go('/welcome');
+              }
+            },
+          ),
+        ],
+      ),
       body: tenants.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (Object error, StackTrace stack) => Center(

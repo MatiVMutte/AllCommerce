@@ -21,3 +21,7 @@ final tenantBySlugProvider = FutureProvider.family<TenantModel?, String>(
   (Ref ref, String slug) =>
       ref.watch(tenantRepositoryProvider).getBySlug(slug),
 );
+
+final tenantByIdProvider = FutureProvider.family<TenantModel?, String>(
+  (Ref ref, String id) => ref.watch(tenantRepositoryProvider).getById(id),
+);
