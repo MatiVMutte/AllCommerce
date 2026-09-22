@@ -46,19 +46,27 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
     super.dispose();
   }
 
+  /// Values written by the last AI suggestion, used to tell AI-filled fields
+  /// (safe to overwrite on a new photo) from user-edited ones (kept).
+  final Map<TextEditingController, String> _aiFilled =
+      <TextEditingController, String>{};
+
+  void _fill(TextEditingController controller, String? value) {
+    if (value == null || value.isEmpty) return;
+    final String current = controller.text.trim();
+    final bool untouched =
+        current.isEmpty || current == _aiFilled[controller]?.trim();
+    if (!untouched) return;
+    controller.text = value;
+    _aiFilled[controller] = value;
+  }
+
   void _applySuggestion(AiProductSuggestion suggestion) {
-    if (_title.text.isEmpty) _title.text = suggestion.title;
-    if (_description.text.isEmpty) {
-      _description.text = suggestion.description;
-    }
-    if (_price.text.isEmpty && suggestion.suggestedPriceArs != null) {
-      _price.text = suggestion.suggestedPriceArs!
-          .toStringAsFixed(0);
-    }
-    if (_tags.text.isEmpty) _tags.text = suggestion.tags.join(', ');
-    if (_sku.text.isEmpty && suggestion.sku != null) {
-      _sku.text = suggestion.sku!;
-    }
+    _fill(_title, suggestion.title);
+    _fill(_description, suggestion.description);
+    _fill(_price, suggestion.suggestedPriceArs?.toStringAsFixed(0));
+    _fill(_tags, suggestion.tags.join(', '));
+    _fill(_sku, suggestion.sku);
     if (!_categoryTouched) {
       setState(() {
         _category = ProductCategory.fromId(suggestion.category);
