@@ -45,4 +45,15 @@ class ImageService {
     }
     return result;
   }
+
+  /// Compresses to JPEG at max 512px — used for tenant logos.
+  Future<Uint8List> compressLogo(Uint8List bytes) {
+    return FlutterImageCompress.compressWithList(
+      bytes,
+      minWidth: 512,
+      minHeight: 512,
+      quality: 85,
+      format: CompressFormat.jpeg,
+    );
+  }
 }

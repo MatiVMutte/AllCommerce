@@ -4,6 +4,7 @@ import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/core/widgets/order_status_chip.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/orders/data/models/order_item_model.dart';
@@ -258,16 +259,7 @@ class _OwnerOrderDetailViewState
                     children: <Widget>[
                       Row(
                         children: <Widget>[
-                          Chip(
-                            label: Text(order.status.label),
-                            backgroundColor: order.status
-                                .color(scheme)
-                                .withValues(alpha: 0.15),
-                            labelStyle: TextStyle(
-                              color: order.status.color(scheme),
-                            ),
-                            side: BorderSide.none,
-                          ),
+                          OrderStatusChip(status: order.status),
                           const SizedBox(width: 8),
                           Text(
                             Formatters.dateTime(order.createdAt),

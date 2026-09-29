@@ -16,11 +16,13 @@ import 'package:all_commerce/features/catalog/presentation/views/catalog_view.da
 import 'package:all_commerce/features/catalog/presentation/views/product_detail_view.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
+import 'package:all_commerce/features/orders/presentation/views/my_orders_view.dart';
 import 'package:all_commerce/features/orders/presentation/views/order_success_view.dart';
 import 'package:all_commerce/features/orders/presentation/views/owner_order_detail_view.dart';
 import 'package:all_commerce/features/orders/presentation/views/owner_orders_view.dart';
 import 'package:all_commerce/features/product_upload/presentation/views/product_upload_view.dart';
 import 'package:all_commerce/features/store/presentation/views/owner_products_view.dart';
+import 'package:all_commerce/features/store/presentation/views/tenant_settings_view.dart';
 import 'package:all_commerce/features/store/presentation/views/product_edit_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/store_directory_view.dart';
 import 'package:all_commerce/features/store/presentation/views/business_onboarding_view.dart';
@@ -110,6 +112,11 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
               const BusinessOnboardingView(),
         ),
         GoRoute(
+          path: '/my-orders',
+          builder: (BuildContext context, GoRouterState state) =>
+              const MyOrdersView(),
+        ),
+        GoRoute(
           path: '/owner',
           builder: (BuildContext context, GoRouterState state) =>
               const OwnerHomeView(),
@@ -138,6 +145,11 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
           path: '/owner/products',
           builder: (BuildContext context, GoRouterState state) =>
               const OwnerProductsView(),
+        ),
+        GoRoute(
+          path: '/owner/settings',
+          builder: (BuildContext context, GoRouterState state) =>
+              const TenantSettingsView(),
         ),
         GoRoute(
           path: '/owner/products/:id/edit',

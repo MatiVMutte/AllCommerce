@@ -1,9 +1,18 @@
 import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/core/utils/text_utils.dart';
+import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/orders/data/models/order_item_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:all_commerce/features/orders/data/repositories/order_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Orders placed by the current user (empty without a session).
+final myOrdersProvider =
+    FutureProvider.autoDispose<List<OrderModel>>((Ref ref) async {
+  final String? uid = ref.watch(sessionProvider)?.user.id;
+  if (uid == null) return <OrderModel>[];
+  return ref.watch(orderRepositoryProvider).listMine(uid);
+});
 
 final ownerOrdersProvider =
     FutureProvider.autoDispose.family<List<OrderModel>, String>(

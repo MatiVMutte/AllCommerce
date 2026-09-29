@@ -76,6 +76,10 @@ class OrderSuccessView extends StatelessWidget {
                   onPressed: () => context.go('/s/$slug'),
                   child: const Text('Volver al catálogo'),
                 ),
+                TextButton(
+                  onPressed: () => context.go('/my-orders'),
+                  child: const Text('Ver mis pedidos'),
+                ),
               ],
             ),
           ),

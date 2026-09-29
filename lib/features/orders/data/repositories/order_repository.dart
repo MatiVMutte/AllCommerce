@@ -54,6 +54,19 @@ class OrderRepository {
         .toList();
   }
 
+  /// Orders placed by the logged-in customer, newest first.
+  Future<List<OrderModel>> listMine(String customerId) async {
+    final List<dynamic> rows = await _client
+        .from('orders')
+        .select()
+        .eq('customer_id', customerId)
+        .order('created_at', ascending: false)
+        .limit(100);
+    return rows
+        .map((dynamic r) => OrderModel.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<List<OrderItemModel>> listItems(String orderId) async {
     final List<dynamic> rows = await _client
         .from('order_items')

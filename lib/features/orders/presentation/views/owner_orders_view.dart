@@ -1,6 +1,7 @@
 import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/core/widgets/order_status_chip.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
@@ -175,8 +176,6 @@ class _OrderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color statusColor =
-        order.status.color(Theme.of(context).colorScheme);
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -206,12 +205,7 @@ class _OrderTile extends StatelessWidget {
                   ],
                 ),
               ),
-              Chip(
-                label: Text(order.status.label),
-                backgroundColor: statusColor.withValues(alpha: 0.15),
-                labelStyle: TextStyle(color: statusColor),
-                side: BorderSide.none,
-              ),
+              OrderStatusChip(status: order.status),
             ],
           ),
         ),

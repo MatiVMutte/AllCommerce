@@ -27,12 +27,18 @@ class StoreDirectoryView extends ConsumerWidget {
               onSelected: (String value) {
                 if (value == 'signOut') {
                   ref.read(authControllerProvider.notifier).signOut();
+                } else if (value == 'myOrders') {
+                  context.push('/my-orders');
                 }
               },
               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                 PopupMenuItem<String>(
                   enabled: false,
                   child: Text(profile.fullName),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'myOrders',
+                  child: Text('Mis pedidos'),
                 ),
                 const PopupMenuItem<String>(
                   value: 'signOut',
