@@ -44,7 +44,10 @@ class _CustomerProfileViewState extends ConsumerState<CustomerProfileView> {
   Widget build(BuildContext context) {
     final bool loading = ref.watch(authControllerProvider).isLoading;
     return Scaffold(
-      appBar: AppBar(title: const Text('Tu perfil')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('Tu perfil'),
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),

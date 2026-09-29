@@ -1,4 +1,5 @@
 import 'package:all_commerce/core/utils/formatters.dart';
+import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -28,6 +29,9 @@ class OrderSuccessView extends StatelessWidget {
   Widget build(BuildContext context) {
     final OrderConfirmation? data = confirmation;
     return Scaffold(
+      appBar: AppBar(
+        leading: AppBackButton(fallback: '/s/$slug'),
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),

@@ -23,7 +23,7 @@ Future<void> addToCartWithConfirm(
         content: const Text('Agregado al carrito'),
         action: SnackBarAction(
           label: 'Ver',
-          onPressed: () => context.go('/s/${tenant.slug}/cart'),
+          onPressed: () => context.push('/s/${tenant.slug}/cart'),
         ),
       ),
     );

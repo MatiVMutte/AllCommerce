@@ -71,7 +71,10 @@ class _BusinessOnboardingViewState
   Widget build(BuildContext context) {
     final bool loading = ref.watch(authControllerProvider).isLoading;
     return Scaffold(
-      appBar: AppBar(title: const Text('Creá tu local')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('Creá tu local'),
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),

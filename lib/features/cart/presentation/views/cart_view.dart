@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:all_commerce/core/constants/app_strings.dart';
 import 'package:all_commerce/core/router/return_to.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
@@ -5,6 +7,7 @@ import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
+import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/cart/data/models/cart_item.dart';
@@ -44,13 +47,13 @@ class _CartViewState extends ConsumerState<CartView> {
     final CartState cart = ref.read(cartProvider);
     if (ref.read(sessionProvider) == null) {
       ref.read(returnToProvider.notifier).set('/s/${widget.slug}/cart');
-      context.go('/login');
+      unawaited(context.push('/login'));
       return;
     }
     final UserModel? profile = ref.read(currentProfileProvider).value;
     if (profile == null) {
       ref.read(returnToProvider.notifier).set('/s/${widget.slug}/cart');
-      context.go('/select-role');
+      unawaited(context.push('/select-role'));
       return;
     }
     String phone = profile.phone ?? '';
@@ -163,9 +166,7 @@ class _CartViewState extends ConsumerState<CartView> {
         return Scaffold(
           appBar: AppBar(
             title: const Text('Tu pedido'),
-            leading: BackButton(
-              onPressed: () => context.go('/s/${widget.slug}'),
-            ),
+            leading: AppBackButton(fallback: '/s/${widget.slug}'),
           ),
           body: Center(
             child: ConstrainedBox(

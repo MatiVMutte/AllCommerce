@@ -75,27 +75,27 @@ class OwnerHomeView extends ConsumerWidget {
                         icon: const Icon(Icons.add_a_photo_outlined),
                         label: const Text('Subir producto'),
                         onPressed: tenant.canPublish
-                            ? () => context.go('/owner/products/new')
+                            ? () => context.push('/owner/products/new')
                             : null,
                       ),
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
                         icon: const Icon(Icons.inventory_2_outlined),
                         label: const Text('Mis productos'),
-                        onPressed: () => context.go('/owner/products'),
+                        onPressed: () => context.push('/owner/products'),
                       ),
                       const SizedBox(height: 12),
                       ref.watch(ownerOrdersProvider(tenant.id)).when(
                         loading: () => OutlinedButton.icon(
                           icon: const Icon(Icons.receipt_long_outlined),
                           label: const Text('Pedidos'),
-                          onPressed: () => context.go('/owner/orders'),
+                          onPressed: () => context.push('/owner/orders'),
                         ),
                         error: (Object e, StackTrace s) =>
                             OutlinedButton.icon(
                           icon: const Icon(Icons.receipt_long_outlined),
                           label: const Text('Pedidos'),
-                          onPressed: () => context.go('/owner/orders'),
+                          onPressed: () => context.push('/owner/orders'),
                         ),
                         data: (List<OrderModel> orders) {
                           final int pending = pendingCount(orders);
@@ -113,13 +113,13 @@ class OwnerHomeView extends ConsumerWidget {
                                   : 'Pedidos',
                             ),
                             onPressed: () =>
-                                context.go('/owner/orders'),
+                                context.push('/owner/orders'),
                           );
                         },
                       ),
                       const SizedBox(height: 12),
                       FilledButton(
-                        onPressed: () => context.go('/s/${tenant.slug}'),
+                        onPressed: () => context.push('/s/${tenant.slug}'),
                         child: const Text('Ver mi catálogo'),
                       ),
                       if (!tenant.canPublish) ...<Widget>[

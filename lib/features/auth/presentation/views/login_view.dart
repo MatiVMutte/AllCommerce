@@ -1,6 +1,7 @@
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
+import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -40,7 +41,10 @@ class _LoginViewState extends ConsumerState<LoginView> {
   Widget build(BuildContext context) {
     final bool loading = ref.watch(authControllerProvider).isLoading;
     return Scaffold(
-      appBar: AppBar(title: const Text('Ingresar')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/'),
+        title: const Text('Ingresar'),
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -83,11 +87,11 @@ class _LoginViewState extends ConsumerState<LoginView> {
                       : const Text('Ingresar'),
                 ),
                 TextButton(
-                  onPressed: () => context.go('/forgot-password'),
+                  onPressed: () => context.push('/forgot-password'),
                   child: const Text('¿Olvidaste tu contraseña?'),
                 ),
                 TextButton(
-                  onPressed: () => context.go('/register'),
+                  onPressed: () => context.push('/register'),
                   child: const Text('Crear cuenta'),
                 ),
               ],

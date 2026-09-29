@@ -1,4 +1,5 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
+import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/core/constants/categories.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
@@ -165,6 +166,11 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
         ref.watch(productUploadControllerProvider);
     return Scaffold(
       appBar: AppBar(
+        leading: AppBackButton(
+          fallback: widget.existing == null
+              ? '/owner'
+              : '/owner/products',
+        ),
         title: Text(
           widget.existing == null
               ? AppStrings.uploadProduct

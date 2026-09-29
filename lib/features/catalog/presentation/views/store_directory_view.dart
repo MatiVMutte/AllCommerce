@@ -43,7 +43,7 @@ class StoreDirectoryView extends ConsumerWidget {
           else
             IconButton(
               icon: const Icon(Icons.person_outline),
-              onPressed: () => context.go('/welcome'),
+              onPressed: () => context.push('/welcome'),
             ),
         ],
       ),
@@ -156,7 +156,7 @@ class _StoreCard extends StatelessWidget {
               ),
           ],
         ),
-        onTap: () => context.go('/s/${tenant.slug}'),
+        onTap: () => context.push('/s/${tenant.slug}'),
       ),
     );
   }

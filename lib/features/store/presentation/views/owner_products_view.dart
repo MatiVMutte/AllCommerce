@@ -3,6 +3,7 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
+import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
@@ -31,7 +32,7 @@ class OwnerProductsView extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mis productos'),
-        leading: BackButton(onPressed: () => context.go('/owner')),
+        leading: const AppBackButton(fallback: '/owner'),
       ),
       floatingActionButton: tenantAsync.value == null
           ? null
@@ -164,7 +165,7 @@ class _ProductList extends ConsumerWidget {
                 const Text('Todavía no cargaste productos'),
                 const SizedBox(height: 12),
                 FilledButton(
-                  onPressed: () => context.go('/owner/products/new'),
+                  onPressed: () => context.push('/owner/products/new'),
                   child: const Text('Subir el primero'),
                 ),
               ],
@@ -310,7 +311,7 @@ class _OwnerProductTile extends ConsumerWidget {
           PopupMenuButton<String>(
             onSelected: (String value) {
               if (value == 'edit') {
-                context.go('/owner/products/${product.id}/edit',
+                context.push('/owner/products/${product.id}/edit',
                     extra: product);
               } else if (value == 'delete') {
                 _confirmDelete(context, ref);
@@ -328,7 +329,7 @@ class _OwnerProductTile extends ConsumerWidget {
         ],
       ),
       onTap: () =>
-          context.go('/owner/products/${product.id}/edit', extra: product),
+          context.push('/owner/products/${product.id}/edit', extra: product),
     );
   }
 }
@@ -356,7 +357,7 @@ class _UploadFab extends StatelessWidget {
                 );
                 return;
               }
-              context.go('/owner/products/new');
+              context.push('/owner/products/new');
             },
     );
   }

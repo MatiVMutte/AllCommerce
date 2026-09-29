@@ -1,5 +1,6 @@
 import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
+import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
@@ -35,7 +36,7 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pedidos'),
-        leading: BackButton(onPressed: () => context.go('/owner')),
+        leading: const AppBackButton(fallback: '/owner'),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -180,7 +181,7 @@ class _OrderTile extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () =>
-            context.go('/owner/orders/${order.id}', extra: order),
+            context.push('/owner/orders/${order.id}', extra: order),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(

@@ -3,6 +3,7 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_theme.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
+import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
@@ -94,7 +95,7 @@ class _ProductDetailScaffold extends ConsumerWidget {
     );
     return Scaffold(
       appBar: AppBar(
-        leading: BackButton(onPressed: () => context.go('/s/$slug')),
+        leading: AppBackButton(fallback: '/s/$slug'),
         title: Text(tenant.name),
       ),
       body: productAsync.when(

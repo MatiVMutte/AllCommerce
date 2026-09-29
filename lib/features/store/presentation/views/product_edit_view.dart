@@ -1,4 +1,5 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
+import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/product_upload/presentation/views/product_upload_view.dart';
 import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
@@ -26,7 +27,10 @@ class ProductEditView extends ConsumerWidget {
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (Object error, StackTrace stack) => Scaffold(
-        appBar: AppBar(title: const Text('Editar producto')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallback: '/owner/products'),
+          title: const Text('Editar producto'),
+        ),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -45,7 +49,11 @@ class ProductEditView extends ConsumerWidget {
       data: (ProductModel? resolved) {
         if (resolved == null) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Editar producto')),
+            appBar: AppBar(
+              leading:
+                  const AppBackButton(fallback: '/owner/products'),
+              title: const Text('Editar producto'),
+            ),
             body: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,

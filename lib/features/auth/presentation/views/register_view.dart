@@ -1,6 +1,7 @@
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
+import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -63,7 +64,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: () => context.go('/login'),
+                  onPressed: () => context.push('/login'),
                   child: const Text('Ir a ingresar'),
                 ),
               ],
@@ -74,7 +75,10 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
     }
     final bool loading = ref.watch(authControllerProvider).isLoading;
     return Scaffold(
-      appBar: AppBar(title: const Text('Crear cuenta')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/'),
+        title: const Text('Crear cuenta'),
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -126,7 +130,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                       : const Text('Crear cuenta'),
                 ),
                 TextButton(
-                  onPressed: () => context.go('/login'),
+                  onPressed: () => context.push('/login'),
                   child: const Text('Ya tengo cuenta'),
                 ),
               ],

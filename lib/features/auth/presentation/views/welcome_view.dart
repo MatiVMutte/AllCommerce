@@ -1,4 +1,5 @@
 import 'package:all_commerce/core/constants/app_colors.dart';
+import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -52,6 +53,10 @@ class _WelcomeViewState extends State<WelcomeView> {
       body: SafeArea(
         child: Column(
           children: <Widget>[
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: AppBackButton(fallback: '/'),
+            ),
             Expanded(
               child: PageView.builder(
                 controller: _controller,
@@ -113,7 +118,7 @@ class _WelcomeViewState extends State<WelcomeView> {
                   FilledButton(
                     onPressed: () {
                       if (isLast) {
-                        context.go('/register');
+                        context.push('/register');
                       } else {
                         _controller.nextPage(
                           duration: const Duration(milliseconds: 300),
@@ -124,7 +129,7 @@ class _WelcomeViewState extends State<WelcomeView> {
                     child: Text(isLast ? 'Crear cuenta' : 'Siguiente'),
                   ),
                   TextButton(
-                    onPressed: () => context.go('/login'),
+                    onPressed: () => context.push('/login'),
                     child: const Text('Ya tengo cuenta'),
                   ),
                 ],

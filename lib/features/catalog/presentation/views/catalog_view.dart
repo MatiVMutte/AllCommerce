@@ -4,6 +4,7 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_theme.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
+import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/features/cart/presentation/view_models/cart_controller.dart';
 import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
@@ -93,7 +94,7 @@ class _CatalogScaffold extends ConsumerWidget {
                 pinned: true,
                 leading: isWhiteLabel
                     ? null
-                    : BackButton(onPressed: () => context.go('/')),
+                    : const AppBackButton(fallback: '/'),
                 actions: <Widget>[
                   Consumer(
                     builder:
@@ -111,7 +112,7 @@ class _CatalogScaffold extends ConsumerWidget {
                           ),
                         ),
                         onPressed: () =>
-                            context.go('/s/$slug/cart'),
+                            context.push('/s/$slug/cart'),
                       );
                     },
                   ),
@@ -377,7 +378,7 @@ class _ProductCard extends ConsumerWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.go('/s/$slug/p/${product.id}'),
+        onTap: () => context.push('/s/$slug/p/${product.id}'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[

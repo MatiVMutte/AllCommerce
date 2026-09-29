@@ -9,7 +9,10 @@ class RoleSelectView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('¿Cómo vas a usar AllCommerce?')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('¿Cómo vas a usar AllCommerce?'),
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
