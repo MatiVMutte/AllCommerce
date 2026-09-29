@@ -67,6 +67,13 @@ class AuthRepository {
     return UserModel.fromJson(row);
   }
 
+  Future<void> updatePhone(String userId, String phone) async {
+    await _client
+        .from('users')
+        .update(<String, dynamic>{'phone': phone})
+        .eq('id', userId);
+  }
+
   Future<TenantModel> createTenant({
     required String slug,
     required String name,

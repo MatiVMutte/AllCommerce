@@ -58,6 +58,28 @@ void main() {
     );
   });
 
+  test('maps PostgrestException checkout codes', () {
+    const Map<String, String> cases = <String, String>{
+      'PHONE_REQUIRED': 'Necesitamos tu WhatsApp para enviar el pedido',
+      'PROFILE_REQUIRED': 'Completá tu perfil para hacer el pedido',
+      'EMPTY_CART': 'Tu carrito está vacío',
+      'PRODUCT_UNAVAILABLE':
+          'Un producto del carrito ya no está disponible',
+      'TENANT_INACTIVE': 'Este local no está recibiendo pedidos',
+      'INVALID_COUPON': 'El cupón no es válido',
+      'INVALID_QUANTITY': 'Cantidad inválida',
+    };
+    for (final MapEntry<String, String> entry in cases.entries) {
+      expect(
+        AuthErrorMapper.toMessage(
+          PostgrestException(message: entry.key),
+        ),
+        entry.value,
+        reason: entry.key,
+      );
+    }
+  });
+
   test('maps generic exception', () {
     expect(
       AuthErrorMapper.toMessage(Exception('boom')),

@@ -18,7 +18,6 @@ abstract final class AppStrings {
   static const String productNotFound = 'Producto no encontrado';
   static const String backToCatalog = 'Volver al catálogo';
   static const String addToCart = 'Agregar al carrito';
-  static const String comingSoon = 'Próximamente';
   static const String signOut = 'Cerrar sesión';
   static const String uploadProduct = 'Subir producto';
   static const String takePhoto = 'Sacar foto';

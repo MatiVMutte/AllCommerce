@@ -4,6 +4,8 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_theme.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
+import 'package:all_commerce/features/cart/presentation/view_models/cart_controller.dart';
+import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -92,6 +94,28 @@ class _CatalogScaffold extends ConsumerWidget {
                 leading: isWhiteLabel
                     ? null
                     : BackButton(onPressed: () => context.go('/')),
+                actions: <Widget>[
+                  Consumer(
+                    builder:
+                        (BuildContext context, WidgetRef ref, _) {
+                      final cart = ref.watch(cartProvider);
+                      final int count = cart.tenantId == tenant.id
+                          ? cart.itemCount
+                          : 0;
+                      return IconButton(
+                        icon: Badge(
+                          isLabelVisible: count > 0,
+                          label: Text('$count'),
+                          child: const Icon(
+                            Icons.shopping_cart_outlined,
+                          ),
+                        ),
+                        onPressed: () =>
+                            context.go('/s/$slug/cart'),
+                      );
+                    },
+                  ),
+                ],
               ),
               SliverToBoxAdapter(child: _StoreHeader(tenant: tenant)),
               SliverToBoxAdapter(
@@ -215,6 +239,7 @@ class _CatalogScaffold extends ConsumerWidget {
                               _ProductCard(
                                 slug: slug,
                                 product: filtered[index],
+                                tenant: tenant,
                               ),
                           childCount: filtered.length,
                         ),
@@ -336,14 +361,19 @@ class _StoreHeader extends StatelessWidget {
   }
 }
 
-class _ProductCard extends StatelessWidget {
-  const _ProductCard({required this.slug, required this.product});
+class _ProductCard extends ConsumerWidget {
+  const _ProductCard({
+    required this.slug,
+    required this.product,
+    required this.tenant,
+  });
 
   final String slug;
   final ProductModel product;
+  final TenantModel tenant;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -387,9 +417,29 @@ class _ProductCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    Formatters.price(product.price),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          Formatters.price(product.price),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton.filledTonal(
+                        iconSize: 18,
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(Icons.add_shopping_cart),
+                        onPressed: () => addToCartWithConfirm(
+                          context,
+                          ref,
+                          product,
+                          tenant,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

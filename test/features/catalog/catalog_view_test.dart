@@ -1,4 +1,5 @@
 import 'package:all_commerce/core/constants/plans.dart';
+import 'package:all_commerce/core/storage/shared_preferences_provider.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
@@ -7,8 +8,16 @@ import 'package:all_commerce/features/catalog/presentation/views/catalog_view.da
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  late SharedPreferences prefs;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    prefs = await SharedPreferences.getInstance();
+  });
+
   final TenantModel tenant = TenantModel(
     id: 't1',
     slug: 'demo',
@@ -48,6 +57,7 @@ void main() {
   Widget buildView({bool tenantExists = true}) {
     return ProviderScope(
       overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
         tenantBySlugProvider('demo').overrideWith(
           (Ref ref) async => tenantExists ? tenant : null,
         ),

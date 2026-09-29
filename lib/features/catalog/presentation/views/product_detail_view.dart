@@ -3,6 +3,7 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_theme.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
+import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -166,8 +167,10 @@ class _ProductDetailScaffold extends ConsumerWidget {
                                     ),
                           ),
                   );
-                  final Widget details =
-                      _ProductDetails(product: product);
+                  final Widget details = _ProductDetails(
+                    product: product,
+                    tenant: tenant,
+                  );
                   if (wide) {
                     return Padding(
                       padding: const EdgeInsets.all(24),
@@ -207,13 +210,22 @@ class _ProductDetailScaffold extends ConsumerWidget {
   }
 }
 
-class _ProductDetails extends StatelessWidget {
-  const _ProductDetails({required this.product});
+class _ProductDetails extends ConsumerStatefulWidget {
+  const _ProductDetails({required this.product, required this.tenant});
 
   final ProductModel product;
+  final TenantModel tenant;
+
+  @override
+  ConsumerState<_ProductDetails> createState() => _ProductDetailsState();
+}
+
+class _ProductDetailsState extends ConsumerState<_ProductDetails> {
+  int _quantity = 1;
 
   @override
   Widget build(BuildContext context) {
+    final ProductModel product = widget.product;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -251,17 +263,35 @@ class _ProductDetails extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 24),
-        const SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: null,
-            child: Text(AppStrings.addToCart),
-          ),
+        Row(
+          children: <Widget>[
+            IconButton(
+              icon: const Icon(Icons.remove_circle_outline),
+              onPressed: _quantity > 1
+                  ? () => setState(() => _quantity--)
+                  : null,
+            ),
+            Text('$_quantity'),
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: () => setState(() => _quantity++),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
-        Text(
-          AppStrings.comingSoon,
-          style: Theme.of(context).textTheme.bodySmall,
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            icon: const Icon(Icons.add_shopping_cart),
+            label: const Text(AppStrings.addToCart),
+            onPressed: () => addToCartWithConfirm(
+              context,
+              ref,
+              product,
+              widget.tenant,
+              quantity: _quantity,
+            ),
+          ),
         ),
       ],
     );

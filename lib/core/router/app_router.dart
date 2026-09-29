@@ -1,5 +1,7 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
+import 'package:all_commerce/core/router/return_to.dart';
 import 'package:all_commerce/core/router/router_refresh.dart';
+import 'package:all_commerce/features/cart/presentation/views/cart_view.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/tenant/tenant_strategy.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
@@ -13,6 +15,7 @@ import 'package:all_commerce/features/auth/presentation/views/welcome_view.dart'
 import 'package:all_commerce/features/catalog/presentation/views/catalog_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/product_detail_view.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
+import 'package:all_commerce/features/orders/presentation/views/order_success_view.dart';
 import 'package:all_commerce/features/product_upload/presentation/views/product_upload_view.dart';
 import 'package:all_commerce/features/store/presentation/views/owner_products_view.dart';
 import 'package:all_commerce/features/store/presentation/views/product_edit_view.dart';
@@ -44,6 +47,21 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
           path: '/s/:slug',
           builder: (BuildContext context, GoRouterState state) =>
               CatalogView(slug: state.pathParameters['slug'] ?? ''),
+        ),
+        GoRoute(
+          path: '/s/:slug/cart',
+          builder: (BuildContext context, GoRouterState state) =>
+              CartView(slug: state.pathParameters['slug'] ?? ''),
+        ),
+        GoRoute(
+          path: '/s/:slug/order/:id',
+          builder: (BuildContext context, GoRouterState state) =>
+              OrderSuccessView(
+                slug: state.pathParameters['slug'] ?? '',
+                confirmation: state.extra is OrderConfirmation
+                    ? state.extra! as OrderConfirmation
+                    : null,
+              ),
         ),
         GoRoute(
           path: '/s/:slug/p/:id',
@@ -155,12 +173,20 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
         final UserModel? profile = profileAsync.value;
         if (profile == null) return isOnboarding ? null : '/select-role';
         if (profile.isOwner) {
-          return (isAuthEntry || isOnboarding || loc == '/') ? '/owner' : null;
+          if (isAuthEntry || isOnboarding || loc == '/') {
+            final String? returnTo =
+                ref.read(returnToProvider.notifier).consume();
+            return returnTo ?? '/owner';
+          }
+          return null;
         }
         // customer
-        return (isAuthEntry || isOnboarding || loc.startsWith('/owner'))
-            ? '/'
-            : null;
+        if (isAuthEntry || isOnboarding || loc.startsWith('/owner')) {
+          final String? returnTo =
+              ref.read(returnToProvider.notifier).consume();
+          return returnTo ?? '/';
+        }
+        return null;
       },
       errorBuilder: (BuildContext context, GoRouterState state) => Scaffold(
         body: Center(

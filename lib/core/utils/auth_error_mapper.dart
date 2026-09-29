@@ -46,6 +46,27 @@ abstract final class AuthErrorMapper {
       if (message.contains('PRODUCT_LIMIT_REACHED')) {
         return 'Llegaste al máximo de productos de tu plan';
       }
+      if (message.contains('PHONE_REQUIRED')) {
+        return 'Necesitamos tu WhatsApp para enviar el pedido';
+      }
+      if (message.contains('PROFILE_REQUIRED')) {
+        return 'Completá tu perfil para hacer el pedido';
+      }
+      if (message.contains('EMPTY_CART')) {
+        return 'Tu carrito está vacío';
+      }
+      if (message.contains('PRODUCT_UNAVAILABLE')) {
+        return 'Un producto del carrito ya no está disponible';
+      }
+      if (message.contains('TENANT_INACTIVE')) {
+        return 'Este local no está recibiendo pedidos';
+      }
+      if (message.contains('INVALID_COUPON')) {
+        return 'El cupón no es válido';
+      }
+      if (message.contains('INVALID_QUANTITY')) {
+        return 'Cantidad inválida';
+      }
       if (message.contains('SLUG_TAKEN')) {
         return 'Ese nombre de link ya está en uso, elegí otro';
       }
