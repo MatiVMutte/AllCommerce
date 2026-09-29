@@ -1,3 +1,4 @@
+import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/core/constants/plans.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/features/cart/data/models/cart_item.dart';
@@ -28,7 +29,7 @@ OrderModel _order({double discount = 0, String? notes}) {
     customerId: 'u1',
     customerNameSnapshot: 'Ana',
     customerPhoneSnapshot: '5491199999999',
-    status: 'pending',
+    status: OrderStatus.requested,
     subtotal: 25500,
     discount: discount,
     total: 25500 - discount,

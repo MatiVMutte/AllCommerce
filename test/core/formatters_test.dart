@@ -9,4 +9,11 @@ void main() {
     expect(Formatters.price(8500), r'$8.500');
     expect(Formatters.price(1234567.89), r'$1.234.567,89');
   });
+
+  test('formats dateTime as dd/MM HH:mm', () {
+    expect(
+      Formatters.dateTime(DateTime(2025, 3, 7, 9, 5)),
+      '07/03 09:05',
+    );
+  });
 }

@@ -1,5 +1,7 @@
+import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/core/supabase/supabase_client_provider.dart';
 import 'package:all_commerce/features/cart/data/models/cart_item.dart';
+import 'package:all_commerce/features/orders/data/models/order_item_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -36,6 +38,47 @@ class OrderRepository {
         'p_notes': notes,
       },
     );
+    return OrderModel.fromJson(row);
+  }
+
+  /// Latest orders for [tenantId], newest first.
+  Future<List<OrderModel>> listByTenant(String tenantId) async {
+    final List<dynamic> rows = await _client
+        .from('orders')
+        .select()
+        .eq('tenant_id', tenantId)
+        .order('created_at', ascending: false)
+        .limit(200);
+    return rows
+        .map((dynamic r) => OrderModel.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<OrderItemModel>> listItems(String orderId) async {
+    final List<dynamic> rows = await _client
+        .from('order_items')
+        .select()
+        .eq('order_id', orderId);
+    return rows
+        .map(
+          (dynamic r) => OrderItemModel.fromJson(r as Map<String, dynamic>),
+        )
+        .toList();
+  }
+
+  /// RLS only allows the owner to update the `status` column.
+  Future<OrderModel> updateStatus(
+    String orderId,
+    String tenantId,
+    OrderStatus status,
+  ) async {
+    final Map<String, dynamic> row = await _client
+        .from('orders')
+        .update(<String, dynamic>{'status': status.id})
+        .eq('id', orderId)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
     return OrderModel.fromJson(row);
   }
 }

@@ -1,3 +1,4 @@
+import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,7 +10,7 @@ Map<String, dynamic> _json({required Object orderNumber}) {
     'customer_id': 'u1',
     'customer_name_snapshot': 'Ana',
     'customer_phone_snapshot': '5491199999999',
-    'status': 'pending',
+    'status': 'requested',
     'subtotal': '25500.00',
     'discount': '0.00',
     'total': '25500.00',
@@ -33,6 +34,6 @@ void main() {
     expect(order.subtotal, 25500);
     expect(order.discount, 0);
     expect(order.total, 25500);
-    expect(order.status, 'pending');
+    expect(order.status, OrderStatus.requested);
   });
 }

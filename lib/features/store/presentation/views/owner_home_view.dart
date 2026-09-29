@@ -3,6 +3,8 @@ import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
+import 'package:all_commerce/features/orders/data/models/order_model.dart';
+import 'package:all_commerce/features/orders/presentation/view_models/owner_orders_providers.dart';
 import 'package:all_commerce/features/product_upload/presentation/widgets/plan_blocked_card.dart';
 import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
 import 'package:flutter/material.dart';
@@ -81,6 +83,39 @@ class OwnerHomeView extends ConsumerWidget {
                         icon: const Icon(Icons.inventory_2_outlined),
                         label: const Text('Mis productos'),
                         onPressed: () => context.go('/owner/products'),
+                      ),
+                      const SizedBox(height: 12),
+                      ref.watch(ownerOrdersProvider(tenant.id)).when(
+                        loading: () => OutlinedButton.icon(
+                          icon: const Icon(Icons.receipt_long_outlined),
+                          label: const Text('Pedidos'),
+                          onPressed: () => context.go('/owner/orders'),
+                        ),
+                        error: (Object e, StackTrace s) =>
+                            OutlinedButton.icon(
+                          icon: const Icon(Icons.receipt_long_outlined),
+                          label: const Text('Pedidos'),
+                          onPressed: () => context.go('/owner/orders'),
+                        ),
+                        data: (List<OrderModel> orders) {
+                          final int pending = pendingCount(orders);
+                          return OutlinedButton.icon(
+                            icon: Badge(
+                              isLabelVisible: pending > 0,
+                              label: Text('$pending'),
+                              child: const Icon(
+                                Icons.receipt_long_outlined,
+                              ),
+                            ),
+                            label: Text(
+                              pending > 0
+                                  ? 'Pedidos · $pending nuevos'
+                                  : 'Pedidos',
+                            ),
+                            onPressed: () =>
+                                context.go('/owner/orders'),
+                          );
+                        },
                       ),
                       const SizedBox(height: 12),
                       FilledButton(

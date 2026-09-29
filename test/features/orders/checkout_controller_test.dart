@@ -1,3 +1,4 @@
+import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/features/cart/data/models/cart_item.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:all_commerce/features/orders/data/repositories/order_repository.dart';
@@ -17,7 +18,7 @@ OrderModel _order() {
     customerId: 'u1',
     customerNameSnapshot: 'Ana',
     customerPhoneSnapshot: '5491199999999',
-    status: 'pending',
+    status: OrderStatus.requested,
     subtotal: 100,
     discount: 0,
     total: 100,

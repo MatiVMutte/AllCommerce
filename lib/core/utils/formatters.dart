@@ -10,4 +10,9 @@ abstract final class Formatters {
       ..maximumFractionDigits = digits;
     return '\$${format.format(value)}';
   }
+
+  /// 'dd/MM HH:mm' — short timestamp for order lists.
+  static String dateTime(DateTime value) {
+    return DateFormat('dd/MM HH:mm').format(value);
+  }
 }

@@ -15,7 +15,10 @@ import 'package:all_commerce/features/auth/presentation/views/welcome_view.dart'
 import 'package:all_commerce/features/catalog/presentation/views/catalog_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/product_detail_view.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
+import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:all_commerce/features/orders/presentation/views/order_success_view.dart';
+import 'package:all_commerce/features/orders/presentation/views/owner_order_detail_view.dart';
+import 'package:all_commerce/features/orders/presentation/views/owner_orders_view.dart';
 import 'package:all_commerce/features/product_upload/presentation/views/product_upload_view.dart';
 import 'package:all_commerce/features/store/presentation/views/owner_products_view.dart';
 import 'package:all_commerce/features/store/presentation/views/product_edit_view.dart';
@@ -115,6 +118,21 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
           path: '/owner/products/new',
           builder: (BuildContext context, GoRouterState state) =>
               const ProductUploadView(),
+        ),
+        GoRoute(
+          path: '/owner/orders',
+          builder: (BuildContext context, GoRouterState state) =>
+              const OwnerOrdersView(),
+        ),
+        GoRoute(
+          path: '/owner/orders/:id',
+          builder: (BuildContext context, GoRouterState state) =>
+              OwnerOrderDetailView(
+                orderId: state.pathParameters['id'] ?? '',
+                order: state.extra is OrderModel
+                    ? state.extra! as OrderModel
+                    : null,
+              ),
         ),
         GoRoute(
           path: '/owner/products',
