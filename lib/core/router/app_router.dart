@@ -12,7 +12,10 @@ import 'package:all_commerce/features/auth/presentation/views/role_select_view.d
 import 'package:all_commerce/features/auth/presentation/views/welcome_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/catalog_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/product_detail_view.dart';
+import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/product_upload/presentation/views/product_upload_view.dart';
+import 'package:all_commerce/features/store/presentation/views/owner_products_view.dart';
+import 'package:all_commerce/features/store/presentation/views/product_edit_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/store_directory_view.dart';
 import 'package:all_commerce/features/store/presentation/views/business_onboarding_view.dart';
 import 'package:all_commerce/features/store/presentation/views/owner_home_view.dart';
@@ -94,6 +97,21 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
           path: '/owner/products/new',
           builder: (BuildContext context, GoRouterState state) =>
               const ProductUploadView(),
+        ),
+        GoRoute(
+          path: '/owner/products',
+          builder: (BuildContext context, GoRouterState state) =>
+              const OwnerProductsView(),
+        ),
+        GoRoute(
+          path: '/owner/products/:id/edit',
+          builder: (BuildContext context, GoRouterState state) =>
+              ProductEditView(
+                product: state.extra is ProductModel
+                    ? state.extra! as ProductModel
+                    : null,
+                productId: state.pathParameters['id'] ?? '',
+              ),
         ),
       ],
       redirect: (BuildContext context, GoRouterState state) {

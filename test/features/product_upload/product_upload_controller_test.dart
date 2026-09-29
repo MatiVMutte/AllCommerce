@@ -161,6 +161,78 @@ void main() {
     );
   });
 
+  test('update without image calls update only', () async {
+    when(() => products.update(any(), any(), any()))
+        .thenAnswer((_) async => product);
+
+    final ProductModel? result = await controller().update(product, input);
+
+    expect(result, product);
+    verify(() => products.update('p1', 't1', input)).called(1);
+    verifyNever(
+      () => products.uploadImage(
+        tenantId: any(named: 'tenantId'),
+        productId: any(named: 'productId'),
+        jpegBytes: any(named: 'jpegBytes'),
+      ),
+    );
+  });
+
+  test('update with image runs update -> uploadImage -> setImageUrl', () async {
+    when(() => images.pick(any())).thenAnswer(
+      (_) async => PickedImage(bytes: bytes, name: 'a.jpg'),
+    );
+    when(() => images.compress(any())).thenAnswer((_) async => bytes);
+    when(() => ai.analyze(any())).thenAnswer((_) async => suggestion);
+    when(() => products.update(any(), any(), any()))
+        .thenAnswer((_) async => product);
+    when(
+      () => products.uploadImage(
+        tenantId: any(named: 'tenantId'),
+        productId: any(named: 'productId'),
+        jpegBytes: any(named: 'jpegBytes'),
+      ),
+    ).thenAnswer((_) async => 'https://img');
+    when(() => products.setImageUrl(any(), any())).thenAnswer((_) async {});
+
+    await controller().pickAndAnalyze(ImageSource.gallery);
+    final ProductModel? result = await controller().update(product, input);
+
+    expect(result, product);
+    verifyInOrder(<dynamic Function()>[
+      () => products.update(any(), any(), any()),
+      () => products.uploadImage(
+            tenantId: any(named: 'tenantId'),
+            productId: any(named: 'productId'),
+            jpegBytes: any(named: 'jpegBytes'),
+          ),
+      () => products.setImageUrl(any(), any()),
+    ]);
+  });
+
+  test('update returns product even if image upload fails', () async {
+    when(() => images.pick(any())).thenAnswer(
+      (_) async => PickedImage(bytes: bytes, name: 'a.jpg'),
+    );
+    when(() => images.compress(any())).thenAnswer((_) async => bytes);
+    when(() => ai.analyze(any())).thenAnswer((_) async => suggestion);
+    when(() => products.update(any(), any(), any()))
+        .thenAnswer((_) async => product);
+    when(
+      () => products.uploadImage(
+        tenantId: any(named: 'tenantId'),
+        productId: any(named: 'productId'),
+        jpegBytes: any(named: 'jpegBytes'),
+      ),
+    ).thenThrow(Exception('storage down'));
+
+    await controller().pickAndAnalyze(ImageSource.gallery);
+    final ProductModel? result = await controller().update(product, input);
+
+    expect(result, product);
+    expect(readState().infoMessage, isNotNull);
+  });
+
   test('save returns product even if image upload fails', () async {
     when(() => images.pick(any())).thenAnswer(
       (_) async => PickedImage(bytes: bytes, name: 'a.jpg'),

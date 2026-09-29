@@ -1,8 +1,10 @@
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
+import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/product_upload/presentation/widgets/plan_blocked_card.dart';
+import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -54,6 +56,18 @@ class OwnerHomeView extends ConsumerWidget {
                           '${tenant.plan.label} · ${tenant.daysLeft} días restantes',
                         ),
                       ),
+                      ref.watch(ownerProductsProvider(tenant.id)).when(
+                        loading: () => const SizedBox.shrink(),
+                        error: (Object e, StackTrace s) =>
+                            const SizedBox.shrink(),
+                        data: (List<ProductModel> products) => Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            '${products.length} / ${tenant.plan.maxProducts} productos',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       FilledButton.icon(
                         icon: const Icon(Icons.add_a_photo_outlined),
@@ -61,6 +75,12 @@ class OwnerHomeView extends ConsumerWidget {
                         onPressed: tenant.canPublish
                             ? () => context.go('/owner/products/new')
                             : null,
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.inventory_2_outlined),
+                        label: const Text('Mis productos'),
+                        onPressed: () => context.go('/owner/products'),
                       ),
                       const SizedBox(height: 12),
                       FilledButton(

@@ -34,7 +34,9 @@ class ProductRepository {
     required Uint8List jpegBytes,
   }) async {
     final String path = '$tenantId/$productId.jpg';
-    await _client.storage.from('product-images').uploadBinary(
+    await _client.storage
+        .from('product-images')
+        .uploadBinary(
           path,
           jpegBytes,
           fileOptions: const FileOptions(
@@ -42,7 +44,82 @@ class ProductRepository {
             upsert: true,
           ),
         );
-    return _client.storage.from('product-images').getPublicUrl(path);
+    // Same path on re-upload: version the URL so caches pick up the new image.
+    final String url = _client.storage
+        .from('product-images')
+        .getPublicUrl(path);
+    return '$url?v=${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  /// All products of the tenant, active or not, newest first.
+  Future<List<ProductModel>> listAll(String tenantId) async {
+    final List<Map<String, dynamic>> rows = await _client
+        .from('products')
+        .select()
+        .eq('tenant_id', tenantId)
+        .order('created_at', ascending: false);
+    return rows.map(ProductModel.fromJson).toList();
+  }
+
+  Future<ProductModel?> getById(String tenantId, String productId) async {
+    final Map<String, dynamic>? row = await _client
+        .from('products')
+        .select()
+        .eq('tenant_id', tenantId)
+        .eq('id', productId)
+        .maybeSingle();
+    if (row == null) return null;
+    return ProductModel.fromJson(row);
+  }
+
+  Future<ProductModel> update(
+    String productId,
+    String tenantId,
+    ProductInput input,
+  ) async {
+    final Map<String, dynamic> row = await _client
+        .from('products')
+        .update(<String, dynamic>{
+          'title': input.title,
+          'description': input.description,
+          'category': input.category,
+          'tags': input.tags,
+          'price': input.price,
+          'sku': input.sku,
+          'stock': input.stock,
+        })
+        .eq('id', productId)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+    return ProductModel.fromJson(row);
+  }
+
+  Future<void> setActive(
+    String productId,
+    String tenantId,
+    bool isActive,
+  ) async {
+    await _client
+        .from('products')
+        .update(<String, dynamic>{'is_active': isActive})
+        .eq('id', productId)
+        .eq('tenant_id', tenantId);
+  }
+
+  Future<void> delete(String productId, String tenantId) async {
+    await _client
+        .from('products')
+        .delete()
+        .eq('id', productId)
+        .eq('tenant_id', tenantId);
+    try {
+      await _client.storage.from('product-images').remove(<String>[
+        '$tenantId/$productId.jpg',
+      ]);
+    } catch (_) {
+      // Missing image is fine; storage errors are non-blocking.
+    }
   }
 
   Future<void> setImageUrl(String productId, String url) async {

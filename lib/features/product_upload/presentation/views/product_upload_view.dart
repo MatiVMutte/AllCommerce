@@ -9,6 +9,7 @@ import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/product_upload/data/models/ai_product_suggestion.dart';
 import 'package:all_commerce/features/product_upload/data/models/product_input.dart';
 import 'package:all_commerce/features/product_upload/presentation/view_models/product_upload_controller.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:all_commerce/features/product_upload/presentation/widgets/plan_blocked_card.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +18,10 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ProductUploadView extends ConsumerStatefulWidget {
-  const ProductUploadView({super.key});
+  const ProductUploadView({this.existing, super.key});
+
+  /// When non-null the form edits this product instead of creating one.
+  final ProductModel? existing;
 
   @override
   ConsumerState<ProductUploadView> createState() =>
@@ -34,6 +38,24 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
   final TextEditingController _stock = TextEditingController(text: '0');
   ProductCategory _category = ProductCategory.other;
   bool _categoryTouched = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final ProductModel? existing = widget.existing;
+    if (existing != null) {
+      _title.text = existing.title;
+      _description.text = existing.description ?? '';
+      _price.text = existing.price == existing.price.roundToDouble()
+          ? existing.price.toStringAsFixed(0)
+          : existing.price.toString();
+      _tags.text = existing.tags.join(', ');
+      _sku.text = existing.sku ?? '';
+      _stock.text = existing.stock.toString();
+      _category = existing.categoryEnum;
+      _categoryTouched = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -92,15 +114,26 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       sku: sku.isEmpty ? null : sku,
       stock: int.tryParse(_stock.text.trim()) ?? 0,
     );
-    final ProductModel? product = await ref
-        .read(productUploadControllerProvider.notifier)
-        .save(input, tenant.id);
+    final ProductModel? existing = widget.existing;
+    final ProductModel? product = existing == null
+        ? await ref
+            .read(productUploadControllerProvider.notifier)
+            .save(input, tenant.id)
+        : await ref
+            .read(productUploadControllerProvider.notifier)
+            .update(existing, input);
     if (!mounted) return;
     if (product != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AppStrings.productPublished)),
+        SnackBar(
+          content: Text(
+            existing == null
+                ? AppStrings.productPublished
+                : 'Producto actualizado',
+          ),
+        ),
       );
-      context.go('/owner');
+      context.go('/owner/products');
       return;
     }
     final ProductUploadState state = ref.read(productUploadControllerProvider);
@@ -131,7 +164,13 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
     final ProductUploadState state =
         ref.watch(productUploadControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.uploadProduct)),
+      appBar: AppBar(
+        title: Text(
+          widget.existing == null
+              ? AppStrings.uploadProduct
+              : 'Editar producto',
+        ),
+      ),
       body: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (Object error, StackTrace stack) =>
@@ -198,6 +237,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
               children: <Widget>[
                 _ImageSection(
                   state: state,
+                  existingImageUrl: widget.existing?.imageUrl,
                   onPick: (ImageSource source) => ref
                       .read(productUploadControllerProvider.notifier)
                       .pickAndAnalyze(source),
@@ -319,7 +359,11 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text(AppStrings.publishProduct),
+                      : Text(
+                          widget.existing == null
+                              ? AppStrings.publishProduct
+                              : 'Guardar cambios',
+                        ),
                 ),
               ],
             ),
@@ -331,14 +375,45 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
 }
 
 class _ImageSection extends StatelessWidget {
-  const _ImageSection({required this.state, required this.onPick});
+  const _ImageSection({
+    required this.state,
+    required this.onPick,
+    this.existingImageUrl,
+  });
 
   final ProductUploadState state;
   final void Function(ImageSource source) onPick;
+  final String? existingImageUrl;
 
   @override
   Widget build(BuildContext context) {
     final Uint8List? bytes = state.imageBytes;
+    if (bytes == null && existingImageUrl != null) {
+      return Stack(
+        children: <Widget>[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: CachedNetworkImage(
+                imageUrl: existingImageUrl!,
+                fit: BoxFit.cover,
+                errorWidget: (BuildContext context, String url, _) =>
+                    const Icon(Icons.image_not_supported_outlined, size: 48),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: FilledButton.tonal(
+              onPressed: () => onPick(ImageSource.gallery),
+              child: const Text(AppStrings.changePhoto),
+            ),
+          ),
+        ],
+      );
+    }
     if (bytes == null) {
       return Column(
         children: <Widget>[

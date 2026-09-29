@@ -9,6 +9,7 @@ import 'package:all_commerce/features/product_upload/data/models/product_input.d
 import 'package:all_commerce/features/product_upload/data/repositories/product_repository.dart';
 import 'package:all_commerce/features/product_upload/data/services/ai_analyze_service.dart';
 import 'package:all_commerce/features/product_upload/data/services/image_service.dart';
+import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -152,6 +153,49 @@ class ProductUploadController extends Notifier<ProductUploadState> {
       }
     }
     ref.invalidate(catalogProductsProvider(tenantId));
+    state = state.copyWith(saving: false);
+    return product;
+  }
+
+  /// Updates an existing product, uploading a new image if one was picked.
+  Future<ProductModel?> update(
+    ProductModel existing,
+    ProductInput input,
+  ) async {
+    state = state.copyWith(saving: true, error: () => null);
+    final ProductModel product;
+    try {
+      product = await _products.update(existing.id, existing.tenantId, input);
+    } on PostgrestException catch (e) {
+      final String? blocked = _blockedCodeFrom(e.message);
+      state = state.copyWith(
+        saving: false,
+        error: () => e,
+        blockedCode: blocked != null ? () => blocked : null,
+      );
+      return null;
+    } catch (e) {
+      state = state.copyWith(saving: false, error: () => e);
+      return null;
+    }
+    final Uint8List? image = state.imageBytes;
+    if (image != null) {
+      try {
+        final String url = await _products.uploadImage(
+          tenantId: existing.tenantId,
+          productId: existing.id,
+          jpegBytes: image,
+        );
+        await _products.setImageUrl(existing.id, url);
+      } catch (_) {
+        state = state.copyWith(
+          infoMessage: () =>
+              'El producto se guardó pero la foto no se pudo subir',
+        );
+      }
+    }
+    ref.invalidate(catalogProductsProvider(existing.tenantId));
+    ref.invalidate(ownerProductsProvider(existing.tenantId));
     state = state.copyWith(saving: false);
     return product;
   }
