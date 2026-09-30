@@ -1,6 +1,7 @@
 import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/core/widgets/order_status_chip.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
@@ -149,7 +150,12 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                       onRefresh: () async =>
                           ref.invalidate(ownerOrdersProvider(tenantId)),
                       child: ListView.separated(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.fromLTRB(
+                          16,
+                          16,
+                          16,
+                          16 + FloatingNavBar.height,
+                        ),
                         itemCount: filtered.length,
                         separatorBuilder: (_, _) =>
                             const SizedBox(height: 8),

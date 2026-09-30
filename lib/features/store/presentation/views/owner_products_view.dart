@@ -4,6 +4,7 @@ import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
@@ -198,6 +199,8 @@ class _ProductList extends ConsumerWidget {
           );
         }
         return ListView.separated(
+          padding:
+              const EdgeInsets.only(bottom: FloatingNavBar.height),
           itemCount: filtered.length,
           separatorBuilder: (BuildContext context, int index) =>
               const Divider(height: 1),

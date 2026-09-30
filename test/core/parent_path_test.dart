@@ -20,6 +20,7 @@ void main() {
 
   test('auth routes', () {
     expect(parentPathOf('/my-orders'), '/');
+    expect(parentPathOf('/profile'), '/');
     expect(parentPathOf('/login'), '/');
     expect(parentPathOf('/welcome'), '/');
     expect(parentPathOf('/register'), '/login');

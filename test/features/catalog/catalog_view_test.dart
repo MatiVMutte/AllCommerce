@@ -4,6 +4,7 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
+import 'package:all_commerce/core/widgets/price_pill.dart';
 import 'package:all_commerce/features/catalog/presentation/views/catalog_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -74,6 +75,9 @@ void main() {
 
     expect(find.text('Vaso térmico'), findsOneWidget);
     expect(find.text('Remera lisa'), findsOneWidget);
+    expect(find.byType(PricePill), findsNWidgets(2));
+    expect(find.text('\$100'), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsNWidgets(2));
 
     await tester.enterText(find.byType(TextField), 'vaso');
     await tester.pumpAndSettle();

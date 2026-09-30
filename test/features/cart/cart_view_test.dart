@@ -65,6 +65,7 @@ void main() {
     expect(find.text('Vaso térmico'), findsOneWidget);
     expect(find.text('Remera'), findsOneWidget);
     expect(find.text('Subtotal'), findsOneWidget);
-    expect(find.text('\$500'), findsOneWidget);
+    expect(find.text('Total'), findsOneWidget);
+    expect(find.text('\$500'), findsNWidgets(2));
   });
 }

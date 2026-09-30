@@ -9,6 +9,7 @@ import 'package:all_commerce/features/auth/presentation/view_models/auth_provide
 import 'package:all_commerce/features/auth/presentation/views/customer_profile_view.dart';
 import 'package:all_commerce/features/auth/presentation/views/forgot_password_view.dart';
 import 'package:all_commerce/features/auth/presentation/views/login_view.dart';
+import 'package:all_commerce/features/auth/presentation/views/profile_view.dart';
 import 'package:all_commerce/features/auth/presentation/views/register_view.dart';
 import 'package:all_commerce/features/auth/presentation/views/role_select_view.dart';
 import 'package:all_commerce/features/auth/presentation/views/welcome_view.dart';
@@ -26,6 +27,8 @@ import 'package:all_commerce/features/store/presentation/views/tenant_settings_v
 import 'package:all_commerce/features/store/presentation/views/product_edit_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/store_directory_view.dart';
 import 'package:all_commerce/features/store/presentation/views/business_onboarding_view.dart';
+import 'package:all_commerce/features/shell/customer_shell.dart';
+import 'package:all_commerce/features/shell/owner_shell.dart';
 import 'package:all_commerce/features/store/presentation/views/owner_home_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,15 +46,37 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
     return GoRouter(
       refreshListenable: refreshNotifier,
       routes: <RouteBase>[
-        GoRoute(
-          path: '/',
-          builder: (BuildContext context, GoRouterState state) =>
-              const StoreDirectoryView(),
-        ),
-        GoRoute(
-          path: '/s/:slug',
-          builder: (BuildContext context, GoRouterState state) =>
-              CatalogView(slug: state.pathParameters['slug'] ?? ''),
+        ShellRoute(
+          builder: (BuildContext context, GoRouterState state,
+                  Widget child) =>
+              CustomerShell(state: state, child: child),
+          routes: <RouteBase>[
+            GoRoute(
+              path: '/',
+              builder: (BuildContext context, GoRouterState state) =>
+                  StoreDirectoryView(
+                    focusSearch:
+                        state.uri.queryParameters['focus'] == 'search',
+                  ),
+            ),
+            GoRoute(
+              path: '/s/:slug',
+              builder: (BuildContext context, GoRouterState state) =>
+                  CatalogView(
+                    slug: state.pathParameters['slug'] ?? '',
+                  ),
+            ),
+            GoRoute(
+              path: '/my-orders',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const MyOrdersView(),
+            ),
+            GoRoute(
+              path: '/profile',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const ProfileView(),
+            ),
+          ],
         ),
         GoRoute(
           path: '/s/:slug/cart',
@@ -111,25 +136,37 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
           builder: (BuildContext context, GoRouterState state) =>
               const BusinessOnboardingView(),
         ),
-        GoRoute(
-          path: '/my-orders',
-          builder: (BuildContext context, GoRouterState state) =>
-              const MyOrdersView(),
-        ),
-        GoRoute(
-          path: '/owner',
-          builder: (BuildContext context, GoRouterState state) =>
-              const OwnerHomeView(),
+        ShellRoute(
+          builder: (BuildContext context, GoRouterState state,
+                  Widget child) =>
+              OwnerShell(state: state, child: child),
+          routes: <RouteBase>[
+            GoRoute(
+              path: '/owner',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const OwnerHomeView(),
+            ),
+            GoRoute(
+              path: '/owner/products',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const OwnerProductsView(),
+            ),
+            GoRoute(
+              path: '/owner/orders',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const OwnerOrdersView(),
+            ),
+            GoRoute(
+              path: '/owner/settings',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const TenantSettingsView(),
+            ),
+          ],
         ),
         GoRoute(
           path: '/owner/products/new',
           builder: (BuildContext context, GoRouterState state) =>
               const ProductUploadView(),
-        ),
-        GoRoute(
-          path: '/owner/orders',
-          builder: (BuildContext context, GoRouterState state) =>
-              const OwnerOrdersView(),
         ),
         GoRoute(
           path: '/owner/orders/:id',
@@ -140,16 +177,6 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
                     ? state.extra! as OrderModel
                     : null,
               ),
-        ),
-        GoRoute(
-          path: '/owner/products',
-          builder: (BuildContext context, GoRouterState state) =>
-              const OwnerProductsView(),
-        ),
-        GoRoute(
-          path: '/owner/settings',
-          builder: (BuildContext context, GoRouterState state) =>
-              const TenantSettingsView(),
         ),
         GoRoute(
           path: '/owner/products/:id/edit',
@@ -170,6 +197,7 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
           '/login',
           '/register',
           '/forgot-password',
+          '/profile',
         };
         const Set<String> authEntryPaths = <String>{
           '/welcome',

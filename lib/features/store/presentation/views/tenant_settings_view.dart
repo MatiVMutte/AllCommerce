@@ -4,6 +4,7 @@ import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/store/presentation/view_models/tenant_settings_controller.dart';
@@ -128,7 +129,12 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
               child: Form(
                 key: _formKey,
                 child: ListView(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.fromLTRB(
+                    24,
+                    24,
+                    24,
+                    24 + FloatingNavBar.height,
+                  ),
                   children: <Widget>[
                     Center(
                       child: Column(

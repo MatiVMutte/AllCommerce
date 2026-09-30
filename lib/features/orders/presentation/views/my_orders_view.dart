@@ -1,7 +1,13 @@
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
+import 'package:all_commerce/core/widgets/app_avatar.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/core/widgets/app_card.dart';
+import 'package:all_commerce/core/widgets/app_skeleton.dart';
+import 'package:all_commerce/core/widgets/app_states.dart';
+import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/core/widgets/order_status_chip.dart';
 import 'package:all_commerce/features/orders/data/models/order_item_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
@@ -28,42 +34,31 @@ class MyOrdersView extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: ordersAsync.when(
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
-            error: (Object e, StackTrace s) => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const Text('Ocurrió un error. Intentá de nuevo.'),
-                  const SizedBox(height: 8),
-                  FilledButton(
-                    onPressed: () =>
-                        ref.invalidate(myOrdersProvider),
-                    child: const Text('Reintentar'),
-                  ),
-                ],
-              ),
+            loading: () => const AppSkeletonList(
+              itemCount: 4,
+              itemHeight: 88,
+            ),
+            error: (Object e, StackTrace s) => AppErrorState(
+              onRetry: () => ref.invalidate(myOrdersProvider),
             ),
             data: (List<OrderModel> orders) {
               if (orders.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      const Text('Todavía no hiciste pedidos'),
-                      const SizedBox(height: 12),
-                      FilledButton(
-                        onPressed: () => context.go('/'),
-                        child: const Text('Ver locales'),
-                      ),
-                    ],
-                  ),
+                return AppEmptyState(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'Todavía no hiciste pedidos',
+                  actionLabel: 'Ver locales',
+                  onAction: () => context.go('/'),
                 );
               }
               return ListView.separated(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(
+                  16,
+                  8,
+                  16,
+                  FloatingNavBar.height,
+                ),
                 itemCount: orders.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (BuildContext context, int index) =>
                     _MyOrderTile(order: orders[index]),
               );
@@ -82,23 +77,63 @@ class _MyOrderTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppTokens tokens = context.tokens;
     final AsyncValue<TenantModel?> tenantAsync =
         ref.watch(tenantByIdProvider(order.tenantId));
-    final String tenantName = tenantAsync.value?.name ?? 'Local';
-    return Card(
-      clipBehavior: Clip.antiAlias,
+    final TenantModel? tenant = tenantAsync.value;
+    final String tenantName = tenant?.name ?? 'Local';
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: ExpansionTile(
+        shape: const Border(),
+        leading: tenant == null
+            ? CircleAvatar(
+                radius: 22,
+                backgroundColor: tokens.surfaceMuted,
+              )
+            : ClipOval(
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: AppAvatar(tenant: tenant, size: 44),
+                ),
+              ),
         title: Text(
           '#${order.orderNumber} · $tenantName',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: tokens.textPrimary,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          '${Formatters.dateTime(order.createdAt)} · '
-          '${Formatters.price(order.total)}',
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const SizedBox(height: 4),
+            Text(
+              Formatters.dateTime(order.createdAt),
+              style: TextStyle(
+                color: tokens.textTertiary,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: <Widget>[
+                Text(
+                  Formatters.price(order.total),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: tokens.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OrderStatusChip(status: order.status),
+              ],
+            ),
+          ],
         ),
-        trailing: OrderStatusChip(status: order.status),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: <Widget>[
           ref.watch(orderItemsProvider(order.id)).when(
@@ -145,14 +180,14 @@ class _MyOrderTile extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          if (tenantAsync.value != null)
+          if (tenant != null)
             FilledButton.tonalIcon(
-              icon: const Icon(Icons.chat_outlined),
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
               label: const Text('Escribir al local por WhatsApp'),
               onPressed: () => launchUrl(
                 buildWhatsAppUri(
-                  tenantAsync.value!.whatsapp,
-                  'Hola ${tenantAsync.value!.name}! '
+                  tenant.whatsapp,
+                  'Hola ${tenant.name}! '
                   'Te escribo por mi pedido #${order.orderNumber}.',
                 ),
                 mode: LaunchMode.externalApplication,

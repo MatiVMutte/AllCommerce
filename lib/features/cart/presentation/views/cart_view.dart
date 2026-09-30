@@ -4,10 +4,14 @@ import 'package:all_commerce/core/constants/app_strings.dart';
 import 'package:all_commerce/core/router/return_to.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/core/widgets/app_card.dart';
+import 'package:all_commerce/core/widgets/app_states.dart';
+import 'package:all_commerce/core/widgets/quantity_stepper.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/cart/data/models/cart_item.dart';
@@ -146,6 +150,7 @@ class _CartViewState extends ConsumerState<CartView> {
 
   @override
   Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
     final AsyncValue<TenantModel?> tenantAsync = ref.watch(
       tenantBySlugProvider(widget.slug),
     );
@@ -154,15 +159,22 @@ class _CartViewState extends ConsumerState<CartView> {
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (Object error, StackTrace stack) =>
-          const Scaffold(body: Center(child: Text(AppStrings.genericError))),
+          Scaffold(body: AppErrorState(onRetry: () => ref.invalidate(
+            tenantBySlugProvider(widget.slug)))),
       data: (TenantModel? tenant) {
         if (tenant == null) {
-          return const Scaffold(
-            body: Center(child: Text(AppStrings.storeNotFound)),
+          return Scaffold(
+            body: AppEmptyState(
+              icon: Icons.storefront_outlined,
+              title: AppStrings.storeNotFound,
+              actionLabel: AppStrings.backToHome,
+              onAction: () => context.go('/'),
+            ),
           );
         }
         final bool wrongStore =
             cart.tenantId != null && cart.tenantId != tenant.id;
+        final bool empty = cart.isEmpty || wrongStore;
         return Scaffold(
           appBar: AppBar(
             title: const Text('Tu pedido'),
@@ -171,92 +183,141 @@ class _CartViewState extends ConsumerState<CartView> {
           body: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 720),
-              child: (cart.isEmpty || wrongStore)
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        const Text('Tu carrito está vacío'),
-                        const SizedBox(height: 12),
-                        FilledButton(
-                          onPressed: () => context.go('/s/${widget.slug}'),
-                          child: const Text('Ver catálogo'),
-                        ),
-                      ],
+              child: empty
+                  ? AppEmptyState(
+                      icon: Icons.shopping_cart_outlined,
+                      title: 'Tu carrito está vacío',
+                      subtitle: 'Agregá productos de ${tenant.name}',
+                      actionLabel: 'Ver catálogo',
+                      onAction: () => context.go('/s/${widget.slug}'),
                     )
                   : ListView(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: 4,
+                            bottom: 8,
+                          ),
+                          child: Text(
+                            tenant.name,
+                            style: TextStyle(
+                              color: tokens.textSecondary,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
                         for (final CartItem item in cart.items)
                           _CartTile(item: item),
-                        const SizedBox(height: 16),
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
-                                TextField(
-                                  controller: _notes,
-                                  maxLines: 2,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Notas para el local (opcional)',
-                                  ),
+                        const SizedBox(height: 8),
+                        AppCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              TextField(
+                                controller: _notes,
+                                maxLines: 2,
+                                decoration: const InputDecoration(
+                                  labelText:
+                                      'Notas para el local (opcional)',
                                 ),
-                                ExpansionTile(
-                                  title: const Text('¿Tenés un cupón?'),
-                                  tilePadding: EdgeInsets.zero,
-                                  children: <Widget>[
-                                    TextField(
-                                      controller: _coupon,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Código de cupón',
-                                      ),
+                              ),
+                              ExpansionTile(
+                                title: const Text('¿Tenés un cupón?'),
+                                tilePadding: EdgeInsets.zero,
+                                children: <Widget>[
+                                  TextField(
+                                    controller: _coupon,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Código de cupón',
                                     ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: <Widget>[
-                                    const Text('Subtotal'),
-                                    Text(
-                                      Formatters.price(cart.subtotal),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                FilledButton.icon(
-                                  icon: const Icon(Icons.send),
-                                  label: Text(
-                                    'Confirmar pedido por WhatsApp · '
-                                    '${Formatters.price(cart.subtotal)}',
                                   ),
-                                  onPressed:
-                                      ref
-                                          .watch(checkoutControllerProvider)
-                                          .sending
-                                      ? null
-                                      : () => _confirm(tenant),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Al confirmar se guarda el pedido y se abre '
-                                  'WhatsApp con el detalle para '
-                                  '${tenant.name}.',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
             ),
           ),
+          bottomNavigationBar: empty
+              ? null
+              : SafeArea(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                    decoration: BoxDecoration(
+                      color: tokens.surface,
+                      border: Border(
+                        top: BorderSide(color: tokens.border),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Row(
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
+                          children: <Widget>[
+                            Text(
+                              'Subtotal',
+                              style: TextStyle(
+                                color: tokens.textSecondary,
+                              ),
+                            ),
+                            Text(Formatters.price(cart.subtotal)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
+                          children: <Widget>[
+                            const Text(
+                              'Total',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              Formatters.price(cart.subtotal),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            icon: const Icon(
+                              Icons.chat_bubble_rounded,
+                            ),
+                            label: const Text(
+                              'Confirmar por WhatsApp',
+                            ),
+                            onPressed: ref
+                                .watch(checkoutControllerProvider)
+                                .sending
+                            ? null
+                            : () => _confirm(tenant),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Se guarda el pedido y se abre WhatsApp '
+                          'con el detalle para ${tenant.name}.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
         );
       },
     );
@@ -270,49 +331,101 @@ class _CartTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: SizedBox(
-          width: 56,
-          height: 56,
-          child: item.imageUrl == null
-              ? Container(
-                  color: const Color(0xFFE3E7F3),
-                  child: const Icon(Icons.image_not_supported_outlined),
-                )
-              : CachedNetworkImage(
-                  imageUrl: item.imageUrl!,
-                  fit: BoxFit.cover,
-                  errorWidget: (BuildContext context, String url, _) =>
-                      const Icon(Icons.image_not_supported_outlined),
-                ),
+    final AppTokens tokens = context.tokens;
+    return Dismissible(
+      key: ValueKey<String>(item.productId),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) =>
+          ref.read(cartProvider.notifier).remove(item.productId),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: tokens.danger,
+          borderRadius: BorderRadius.circular(14),
         ),
+        child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
-      title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Row(
-        children: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.remove_circle_outline),
-            onPressed: () => ref
-                .read(cartProvider.notifier)
-                .setQuantity(item.productId, item.quantity - 1),
-          ),
-          Text('${item.quantity}'),
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            onPressed: () => ref
-                .read(cartProvider.notifier)
-                .setQuantity(item.productId, item.quantity + 1),
-          ),
-          const Spacer(),
-          Text(Formatters.price(item.lineTotal)),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () =>
-                ref.read(cartProvider.notifier).remove(item.productId),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: <Widget>[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: SizedBox(
+                width: 64,
+                height: 64,
+                child: item.imageUrl == null
+                    ? Container(
+                        color: tokens.surfaceMuted,
+                        child: Icon(
+                          Icons.image_not_supported_outlined,
+                          color: tokens.textTertiary,
+                        ),
+                      )
+                    : CachedNetworkImage(
+                        imageUrl: item.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorWidget:
+                            (BuildContext context, String url, _) =>
+                                Container(
+                              color: tokens.surfaceMuted,
+                              child: Icon(
+                                Icons.image_not_supported_outlined,
+                                color: tokens.textTertiary,
+                              ),
+                            ),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    item.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    Formatters.price(item.price),
+                    style: TextStyle(
+                      color: tokens.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                QuantityStepper(
+                  dense: true,
+                  quantity: item.quantity,
+                  onChanged: (int qty) => ref
+                      .read(cartProvider.notifier)
+                      .setQuantity(item.productId, qty),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  Formatters.price(item.lineTotal),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: tokens.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
@@ -73,7 +74,12 @@ class _OwnerPanel extends ConsumerWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(
+            24,
+            24,
+            24,
+            24 + FloatingNavBar.height,
+          ),
           children: <Widget>[
             if (!tenant.canPublish)
               Padding(

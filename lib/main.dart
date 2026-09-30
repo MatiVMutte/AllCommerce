@@ -73,6 +73,8 @@ class _AllCommerceAppState extends ConsumerState<AllCommerceApp>
     return MaterialApp.router(
       title: AppConfig.appName,
       theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
       routerConfig: ref.watch(routerProvider),
       debugShowCheckedModeBanner: false,
     );

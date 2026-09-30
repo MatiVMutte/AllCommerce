@@ -29,7 +29,7 @@ String? parentPathOf(String location) {
     if (segs[1] == 'settings') return '/owner';
     return '/owner';
   }
-  if (loc == '/my-orders') return '/';
+  if (loc == '/my-orders' || loc == '/profile') return '/';
   switch (loc) {
     case '/login':
     case '/welcome':
