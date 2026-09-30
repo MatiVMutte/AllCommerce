@@ -1,7 +1,9 @@
 import 'package:all_commerce/core/tenant/tenant_model.dart';
+import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
+import 'package:all_commerce/features/auth/presentation/widgets/auth_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,6 +38,7 @@ class _BusinessOnboardingViewState
         );
       }
     });
+    _slug.addListener(() => setState(() {}));
   }
 
   @override
@@ -69,70 +72,139 @@ class _BusinessOnboardingViewState
 
   @override
   Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
     final bool loading = ref.watch(authControllerProvider).isLoading;
+    final bool slugValid =
+        Validators.slug(_slug.text.trim()) == null &&
+            _slug.text.trim().isNotEmpty;
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('Creá tu local'),
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                TextFormField(
-                  controller: _fullName,
-                  decoration: const InputDecoration(labelText: 'Tu nombre'),
-                  validator: Validators.fullName,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    const AuthHeader(
+                      title: 'Creá tu local',
+                      subtitle:
+                          'Tu catálogo queda online en un minuto',
+                    ),
+                    const SizedBox(height: 32),
+                    LabeledField(
+                      label: 'Tu nombre',
+                      child: TextFormField(
+                        controller: _fullName,
+                        decoration: const InputDecoration(
+                          hintText: 'Ana López',
+                        ),
+                        validator: Validators.fullName,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    LabeledField(
+                      label: 'Nombre del local',
+                      child: TextFormField(
+                        controller: _storeName,
+                        decoration: const InputDecoration(
+                          hintText: 'Bazar Don Pepe',
+                        ),
+                        validator: Validators.storeName,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    LabeledField(
+                      label: 'Link de tu catálogo',
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: tokens.surfaceMuted,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            Text(
+                              'allcommerce.app/s/',
+                              style: TextStyle(
+                                color: tokens.textTertiary,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _slug,
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  errorBorder: InputBorder.none,
+                                  focusedErrorBorder:
+                                      InputBorder.none,
+                                  filled: false,
+                                  hintText: 'tu-local',
+                                  isDense: true,
+                                ),
+                                onChanged: (_) =>
+                                    _slugEdited = true,
+                                validator: Validators.slug,
+                              ),
+                            ),
+                            if (slugValid)
+                              Icon(
+                                Icons.check_circle_rounded,
+                                size: 20,
+                                color: tokens.success,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    LabeledField(
+                      label: 'WhatsApp del local',
+                      child: TextFormField(
+                        controller: _whatsapp,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                          hintText: '11 2233 4455',
+                          helperText:
+                              'Con código de área, sin 0 ni 15',
+                        ),
+                        validator: Validators.phone,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    LabeledField(
+                      label: 'Dirección (opcional)',
+                      child: TextFormField(
+                        controller: _address,
+                        decoration: const InputDecoration(
+                          hintText: 'Av. Siempre Viva 742',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    FilledButton(
+                      onPressed: loading ? null : _submit,
+                      child: loading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Crear mi local'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _storeName,
-                  decoration:
-                      const InputDecoration(labelText: 'Nombre del local'),
-                  validator: Validators.storeName,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _slug,
-                  decoration: const InputDecoration(
-                    labelText: 'Link de tu catálogo',
-                    prefixText: 'allcommerce.app/s/',
-                  ),
-                  onChanged: (_) => _slugEdited = true,
-                  validator: Validators.slug,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _whatsapp,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'WhatsApp del local',
-                    helperText: 'Con código de área, sin 0 ni 15',
-                  ),
-                  validator: Validators.phone,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _address,
-                  decoration:
-                      const InputDecoration(labelText: 'Dirección (opcional)'),
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: loading ? null : _submit,
-                  child: loading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Crear mi local'),
-                ),
-              ],
+              ),
             ),
           ),
         ),

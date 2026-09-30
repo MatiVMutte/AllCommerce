@@ -94,8 +94,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Demo Store'), findsOneWidget);
-    expect(find.text('2 / 30 productos'), findsOneWidget);
-    expect(find.text('1 nuevos'), findsOneWidget);
-    expect(find.text('Configuración'), findsOneWidget);
+    expect(find.text('2/30'), findsOneWidget);
+    expect(find.text('1'), findsWidgets);
+    expect(find.text('Pedidos nuevos'), findsOneWidget);
+    expect(find.textContaining('Plan Prueba'), findsOneWidget);
   });
 }

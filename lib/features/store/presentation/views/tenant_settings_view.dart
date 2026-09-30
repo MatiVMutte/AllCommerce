@@ -1,9 +1,12 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/core/theme/app_tokens.dart';
+import 'package:all_commerce/core/utils/app_haptics.dart';
+import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
-import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
@@ -60,6 +63,24 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     _whatsapp.text = w.startsWith('549') ? w.substring(3) : w;
     _color = tenant.primaryColor;
     _initialized = true;
+    _name.addListener(_onChange);
+    _description.addListener(_onChange);
+    _address.addListener(_onChange);
+    _whatsapp.addListener(_onChange);
+  }
+
+  void _onChange() => setState(() {});
+
+  bool _isDirty(TenantModel tenant, bool hasPendingLogo) {
+    final String w = tenant.whatsapp;
+    final String currentPhone =
+        w.startsWith('549') ? w.substring(3) : w;
+    return hasPendingLogo ||
+        _name.text.trim() != tenant.name ||
+        _description.text.trim() != (tenant.description ?? '') ||
+        _address.text.trim() != (tenant.address ?? '') ||
+        _whatsapp.text.trim() != currentPhone ||
+        _color != tenant.primaryColor;
   }
 
   Future<void> _save(TenantModel tenant) async {
@@ -83,6 +104,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
       if (error != null) showErrorSnackBar(context, error);
       return;
     }
+    AppHaptics.success();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Local actualizado')),
     );
@@ -95,195 +117,376 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
 
   @override
   Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
     final UserModel? profile = ref.watch(currentProfileProvider).value;
     final String? tenantId = profile?.tenantId;
     final TenantSettingsState state =
         ref.watch(tenantSettingsControllerProvider);
     if (tenantId == null) {
       return const Scaffold(
-        body: Center(child: Text(AppStrings.genericError)),
+        body: AppEmptyState(
+          icon: Icons.error_outline,
+          title: AppStrings.genericError,
+        ),
       );
     }
     final AsyncValue<TenantModel?> tenantAsync =
         ref.watch(tenantByIdProvider(tenantId));
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(fallback: '/owner'),
-        title: const Text('Configuración'),
-      ),
-      body: tenantAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object e, StackTrace s) =>
-            const Center(child: Text(AppStrings.genericError)),
-        data: (TenantModel? tenant) {
-          if (tenant == null) {
-            return const Center(child: Text(AppStrings.storeNotFound));
-          }
-          if (!_initialized) _init(tenant);
-          final List<String> colors = _palette.contains(_color)
-              ? _palette
-              : <String>[..._palette, _color];
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(
-                    24,
-                    24,
-                    24,
-                    24 + FloatingNavBar.height,
-                  ),
-                  children: <Widget>[
-                    Center(
-                      child: Column(
-                        children: <Widget>[
-                          CircleAvatar(
-                            radius: 48,
-                            backgroundColor: tenant.primaryColorValue,
-                            foregroundColor: Colors.white,
-                            child: state.pendingLogo != null
-                                ? ClipOval(
-                                    child: Image.memory(
-                                      state.pendingLogo!,
-                                      width: 96,
-                                      height: 96,
-                                      fit: BoxFit.cover,
+      body: SafeArea(
+        child: tenantAsync.when(
+          loading: () =>
+              const Center(child: CircularProgressIndicator()),
+          error: (Object e, StackTrace s) => AppErrorState(
+            onRetry: () =>
+                ref.invalidate(tenantByIdProvider(tenantId)),
+          ),
+          data: (TenantModel? tenant) {
+            if (tenant == null) {
+              return const AppEmptyState(
+                icon: Icons.storefront_outlined,
+                title: AppStrings.storeNotFound,
+              );
+            }
+            if (!_initialized) _init(tenant);
+            final List<String> colors = _palette.contains(_color)
+                ? _palette
+                : <String>[..._palette, _color];
+            final Color preview = _hexColor(_color);
+            final bool dirty =
+                _isDirty(tenant, state.pendingLogo != null);
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Form(
+                  key: _formKey,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(
+                      24,
+                      16,
+                      24,
+                      24 + FloatingNavBar.height,
+                    ),
+                    children: <Widget>[
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Mi local',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: Column(
+                          children: <Widget>[
+                            Stack(
+                              children: <Widget>[
+                                _SettingsAvatar(
+                                  tenant: tenant,
+                                  pendingLogo: state.pendingLogo,
+                                ),
+                                Positioned(
+                                  right: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Theme.of(context)
+                                            .scaffoldBackgroundColor,
+                                        width: 2,
+                                      ),
                                     ),
-                                  )
-                                : tenant.logoUrl == null
-                                    ? Text(
-                                        tenant.name.characters.first
+                                    child: IconButton(
+                                      padding: EdgeInsets.zero,
+                                      iconSize: 16,
+                                      icon: const Icon(
+                                        Icons.photo_camera_outlined,
+                                        color: Colors.white,
+                                      ),
+                                      onPressed: state.saving
+                                          ? null
+                                          : () => ref
+                                              .read(
+                                                tenantSettingsControllerProvider
+                                                    .notifier,
+                                              )
+                                              .pickLogo(),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _name.text.trim().isEmpty
+                                  ? tenant.name
+                                  : _name.text.trim(),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: tokens.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const _Section('DATOS'),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _name,
+                        decoration: const InputDecoration(
+                          labelText: 'Nombre del local',
+                        ),
+                        validator: Validators.storeName,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _description,
+                        decoration: const InputDecoration(
+                          labelText: 'Descripción (opcional)',
+                        ),
+                        maxLines: 3,
+                        maxLength: 200,
+                      ),
+                      const SizedBox(height: 4),
+                      const _Section('CONTACTO'),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _address,
+                        decoration: const InputDecoration(
+                          labelText: 'Dirección (opcional)',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _whatsapp,
+                        decoration: const InputDecoration(
+                          labelText: 'WhatsApp',
+                          hintText: '11 2233 4455',
+                        ),
+                        keyboardType: TextInputType.phone,
+                        validator: Validators.phone,
+                      ),
+                      const SizedBox(height: 4),
+                      const _Section('APARIENCIA'),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 14,
+                        runSpacing: 14,
+                        children: <Widget>[
+                          for (final String hex in colors)
+                            _ColorDot(
+                              hex: hex,
+                              selected: hex == _color,
+                              onTap: () =>
+                                  setState(() => _color = hex),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Live preview of the catalog header.
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: tokens.border),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Container(
+                              height: 64,
+                              color: preview,
+                            ),
+                            Transform.translate(
+                              offset: const Offset(0, -20),
+                              child: Column(
+                                children: <Widget>[
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Theme.of(context)
+                                            .scaffoldBackgroundColor,
+                                        width: 3,
+                                      ),
+                                    ),
+                                    child: CircleAvatar(
+                                      radius: 24,
+                                      backgroundColor: preview,
+                                      child: Text(
+                                        (_name.text.trim().isEmpty
+                                                ? tenant.name
+                                                : _name.text.trim())
+                                            .characters
+                                            .first
                                             .toUpperCase(),
                                         style: const TextStyle(
-                                          fontSize: 32,
-                                        ),
-                                      )
-                                    : ClipOval(
-                                        child: CachedNetworkImage(
-                                          imageUrl: tenant.logoUrl!,
-                                          width: 96,
-                                          height: 96,
-                                          fit: BoxFit.cover,
-                                          errorWidget: (_, _, _) => Text(
-                                            tenant.name.characters.first
-                                                .toUpperCase(),
-                                          ),
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _name.text.trim().isEmpty
+                                        ? tenant.name
+                                        : _name.text.trim(),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: tokens.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              '${ShareService.linkBase}/s/${tenant.slug}',
+                              style: TextStyle(
+                                color: tokens.textSecondary,
+                              ),
+                            ),
                           ),
-                          TextButton(
-                            onPressed: state.saving
-                                ? null
-                                : () => ref
-                                    .read(
-                                      tenantSettingsControllerProvider
-                                          .notifier,
-                                    )
-                                    .pickLogo(),
-                            child: const Text('Cambiar logo'),
+                          IconButton(
+                            icon: Icon(
+                              Icons.copy_outlined,
+                              size: 18,
+                              color: tokens.textSecondary,
+                            ),
+                            tooltip: 'Copiar link',
+                            onPressed: () async {
+                              await Clipboard.setData(
+                                ClipboardData(
+                                  text:
+                                      'https://${ShareService.linkBase}/s/${tenant.slug}',
+                                ),
+                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Link copiado'),
+                                  ),
+                                );
+                              }
+                            },
                           ),
                         ],
                       ),
-                    ),
-                    TextFormField(
-                      controller: _name,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre del local',
-                      ),
-                      validator: Validators.storeName,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _description,
-                      decoration: const InputDecoration(
-                        labelText: 'Descripción (opcional)',
-                      ),
-                      maxLines: 3,
-                      maxLength: 200,
-                    ),
-                    TextFormField(
-                      controller: _address,
-                      decoration: const InputDecoration(
-                        labelText: 'Dirección (opcional)',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _whatsapp,
-                      decoration: const InputDecoration(
-                        labelText: 'WhatsApp',
-                        hintText: '11 2233 4455',
-                      ),
-                      keyboardType: TextInputType.phone,
-                      validator: Validators.phone,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Color principal'),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: <Widget>[
-                        for (final String hex in colors)
-                          _ColorDot(
-                            hex: hex,
-                            selected: hex == _color,
-                            onTap: () => setState(() => _color = hex),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            'Tu link: allcommerce.app/s/${tenant.slug}',
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.copy_outlined),
-                          tooltip: 'Copiar link',
-                          onPressed: () async {
-                            await Clipboard.setData(
-                              ClipboardData(
-                                text:
-                                    'allcommerce.app/s/${tenant.slug}',
-                              ),
-                            );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Link copiado'),
+                      const SizedBox(height: 20),
+                      FilledButton(
+                        onPressed: state.saving || !dirty
+                            ? null
+                            : () => _save(tenant),
+                        child: state.saving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
                                 ),
-                              );
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    FilledButton(
-                      onPressed:
-                          state.saving ? null : () => _save(tenant),
-                      child: state.saving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text('Guardar cambios'),
-                    ),
-                  ],
+                              )
+                            : const Text('Guardar cambios'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
+    );
+  }
+}
+
+Color _hexColor(String hex) {
+  final String digits = hex.replaceFirst('#', '');
+  return Color(0xFF000000 | (int.tryParse(digits, radix: 16) ?? 0));
+}
+
+class _Section extends StatelessWidget {
+  const _Section(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.6,
+        color: context.tokens.textTertiary,
+      ),
+    );
+  }
+}
+
+class _SettingsAvatar extends StatelessWidget {
+  const _SettingsAvatar({required this.tenant, this.pendingLogo});
+
+  final TenantModel tenant;
+  final Uint8List? pendingLogo;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget child = pendingLogo != null
+        ? Image.memory(pendingLogo!, fit: BoxFit.cover)
+        : tenant.logoUrl == null
+            ? Center(
+                child: Text(
+                  tenant.name.characters.first.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 38,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              )
+            : CachedNetworkImage(
+                imageUrl: tenant.logoUrl!,
+                fit: BoxFit.cover,
+                errorWidget: (_, _, _) => Center(
+                  child: Text(
+                    tenant.name.characters.first.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 38,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              );
+    return Container(
+      width: 96,
+      height: 96,
+      decoration: BoxDecoration(
+        color: tenant.primaryColorValue,
+        shape: BoxShape.circle,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: child,
     );
   }
 }
@@ -301,18 +504,34 @@ class _ColorDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String digits = hex.replaceFirst('#', '');
-    final Color color =
-        Color(0xFF000000 | (int.tryParse(digits, radix: 16) ?? 0));
+    final Color color = _hexColor(hex);
     return InkWell(
       customBorder: const CircleBorder(),
       onTap: onTap,
-      child: CircleAvatar(
-        radius: 18,
-        backgroundColor: color,
-        child: selected
-            ? const Icon(Icons.check, color: Colors.white, size: 18)
-            : null,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: selected
+              ? Border.all(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  width: 3,
+                )
+              : null,
+          boxShadow: selected
+              ? <BoxShadow>[
+                  BoxShadow(color: color, blurRadius: 0, spreadRadius: 2),
+                ]
+              : null,
+        ),
+        child: CircleAvatar(
+          radius: 16,
+          backgroundColor: color,
+          child: selected
+              ? const Icon(Icons.check, color: Colors.white, size: 18)
+              : null,
+        ),
       ),
     );
   }

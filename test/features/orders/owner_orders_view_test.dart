@@ -47,7 +47,8 @@ void main() {
     await tester.pumpWidget(buildView(orders: <OrderModel>[order]));
     await tester.pumpAndSettle();
 
-    expect(find.text('#42 · Ana López'), findsOneWidget);
+    expect(find.text('#42'), findsOneWidget);
+    expect(find.text('Ana López'), findsOneWidget);
     expect(find.text('Solicitado'), findsWidgets);
   });
 

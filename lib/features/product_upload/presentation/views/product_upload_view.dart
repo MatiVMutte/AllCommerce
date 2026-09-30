@@ -1,8 +1,11 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/constants/categories.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/core/theme/app_tokens.dart';
+import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
@@ -56,6 +59,16 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       _category = existing.categoryEnum;
       _categoryTouched = true;
     }
+    // Manual edits clear the AI marker on the field.
+    for (final TextEditingController c in <TextEditingController>[
+      _title,
+      _description,
+      _price,
+      _tags,
+      _sku,
+    ]) {
+      c.addListener(() => setState(() {}));
+    }
   }
 
   @override
@@ -97,6 +110,38 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
     }
   }
 
+  /// "IA" chip shown while the field still holds the AI-written value.
+  Widget? _aiBadge(TextEditingController controller) {
+    final String? filled = _aiFilled[controller];
+    if (filled == null || filled.trim() != controller.text.trim()) {
+      return null;
+    }
+    final Color primary = Theme.of(context).colorScheme.primary;
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(Icons.auto_awesome, size: 14, color: primary),
+          const SizedBox(width: 4),
+          Text(
+            'IA',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _save(TenantModel tenant) async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final String sku = _sku.text.trim();
@@ -125,6 +170,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
             .update(existing, input);
     if (!mounted) return;
     if (product != null) {
+      AppHaptics.success();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -173,7 +219,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
         ),
         title: Text(
           widget.existing == null
-              ? AppStrings.uploadProduct
+              ? 'Nuevo producto'
               : 'Editar producto',
         ),
       ),
@@ -223,6 +269,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
           );
         },
       ),
+      bottomNavigationBar: null,
     );
   }
 
@@ -231,151 +278,230 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
     TenantModel tenant,
     ProductUploadState state,
   ) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 720),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                _ImageSection(
-                  state: state,
-                  existingImageUrl: widget.existing?.imageUrl,
-                  onPick: (ImageSource source) => ref
-                      .read(productUploadControllerProvider.notifier)
-                      .pickAndAnalyze(source),
-                ),
-                if (state.suggestion != null) ...<Widget>[
-                  const SizedBox(height: 12),
-                  const Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Row(
-                        children: <Widget>[
-                          Icon(Icons.auto_awesome, size: 18),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(AppStrings.aiSuggestionBanner),
-                          ),
-                        ],
+    final bool analyzing = state.analyzing;
+    return Column(
+      children: <Widget>[
+        Expanded(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      const _Section('FOTO'),
+                      const SizedBox(height: 8),
+                      _ImageSection(
+                        state: state,
+                        existingImageUrl: widget.existing?.imageUrl,
+                        onPick: (ImageSource source) => ref
+                            .read(
+                              productUploadControllerProvider.notifier,
+                            )
+                            .pickAndAnalyze(source),
                       ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _title,
-                  decoration:
-                      const InputDecoration(labelText: AppStrings.productTitle),
-                  validator: (String? value) {
-                    final int len = (value ?? '').trim().length;
-                    if (len < 2 || len > 80) {
-                      return 'Ingresá un título (2 a 80 caracteres)';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _description,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: AppStrings.productDescription,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<ProductCategory>(
-                  key: ValueKey<ProductCategory>(_category),
-                  initialValue: _category,
-                  decoration: const InputDecoration(
-                    labelText: AppStrings.productCategory,
-                  ),
-                  items: ProductCategory.values
-                      .map(
-                        (ProductCategory c) => DropdownMenuItem<
-                            ProductCategory>(
-                          value: c,
-                          child: Text(c.label),
+                      const SizedBox(height: 20),
+                      const _Section('DATOS'),
+                      const SizedBox(height: 8),
+                      if (analyzing)
+                        const _FieldsSkeleton()
+                      else ...<Widget>[
+                        TextFormField(
+                          controller: _title,
+                          decoration: InputDecoration(
+                            labelText: AppStrings.productTitle,
+                            suffixIcon: _aiBadge(_title),
+                          ),
+                          validator: (String? value) {
+                            final int len =
+                                (value ?? '').trim().length;
+                            if (len < 2 || len > 80) {
+                              return 'Ingresá un título '
+                                  '(2 a 80 caracteres)';
+                            }
+                            return null;
+                          },
                         ),
-                      )
-                      .toList(),
-                  onChanged: (ProductCategory? value) {
-                    if (value == null) return;
-                    setState(() {
-                      _category = value;
-                      _categoryTouched = true;
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _price,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration:
-                      const InputDecoration(labelText: AppStrings.productPrice),
-                  validator: (String? value) {
-                    final double? parsed = double.tryParse(
-                      (value ?? '').trim().replaceAll(',', '.'),
-                    );
-                    if (parsed == null || parsed <= 0) {
-                      return 'Ingresá un precio válido';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _tags,
-                  decoration: const InputDecoration(
-                    labelText: AppStrings.productTags,
-                    helperText: 'Separá con comas',
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _description,
+                          maxLines: 3,
+                          decoration: const InputDecoration(
+                            labelText: AppStrings.productDescription,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      const _Section('PRECIO Y STOCK'),
+                      const SizedBox(height: 8),
+                      if (analyzing)
+                        const _FieldsSkeleton()
+                      else ...<Widget>[
+                        TextFormField(
+                          controller: _price,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: AppStrings.productPrice,
+                            suffixIcon: _aiBadge(_price),
+                          ),
+                          validator: (String? value) {
+                            final double? parsed = double.tryParse(
+                              (value ?? '')
+                                  .trim()
+                                  .replaceAll(',', '.'),
+                            );
+                            if (parsed == null || parsed <= 0) {
+                              return 'Ingresá un precio válido';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _stock,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: AppStrings.productStock,
+                          ),
+                          validator: (String? value) {
+                            if ((value ?? '').trim().isEmpty) {
+                              return null;
+                            }
+                            if (int.tryParse(value!.trim()) == null) {
+                              return 'Ingresá un número entero';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      const _Section('CATEGORÍA Y ETIQUETAS'),
+                      const SizedBox(height: 8),
+                      if (analyzing)
+                        const _FieldsSkeleton()
+                      else ...<Widget>[
+                        DropdownButtonFormField<ProductCategory>(
+                          key: ValueKey<ProductCategory>(_category),
+                          initialValue: _category,
+                          decoration: const InputDecoration(
+                            labelText: AppStrings.productCategory,
+                          ),
+                          items: ProductCategory.values
+                              .map(
+                                (ProductCategory c) =>
+                                    DropdownMenuItem<ProductCategory>(
+                                  value: c,
+                                  child: Text(c.label),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (ProductCategory? value) {
+                            if (value == null) return;
+                            setState(() {
+                              _category = value;
+                              _categoryTouched = true;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _tags,
+                          decoration: InputDecoration(
+                            labelText: AppStrings.productTags,
+                            helperText: 'Separá con comas',
+                            suffixIcon: _aiBadge(_tags),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _sku,
+                          decoration: InputDecoration(
+                            labelText: AppStrings.productSku,
+                            suffixIcon: _aiBadge(_sku),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _sku,
-                  decoration:
-                      const InputDecoration(labelText: AppStrings.productSku),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _stock,
-                  keyboardType: TextInputType.number,
-                  decoration:
-                      const InputDecoration(labelText: AppStrings.productStock),
-                  validator: (String? value) {
-                    if ((value ?? '').trim().isEmpty) return null;
-                    if (int.tryParse(value!.trim()) == null) {
-                      return 'Ingresá un número entero';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed:
-                      state.saving ? null : () => _save(tenant),
-                  child: state.saving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          widget.existing == null
-                              ? AppStrings.publishProduct
-                              : 'Guardar cambios',
-                        ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
+        SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            decoration: BoxDecoration(
+              color: context.tokens.surface,
+              border: Border(
+                top: BorderSide(color: context.tokens.border),
+              ),
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed:
+                    state.saving || analyzing ? null : () => _save(tenant),
+                child: state.saving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child:
+                            CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        widget.existing == null
+                            ? 'Publicar producto'
+                            : 'Guardar cambios',
+                      ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  const _Section(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.6,
+        color: context.tokens.textTertiary,
       ),
+    );
+  }
+}
+
+/// Shimmer placeholders for the form fields while AI is analyzing.
+class _FieldsSkeleton extends StatelessWidget {
+  const _FieldsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: <Widget>[
+        AppSkeleton(height: 52, radius: 14),
+        SizedBox(height: 16),
+        AppSkeleton(height: 52, radius: 14),
+      ],
     );
   }
 }
@@ -393,113 +519,120 @@ class _ImageSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
     final Uint8List? bytes = state.imageBytes;
-    if (bytes == null && existingImageUrl != null) {
-      return Stack(
-        children: <Widget>[
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: CachedNetworkImage(
-                imageUrl: existingImageUrl!,
-                fit: BoxFit.cover,
-                errorWidget: (BuildContext context, String url, _) =>
-                    const Icon(Icons.image_not_supported_outlined, size: 48),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 8,
-            bottom: 8,
-            child: FilledButton.tonal(
-              onPressed: () => onPick(ImageSource.gallery),
-              child: const Text(AppStrings.changePhoto),
-            ),
-          ),
-        ],
-      );
-    }
-    if (bytes == null) {
+    final bool hasImage = bytes != null || existingImageUrl != null;
+
+    if (!hasImage) {
       return Column(
         children: <Widget>[
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline,
-                style: BorderStyle.solid,
+          InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () => onPick(ImageSource.gallery),
+            child: Container(
+              decoration: BoxDecoration(
+                color: tokens.surfaceMuted,
+                border: Border.all(color: tokens.border),
+                borderRadius: BorderRadius.circular(20),
               ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Center(
-              child: Icon(Icons.add_photo_alternate_outlined, size: 48),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: <Widget>[
-              if (!kIsWeb)
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.photo_camera_outlined),
-                    label: const Text(AppStrings.takePhoto),
-                    onPressed: () => onPick(ImageSource.camera),
+              child: AspectRatio(
+                aspectRatio: 4 / 3,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Icon(
+                        Icons.photo_camera_outlined,
+                        size: 40,
+                        color: tokens.textTertiary,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tocá para elegir una foto',
+                        style: TextStyle(color: tokens.textSecondary),
+                      ),
+                    ],
                   ),
                 ),
-              if (!kIsWeb) const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.photo_library_outlined),
-                  label: const Text(AppStrings.chooseFromGallery),
-                  onPressed: () => onPick(ImageSource.gallery),
-                ),
               ),
-            ],
+            ),
           ),
+          if (!kIsWeb) ...<Widget>[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.photo_camera_outlined),
+                label: const Text(AppStrings.takePhoto),
+                onPressed: () => onPick(ImageSource.camera),
+              ),
+            ),
+          ],
         ],
       );
     }
-    return Stack(
-      children: <Widget>[
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: AspectRatio(
-            aspectRatio: 1,
-            child: Image.memory(bytes, fit: BoxFit.cover),
-          ),
-        ),
-        if (state.analyzing)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.black45,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    CircularProgressIndicator(color: Colors.white),
-                    SizedBox(height: 8),
-                    Text(
-                      AppStrings.analyzingWithAi,
-                      style: TextStyle(color: Colors.white),
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: AspectRatio(
+        aspectRatio: 4 / 3,
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            if (bytes != null)
+              Image.memory(bytes, fit: BoxFit.cover)
+            else
+              CachedNetworkImage(
+                imageUrl: existingImageUrl!,
+                fit: BoxFit.cover,
+                errorWidget:
+                    (BuildContext context, String url, _) => Container(
+                      color: tokens.surfaceMuted,
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        size: 48,
+                        color: tokens.textTertiary,
+                      ),
                     ),
-                  ],
+              ),
+            if (state.analyzing)
+              Container(
+                color: tokens.overlay.withValues(alpha: 0.45),
+                child: const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      CircularProgressIndicator(color: Colors.white),
+                      SizedBox(height: 8),
+                      Text(
+                        AppStrings.analyzingWithAi,
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            Positioned(
+              right: 8,
+              top: 8,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: tokens.overlay.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () => onPick(ImageSource.gallery),
+                  child: const Text('Cambiar'),
                 ),
               ),
             ),
-          ),
-        Positioned(
-          right: 8,
-          bottom: 8,
-          child: FilledButton.tonal(
-            onPressed: () => onPick(ImageSource.gallery),
-            child: const Text(AppStrings.changePhoto),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

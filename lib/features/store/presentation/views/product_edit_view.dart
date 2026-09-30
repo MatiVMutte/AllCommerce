@@ -1,5 +1,6 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/product_upload/presentation/views/product_upload_view.dart';
 import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
@@ -31,19 +32,9 @@ class ProductEditView extends ConsumerWidget {
           leading: const AppBackButton(fallback: '/owner/products'),
           title: const Text('Editar producto'),
         ),
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const Text(AppStrings.genericError),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () =>
-                    ref.invalidate(ownerProductProvider(productId)),
-                child: const Text(AppStrings.retry),
-              ),
-            ],
-          ),
+        body: AppErrorState(
+          onRetry: () =>
+              ref.invalidate(ownerProductProvider(productId)),
         ),
       ),
       data: (ProductModel? resolved) {
@@ -54,18 +45,11 @@ class ProductEditView extends ConsumerWidget {
                   const AppBackButton(fallback: '/owner/products'),
               title: const Text('Editar producto'),
             ),
-            body: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const Text(AppStrings.productNotFound),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () => context.go('/owner/products'),
-                    child: const Text('Volver a mis productos'),
-                  ),
-                ],
-              ),
+            body: AppEmptyState(
+              icon: Icons.inventory_2_outlined,
+              title: AppStrings.productNotFound,
+              actionLabel: 'Volver a mis productos',
+              onAction: () => context.go('/owner/products'),
             ),
           );
         }

@@ -1,6 +1,8 @@
+import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
+import 'package:all_commerce/features/auth/presentation/widgets/auth_layout.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,60 +43,80 @@ class _LoginViewState extends ConsumerState<LoginView> {
   Widget build(BuildContext context) {
     final bool loading = ref.watch(authControllerProvider).isLoading;
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(fallback: '/'),
-        title: const Text('Ingresar'),
-      ),
+      appBar: AppBar(leading: const AppBackButton(fallback: '/')),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                TextFormField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  validator: Validators.email,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _password,
-                  obscureText: _obscure,
-                  decoration: InputDecoration(
-                    labelText: 'Contraseña',
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscure ? Icons.visibility : Icons.visibility_off,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  const AuthHeader(
+                    title: 'Bienvenido de nuevo',
+                    subtitle: 'Ingresá para seguir con tus pedidos',
+                  ),
+                  const SizedBox(height: 32),
+                  LabeledField(
+                    label: 'Email',
+                    child: TextFormField(
+                      controller: _email,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        hintText: 'tu@email.com',
                       ),
-                      onPressed: () =>
-                          setState(() => _obscure = !_obscure),
+                      validator: Validators.email,
                     ),
                   ),
-                  validator: Validators.password,
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: loading ? null : _submit,
-                  child: loading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Ingresar'),
-                ),
-                TextButton(
-                  onPressed: () => context.push('/forgot-password'),
-                  child: const Text('¿Olvidaste tu contraseña?'),
-                ),
-                TextButton(
-                  onPressed: () => context.push('/register'),
-                  child: const Text('Crear cuenta'),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  LabeledField(
+                    label: 'Contraseña',
+                    child: TextFormField(
+                      controller: _password,
+                      obscureText: _obscure,
+                      decoration: InputDecoration(
+                        hintText: '••••••••',
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscure
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            size: 20,
+                            color: context.tokens.textSecondary,
+                          ),
+                          onPressed: () =>
+                              setState(() => _obscure = !_obscure),
+                        ),
+                      ),
+                      validator: Validators.password,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  FilledButton(
+                    onPressed: loading ? null : _submit,
+                    child: loading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text('Ingresar'),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        context.push('/forgot-password'),
+                    child: const Text('¿Olvidaste tu contraseña?'),
+                  ),
+                  TextButton(
+                    onPressed: () => context.push('/register'),
+                    child: const Text('Crear cuenta'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

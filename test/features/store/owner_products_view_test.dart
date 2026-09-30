@@ -66,10 +66,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('2 / 30 productos'), findsOneWidget);
-    expect(find.text('Pausado'), findsOneWidget);
+    expect(find.text('2 / 30'), findsOneWidget);
     expect(find.text('Producto p1'), findsOneWidget);
     expect(find.text('Producto p2'), findsOneWidget);
+    expect(find.byType(Switch), findsNWidgets(2));
   });
 
   testWidgets('empty list shows empty state', (tester) async {
