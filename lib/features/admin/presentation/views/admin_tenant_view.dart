@@ -1,4 +1,5 @@
 import 'package:all_commerce/core/constants/plans.dart';
+import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
@@ -79,6 +80,8 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
           );
       ref.invalidate(adminTenantsProvider);
       ref.invalidate(adminMetricsProvider);
+      ref.invalidate(tenantByIdProvider(row.id));
+      ref.invalidate(tenantBySlugProvider(row.slug));
       if (!mounted) return;
       AppHaptics.success();
       showAppSnackBar(context, 'Plan actualizado', clearNavBar: false);

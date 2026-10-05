@@ -17,15 +17,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class PlansView extends ConsumerWidget {
+class PlansView extends ConsumerStatefulWidget {
   const PlansView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PlansView> createState() => _PlansViewState();
+}
+
+class _PlansViewState extends ConsumerState<PlansView> {
+  /// Refresh the cached tenant row once per visit so plan changes (e.g. made
+  /// from the admin panel) are reflected.
+  String? _refreshedTenantId;
+
+  @override
+  Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     final AsyncValue<List<PlanModel>> plansAsync = ref.watch(plansProvider);
     final UserModel? profile = ref.watch(currentProfileProvider).value;
     final String? tenantId = profile?.tenantId;
+    if (tenantId != null && tenantId != _refreshedTenantId) {
+      _refreshedTenantId = tenantId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.invalidate(tenantByIdProvider(tenantId));
+      });
+    }
     final TenantModel? tenant = tenantId == null
         ? null
         : ref.watch(tenantByIdProvider(tenantId)).value;

@@ -44,6 +44,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
   final TextEditingController _whatsapp = TextEditingController();
   String _color = '#0052FF';
   bool _initialized = false;
+  String? _refreshedTenantId;
 
   @override
   void dispose() {
@@ -116,6 +117,12 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     final AppTokens tokens = context.tokens;
     final UserModel? profile = ref.watch(currentProfileProvider).value;
     final String? tenantId = profile?.tenantId;
+    if (tenantId != null && tenantId != _refreshedTenantId) {
+      _refreshedTenantId = tenantId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.invalidate(tenantByIdProvider(tenantId));
+      });
+    }
     final TenantSettingsState state = ref.watch(
       tenantSettingsControllerProvider,
     );

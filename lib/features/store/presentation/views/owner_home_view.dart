@@ -25,11 +25,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class OwnerHomeView extends ConsumerWidget {
+class OwnerHomeView extends ConsumerStatefulWidget {
   const OwnerHomeView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OwnerHomeView> createState() => _OwnerHomeViewState();
+}
+
+class _OwnerHomeViewState extends ConsumerState<OwnerHomeView> {
+  /// Tenant providers are kept alive for the whole session; refresh the
+  /// tenant row once per visit so plan changes made elsewhere are seen.
+  String? _refreshedTenantId;
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<UserModel?> profileAsync = ref.watch(
       currentProfileProvider,
     );
@@ -43,6 +52,14 @@ class OwnerHomeView extends ConsumerWidget {
           ),
           data: (UserModel? profile) {
             final String? tenantId = profile?.tenantId;
+            if (tenantId != null && tenantId != _refreshedTenantId) {
+              _refreshedTenantId = tenantId;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  ref.invalidate(tenantByIdProvider(tenantId));
+                }
+              });
+            }
             if (tenantId == null) {
               return const AppEmptyState(
                 icon: Icons.storefront_outlined,
@@ -131,8 +148,11 @@ class _OwnerPanel extends ConsumerWidget {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
+        child: RefreshIndicator(
+          onRefresh: () => _refresh(ref),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(
             24,
             16,
             24,
@@ -349,9 +369,20 @@ class _OwnerPanel extends ConsumerWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _refresh(WidgetRef ref) async {
+    ref.invalidate(tenantByIdProvider(tenant.id));
+    ref.invalidate(ownerProductsProvider(tenant.id));
+    ref.invalidate(ownerOrdersProvider(tenant.id));
+    ref.invalidate(aiUsageProvider);
+    await ref
+        .read(tenantByIdProvider(tenant.id).future)
+        .catchError((Object _) => null);
   }
 }
 

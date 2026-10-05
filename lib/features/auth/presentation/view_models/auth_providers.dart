@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:all_commerce/core/supabase/supabase_client_provider.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
+import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/features/billing/data/repositories/ai_usage_repository.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/data/repositories/auth_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -112,6 +114,12 @@ class AuthController extends Notifier<AsyncValue<void>> {
   Future<void> signOut() async {
     state = const AsyncLoading<void>();
     state = await AsyncValue.guard(() => _repository.signOut());
+    // Drop tenant-scoped caches so the next session never sees stale data
+    // (tenantByIdProvider/tenantBySlugProvider are kept alive for the whole
+    // session and do not depend on auth state).
+    ref.invalidate(tenantByIdProvider);
+    ref.invalidate(tenantBySlugProvider);
+    ref.invalidate(aiUsageProvider);
   }
 }
 
