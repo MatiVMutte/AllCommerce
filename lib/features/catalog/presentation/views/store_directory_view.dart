@@ -21,12 +21,10 @@ class StoreDirectoryView extends ConsumerStatefulWidget {
   final bool focusSearch;
 
   @override
-  ConsumerState<StoreDirectoryView> createState() =>
-      _StoreDirectoryViewState();
+  ConsumerState<StoreDirectoryView> createState() => _StoreDirectoryViewState();
 }
 
-class _StoreDirectoryViewState
-    extends ConsumerState<StoreDirectoryView> {
+class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
   final FocusNode _searchFocus = FocusNode();
   bool _animated = false;
 
@@ -49,15 +47,16 @@ class _StoreDirectoryViewState
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    final AsyncValue<List<TenantModel>> tenants =
-        ref.watch(activeTenantsProvider);
+    final AsyncValue<List<TenantModel>> tenants = ref.watch(
+      activeTenantsProvider,
+    );
     final String search = ref.watch(storeSearchProvider);
-    final UserModel? profile =
-        ref.watch(currentProfileProvider).value;
+    final UserModel? profile = ref.watch(currentProfileProvider).value;
     final bool animate = !_animated;
     _animated = true;
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 720),
@@ -77,10 +76,7 @@ class _StoreDirectoryViewState
                   padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
                   child: Text(
                     '¿Qué vas a pedir hoy?',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: tokens.textSecondary,
-                    ),
+                    style: TextStyle(fontSize: 16, color: tokens.textSecondary),
                   ),
                 ),
                 Padding(
@@ -91,22 +87,17 @@ class _StoreDirectoryViewState
                       hintText: AppStrings.searchStores,
                       prefixIcon: Icon(Icons.search),
                     ),
-                    onChanged: (String value) => ref
-                        .read(storeSearchProvider.notifier)
-                        .setQuery(value),
+                    onChanged: (String value) =>
+                        ref.read(storeSearchProvider.notifier).setQuery(value),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Expanded(
                   child: tenants.when(
-                    loading: () => const AppSkeletonList(
-                      itemCount: 4,
-                      itemHeight: 132,
-                    ),
-                    error: (Object error, StackTrace stack) =>
-                        AppErrorState(
-                      onRetry: () =>
-                          ref.invalidate(activeTenantsProvider),
+                    loading: () =>
+                        const AppSkeletonList(itemCount: 4, itemHeight: 132),
+                    error: (Object error, StackTrace stack) => AppErrorState(
+                      onRetry: () => ref.invalidate(activeTenantsProvider),
                     ),
                     data: (List<TenantModel> list) {
                       if (list.isEmpty) {
@@ -115,45 +106,48 @@ class _StoreDirectoryViewState
                           title: AppStrings.noStoresYet,
                         );
                       }
-                      final List<TenantModel> filtered =
-                          filterTenants(list, search);
+                      final List<TenantModel> filtered = filterTenants(
+                        list,
+                        search,
+                      );
                       if (filtered.isEmpty) {
                         return const AppEmptyState(
                           icon: Icons.search_off_rounded,
                           title: AppStrings.noStoresFound,
                         );
                       }
-                      return ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(
-                          16,
-                          4,
-                          16,
-                          FloatingNavBar.height,
-                        ),
-                        itemCount: filtered.length,
-                        itemBuilder:
-                            (BuildContext context, int index) {
-                              final Widget card = _StoreCard(
-                                tenant: filtered[index],
-                              );
-                              return animate
-                                  ? card
+                      return RefreshIndicator(
+                        onRefresh: () async =>
+                            ref.invalidate(activeTenantsProvider),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(
+                            16,
+                            4,
+                            16,
+                            FloatingNavBar.height,
+                          ),
+                          itemCount: filtered.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            final Widget card = _StoreCard(
+                              tenant: filtered[index],
+                            );
+                            return animate
+                                ? card
                                       .animate()
                                       .fadeIn(
                                         duration: 300.ms,
-                                        delay:
-                                            (index * 40).ms,
+                                        delay: (index * 40).ms,
                                       )
                                       .slideY(
                                         begin: 0.08,
                                         end: 0,
                                         duration: 300.ms,
-                                        delay:
-                                            (index * 40).ms,
+                                        delay: (index * 40).ms,
                                         curve: Curves.easeOutCubic,
                                       )
-                                  : card;
-                            },
+                                : card;
+                          },
+                        ),
                       );
                     },
                   ),
@@ -199,9 +193,8 @@ class _StoreCard extends StatelessWidget {
                         : CachedNetworkImage(
                             imageUrl: tenant.logoUrl!,
                             fit: BoxFit.cover,
-                            errorWidget: (_, _, _) => Container(
-                              color: tenant.primaryColorValue,
-                            ),
+                            errorWidget: (_, _, _) =>
+                                Container(color: tenant.primaryColorValue),
                           ),
                   ),
                   Positioned(
@@ -210,10 +203,7 @@ class _StoreCard extends StatelessWidget {
                     child: Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: tokens.surface,
-                          width: 3,
-                        ),
+                        border: Border.all(color: tokens.surface, width: 3),
                       ),
                       child: ClipOval(
                         child: SizedBox(

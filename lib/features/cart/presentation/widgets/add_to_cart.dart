@@ -1,4 +1,6 @@
 import 'package:all_commerce/core/tenant/tenant_model.dart';
+import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
+import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/features/cart/presentation/view_models/cart_controller.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:flutter/material.dart';
@@ -15,44 +17,27 @@ Future<void> addToCartWithConfirm(
   int quantity = 1,
 }) async {
   final CartController cart = ref.read(cartProvider.notifier);
-  final AddResult result =
-      cart.add(product, tenant, quantity: quantity);
+  final AddResult result = cart.add(product, tenant, quantity: quantity);
   if (result == AddResult.added) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Agregado al carrito'),
-        action: SnackBarAction(
-          label: 'Ver',
-          onPressed: () => context.push('/s/${tenant.slug}/cart'),
-        ),
+    showAppSnackBar(
+      context,
+      'Agregado al carrito',
+      action: SnackBarAction(
+        label: 'Ver',
+        onPressed: () => context.push('/s/${tenant.slug}/cart'),
       ),
     );
     return;
   }
-  final bool? replace = await showDialog<bool>(
-    context: context,
-    builder: (BuildContext context) => AlertDialog(
-      title: const Text('Carrito de otro local'),
-      content: const Text(
-        'Tu carrito tiene productos de otro local. '
-        '¿Vaciarlo y agregar este?',
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Vaciar y agregar'),
-        ),
-      ],
-    ),
+  final bool? replace = await showAppConfirmSheet(
+    context,
+    title: 'Carrito de otro local',
+    message:
+        'Tu carrito tiene productos de otro local. ¿Vaciarlo y agregar este?',
+    confirmLabel: 'Vaciar y agregar',
   );
   if (replace == true && context.mounted) {
     cart.replaceWith(product, tenant, quantity: quantity);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Agregado al carrito')),
-    );
+    showAppSnackBar(context, 'Agregado al carrito');
   }
 }

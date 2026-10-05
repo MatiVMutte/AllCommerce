@@ -1,6 +1,7 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
+import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/constants/categories.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
@@ -28,8 +29,7 @@ class ProductUploadView extends ConsumerStatefulWidget {
   final ProductModel? existing;
 
   @override
-  ConsumerState<ProductUploadView> createState() =>
-      _ProductUploadViewState();
+  ConsumerState<ProductUploadView> createState() => _ProductUploadViewState();
 }
 
 class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
@@ -163,22 +163,18 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
     final ProductModel? existing = widget.existing;
     final ProductModel? product = existing == null
         ? await ref
-            .read(productUploadControllerProvider.notifier)
-            .save(input, tenant.id)
+              .read(productUploadControllerProvider.notifier)
+              .save(input, tenant.id)
         : await ref
-            .read(productUploadControllerProvider.notifier)
-            .update(existing, input);
+              .read(productUploadControllerProvider.notifier)
+              .update(existing, input);
     if (!mounted) return;
     if (product != null) {
       AppHaptics.success();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            existing == null
-                ? AppStrings.productPublished
-                : 'Producto actualizado',
-          ),
-        ),
+      showAppSnackBar(
+        context,
+        existing == null ? AppStrings.productPublished : 'Producto actualizado',
+        clearNavBar: false,
       );
       context.go('/owner/products');
       return;
@@ -201,26 +197,20 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       }
       if (next.infoMessage != null &&
           next.infoMessage != previous?.infoMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.infoMessage!)),
-        );
+        showAppSnackBar(context, next.infoMessage!, clearNavBar: false);
       }
     });
-    final AsyncValue<UserModel?> profileAsync =
-        ref.watch(currentProfileProvider);
-    final ProductUploadState state =
-        ref.watch(productUploadControllerProvider);
+    final AsyncValue<UserModel?> profileAsync = ref.watch(
+      currentProfileProvider,
+    );
+    final ProductUploadState state = ref.watch(productUploadControllerProvider);
     return Scaffold(
       appBar: AppBar(
         leading: AppBackButton(
-          fallback: widget.existing == null
-              ? '/owner'
-              : '/owner/products',
+          fallback: widget.existing == null ? '/owner' : '/owner/products',
         ),
         title: Text(
-          widget.existing == null
-              ? 'Nuevo producto'
-              : 'Editar producto',
+          widget.existing == null ? 'Nuevo producto' : 'Editar producto',
         ),
       ),
       body: profileAsync.when(
@@ -232,17 +222,16 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
           if (tenantId == null) {
             return const Center(child: Text(AppStrings.storeNotFound));
           }
-          final AsyncValue<TenantModel?> tenantAsync =
-              ref.watch(tenantByIdProvider(tenantId));
+          final AsyncValue<TenantModel?> tenantAsync = ref.watch(
+            tenantByIdProvider(tenantId),
+          );
           return tenantAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (Object error, StackTrace stack) =>
                 const Center(child: Text(AppStrings.genericError)),
             data: (TenantModel? tenant) {
               if (tenant == null) {
-                return const Center(
-                  child: Text(AppStrings.storeNotFound),
-                );
+                return const Center(child: Text(AppStrings.storeNotFound));
               }
               if (!tenant.canPublish) {
                 return Center(
@@ -298,9 +287,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                         state: state,
                         existingImageUrl: widget.existing?.imageUrl,
                         onPick: (ImageSource source) => ref
-                            .read(
-                              productUploadControllerProvider.notifier,
-                            )
+                            .read(productUploadControllerProvider.notifier)
                             .pickAndAnalyze(source),
                       ),
                       const SizedBox(height: 20),
@@ -316,8 +303,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                             suffixIcon: _aiBadge(_title),
                           ),
                           validator: (String? value) {
-                            final int len =
-                                (value ?? '').trim().length;
+                            final int len = (value ?? '').trim().length;
                             if (len < 2 || len > 80) {
                               return 'Ingresá un título '
                                   '(2 a 80 caracteres)';
@@ -342,8 +328,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                       else ...<Widget>[
                         TextFormField(
                           controller: _price,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
+                          keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
                           decoration: InputDecoration(
@@ -352,9 +337,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                           ),
                           validator: (String? value) {
                             final double? parsed = double.tryParse(
-                              (value ?? '')
-                                  .trim()
-                                  .replaceAll(',', '.'),
+                              (value ?? '').trim().replaceAll(',', '.'),
                             );
                             if (parsed == null || parsed <= 0) {
                               return 'Ingresá un precio válido';
@@ -396,9 +379,9 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                               .map(
                                 (ProductCategory c) =>
                                     DropdownMenuItem<ProductCategory>(
-                                  value: c,
-                                  child: Text(c.label),
-                                ),
+                                      value: c,
+                                      child: Text(c.label),
+                                    ),
                               )
                               .toList(),
                           onChanged: (ProductCategory? value) {
@@ -441,21 +424,19 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
             decoration: BoxDecoration(
               color: context.tokens.surface,
-              border: Border(
-                top: BorderSide(color: context.tokens.border),
-              ),
+              border: Border(top: BorderSide(color: context.tokens.border)),
             ),
             child: SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed:
-                    state.saving || analyzing ? null : () => _save(tenant),
+                onPressed: state.saving || analyzing
+                    ? null
+                    : () => _save(tenant),
                 child: state.saving
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child:
-                            CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : Text(
                         widget.existing == null
@@ -585,15 +566,14 @@ class _ImageSection extends StatelessWidget {
               CachedNetworkImage(
                 imageUrl: existingImageUrl!,
                 fit: BoxFit.cover,
-                errorWidget:
-                    (BuildContext context, String url, _) => Container(
-                      color: tokens.surfaceMuted,
-                      child: Icon(
-                        Icons.image_not_supported_outlined,
-                        size: 48,
-                        color: tokens.textTertiary,
-                      ),
-                    ),
+                errorWidget: (BuildContext context, String url, _) => Container(
+                  color: tokens.surfaceMuted,
+                  child: Icon(
+                    Icons.image_not_supported_outlined,
+                    size: 48,
+                    color: tokens.textTertiary,
+                  ),
+                ),
               ),
             if (state.analyzing)
               Container(

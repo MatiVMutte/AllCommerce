@@ -5,28 +5,38 @@ import 'package:all_commerce/features/catalog/presentation/view_models/catalog_p
 import 'package:all_commerce/features/product_upload/presentation/view_models/product_upload_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Every product of the tenant (active or not).
-final ownerProductsProvider =
-    FutureProvider.autoDispose.family<List<ProductModel>, String>(
-  (Ref ref, String tenantId) =>
-      ref.watch(productRepositoryProvider).listAll(tenantId),
-);
+/// Every product of the tenant (active or not). Exposed as a notifier
+/// so the inventory can apply optimistic updates.
+class OwnerProductsNotifier extends AsyncNotifier<List<ProductModel>> {
+  OwnerProductsNotifier(this.tenantId);
+
+  final String tenantId;
+
+  @override
+  Future<List<ProductModel>> build() =>
+      ref.watch(productRepositoryProvider).listAll(tenantId);
+
+  /// Locally replaces the list (optimistic update/rollback). The
+  /// authoritative refetch still happens through `ref.invalidate`.
+  void replace(List<ProductModel> list) =>
+      state = AsyncData<List<ProductModel>>(list);
+}
+
+final ownerProductsProvider = AsyncNotifierProvider.autoDispose
+    .family<OwnerProductsNotifier, List<ProductModel>, String>(
+      OwnerProductsNotifier.new,
+    );
 
 /// Resolves a product restricted to the logged-in owner's tenant.
 /// Returns null for unknown ids or ids of other tenants.
-final ownerProductProvider =
-    FutureProvider.autoDispose.family<ProductModel?, String>(
-  (Ref ref, String productId) async {
-    final String? tenantId =
-        await ref.watch(currentProfileProvider.future).then(
-              (profile) => profile?.tenantId,
-            );
-    if (tenantId == null) return null;
-    return ref
-        .watch(productRepositoryProvider)
-        .getById(tenantId, productId);
-  },
-);
+final ownerProductProvider = FutureProvider.autoDispose
+    .family<ProductModel?, String>((Ref ref, String productId) async {
+      final String? tenantId = await ref
+          .watch(currentProfileProvider.future)
+          .then((profile) => profile?.tenantId);
+      if (tenantId == null) return null;
+      return ref.watch(productRepositoryProvider).getById(tenantId, productId);
+    });
 
 enum OwnerFilter { all, active, paused }
 
@@ -40,8 +50,8 @@ class OwnerProductQueryNotifier extends Notifier<String> {
 
 final ownerProductQueryProvider =
     NotifierProvider.autoDispose<OwnerProductQueryNotifier, String>(
-  OwnerProductQueryNotifier.new,
-);
+      OwnerProductQueryNotifier.new,
+    );
 
 /// Active/paused filter for the inventory list.
 class OwnerFilterNotifier extends Notifier<OwnerFilter> {
@@ -53,8 +63,8 @@ class OwnerFilterNotifier extends Notifier<OwnerFilter> {
 
 final ownerFilterProvider =
     NotifierProvider.autoDispose<OwnerFilterNotifier, OwnerFilter>(
-  OwnerFilterNotifier.new,
-);
+      OwnerFilterNotifier.new,
+    );
 
 /// Pure inventory filtering: accent-insensitive match on title/sku/tags
 /// plus the active/paused filter.
@@ -87,8 +97,9 @@ class OwnerInventoryState {
     Object? Function()? error,
   }) {
     return OwnerInventoryState(
-      busyProductId:
-          busyProductId != null ? busyProductId() : this.busyProductId,
+      busyProductId: busyProductId != null
+          ? busyProductId()
+          : this.busyProductId,
       error: error != null ? error() : this.error,
     );
   }
@@ -103,25 +114,36 @@ class OwnerInventoryController extends Notifier<OwnerInventoryState> {
       return ref
           .read(productRepositoryProvider)
           .setActive(id, tenantId, !product.isActive);
-    });
+    }, optimistic: product.copyWith(isActive: !product.isActive));
   }
 
   Future<bool> delete(ProductModel product) async {
     return _run(product, (String id, String tenantId) {
-      return ref
-          .read(productRepositoryProvider)
-          .delete(id, tenantId);
-    });
+      return ref.read(productRepositoryProvider).delete(id, tenantId);
+    }, deleted: true);
+  }
+
+  List<ProductModel>? _list(String tenantId) =>
+      ref.read(ownerProductsProvider(tenantId)).value;
+
+  void _setList(String tenantId, List<ProductModel> list) {
+    ref.read(ownerProductsProvider(tenantId).notifier).replace(list);
   }
 
   Future<bool> _run(
     ProductModel product,
-    Future<void> Function(String id, String tenantId) action,
-  ) async {
-    state = state.copyWith(
-      busyProductId: () => product.id,
-      error: () => null,
-    );
+    Future<void> Function(String id, String tenantId) action, {
+    ProductModel? optimistic,
+    bool deleted = false,
+  }) async {
+    state = state.copyWith(busyProductId: () => product.id, error: () => null);
+    final List<ProductModel>? before = _list(product.tenantId);
+    if (before != null && (optimistic != null || deleted)) {
+      _setList(product.tenantId, <ProductModel>[
+        for (final ProductModel p in before)
+          if (p.id != product.id) p else ?optimistic,
+      ]);
+    }
     try {
       await action(product.id, product.tenantId);
       state = state.copyWith(busyProductId: () => null);
@@ -129,13 +151,14 @@ class OwnerInventoryController extends Notifier<OwnerInventoryState> {
       ref.invalidate(catalogProductsProvider(product.tenantId));
       return true;
     } catch (e) {
+      if (before != null) _setList(product.tenantId, before);
       state = state.copyWith(busyProductId: () => null, error: () => e);
       return false;
     }
   }
 }
 
-final ownerInventoryControllerProvider = NotifierProvider.autoDispose<
-    OwnerInventoryController, OwnerInventoryState>(
-  OwnerInventoryController.new,
-);
+final ownerInventoryControllerProvider =
+    NotifierProvider.autoDispose<OwnerInventoryController, OwnerInventoryState>(
+      OwnerInventoryController.new,
+    );

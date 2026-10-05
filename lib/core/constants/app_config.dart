@@ -10,8 +10,7 @@ abstract final class AppConfig {
   static String get supportWhatsapp => dotenv.env['SUPPORT_WHATSAPP'] ?? '';
 
   /// Fixed slug for white-label per-store builds. Empty = multi-store app.
-  static const String fixedTenantSlug =
-      String.fromEnvironment('TENANT_SLUG');
+  static const String fixedTenantSlug = String.fromEnvironment('TENANT_SLUG');
   static const String appName = 'AllCommerce';
   static const int trialDays = 14;
 }

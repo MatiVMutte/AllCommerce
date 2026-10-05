@@ -17,6 +17,7 @@ class ProfileView extends ConsumerWidget {
     if (session == null) {
       return Scaffold(
         body: SafeArea(
+          bottom: false,
           child: Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
@@ -35,10 +36,7 @@ class ProfileView extends ConsumerWidget {
                   const SizedBox(height: 16),
                   const Text(
                     'Tu perfil',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -51,9 +49,7 @@ class ProfileView extends ConsumerWidget {
                     width: double.infinity,
                     child: FilledButton(
                       onPressed: () {
-                        ref
-                            .read(returnToProvider.notifier)
-                            .set('/profile');
+                        ref.read(returnToProvider.notifier).set('/profile');
                         context.push('/login');
                       },
                       child: const Text('Ingresar'),
@@ -64,9 +60,7 @@ class ProfileView extends ConsumerWidget {
                     width: double.infinity,
                     child: OutlinedButton(
                       onPressed: () {
-                        ref
-                            .read(returnToProvider.notifier)
-                            .set('/profile');
+                        ref.read(returnToProvider.notifier).set('/profile');
                         context.push('/register');
                       },
                       child: const Text('Crear cuenta'),
@@ -79,13 +73,14 @@ class ProfileView extends ConsumerWidget {
         ),
       );
     }
-    final AsyncValue<UserModel?> profileAsync =
-        ref.watch(currentProfileProvider);
+    final AsyncValue<UserModel?> profileAsync = ref.watch(
+      currentProfileProvider,
+    );
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: profileAsync.when(
-          loading: () =>
-              const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: CircularProgressIndicator()),
           error: (Object e, StackTrace s) =>
               const Center(child: Text('Ocurrió un error')),
           data: (UserModel? profile) {
@@ -98,8 +93,7 @@ class ProfileView extends ConsumerWidget {
                 Center(
                   child: CircleAvatar(
                     radius: 40,
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primary,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     child: Text(
                       name.characters.first.toUpperCase(),
                       style: const TextStyle(
@@ -138,21 +132,18 @@ class ProfileView extends ConsumerWidget {
                   child: Column(
                     children: <Widget>[
                       ListTile(
-                        leading:
-                            const Icon(Icons.receipt_long_outlined),
+                        leading: const Icon(Icons.receipt_long_outlined),
                         title: const Text('Mis pedidos'),
-                        trailing:
-                            const Icon(Icons.chevron_right_rounded),
+                        trailing: const Icon(Icons.chevron_right_rounded),
                         onTap: () => context.push('/my-orders'),
                       ),
                       ListTile(
-                        leading:
-                            const Icon(Icons.dark_mode_outlined),
+                        leading: const Icon(Icons.dark_mode_outlined),
                         title: const Text('Tema'),
                         subtitle: const Text('Sigue al sistema'),
                         trailing: Switch(
-                          value: Theme.of(context).brightness ==
-                              Brightness.dark,
+                          value:
+                              Theme.of(context).brightness == Brightness.dark,
                           onChanged: null,
                         ),
                       ),
@@ -162,9 +153,8 @@ class ProfileView extends ConsumerWidget {
                 const SizedBox(height: 24),
                 Center(
                   child: TextButton(
-                    onPressed: () => ref
-                        .read(authControllerProvider.notifier)
-                        .signOut(),
+                    onPressed: () =>
+                        ref.read(authControllerProvider.notifier).signOut(),
                     child: const Text('Cerrar sesión'),
                   ),
                 ),

@@ -35,15 +35,15 @@ void main() {
     return ProviderScope(
       overrides: [
         currentProfileProvider.overrideWith((Ref ref) async => owner),
-        ownerOrdersProvider('t1')
-            .overrideWith((Ref ref) async => orders),
+        ownerOrdersProvider('t1').overrideWith((Ref ref) async => orders),
       ],
       child: const MaterialApp(home: OwnerOrdersView()),
     );
   }
 
-  testWidgets('shows order tile with number, name and status chip',
-      (WidgetTester tester) async {
+  testWidgets('shows order tile with number, name and status chip', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(buildView(orders: <OrderModel>[order]));
     await tester.pumpAndSettle();
 

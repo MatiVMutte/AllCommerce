@@ -14,18 +14,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-final Provider<ImageService> imageServiceProvider =
-    Provider<ImageService>((_) => ImageService());
+final Provider<ImageService> imageServiceProvider = Provider<ImageService>(
+  (_) => ImageService(),
+);
 
 final Provider<AiAnalyzeService> aiAnalyzeServiceProvider =
     Provider<AiAnalyzeService>(
-  (Ref ref) => AiAnalyzeService(ref.watch(supabaseClientProvider)),
-);
+      (Ref ref) => AiAnalyzeService(ref.watch(supabaseClientProvider)),
+    );
 
 final Provider<ProductRepository> productRepositoryProvider =
     Provider<ProductRepository>(
-  (Ref ref) => ProductRepository(ref.watch(supabaseClientProvider)),
-);
+      (Ref ref) => ProductRepository(ref.watch(supabaseClientProvider)),
+    );
 
 class ProductUploadState {
   const ProductUploadState({
@@ -95,10 +96,7 @@ class ProductUploadController extends Notifier<ProductUploadState> {
       state = state.copyWith(analyzing: false, suggestion: () => suggestion);
     } on AiAnalyzeException catch (e) {
       if (e.code == 'PLAN_EXPIRED') {
-        state = state.copyWith(
-          analyzing: false,
-          blockedCode: () => e.code,
-        );
+        state = state.copyWith(analyzing: false, blockedCode: () => e.code);
         return;
       }
       state = state.copyWith(
@@ -153,6 +151,7 @@ class ProductUploadController extends Notifier<ProductUploadState> {
       }
     }
     ref.invalidate(catalogProductsProvider(tenantId));
+    ref.invalidate(ownerProductsProvider(tenantId));
     state = state.copyWith(saving: false);
     return product;
   }
@@ -213,5 +212,5 @@ class ProductUploadController extends Notifier<ProductUploadState> {
 
 final productUploadControllerProvider =
     NotifierProvider.autoDispose<ProductUploadController, ProductUploadState>(
-  ProductUploadController.new,
-);
+      ProductUploadController.new,
+    );

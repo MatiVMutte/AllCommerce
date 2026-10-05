@@ -6,6 +6,7 @@ import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
+import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
@@ -32,8 +33,7 @@ class TenantSettingsView extends ConsumerStatefulWidget {
   const TenantSettingsView({super.key});
 
   @override
-  ConsumerState<TenantSettingsView> createState() =>
-      _TenantSettingsViewState();
+  ConsumerState<TenantSettingsView> createState() => _TenantSettingsViewState();
 }
 
 class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
@@ -73,8 +73,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
 
   bool _isDirty(TenantModel tenant, bool hasPendingLogo) {
     final String w = tenant.whatsapp;
-    final String currentPhone =
-        w.startsWith('549') ? w.substring(3) : w;
+    final String currentPhone = w.startsWith('549') ? w.substring(3) : w;
     return hasPendingLogo ||
         _name.text.trim() != tenant.name ||
         _description.text.trim() != (tenant.description ?? '') ||
@@ -93,8 +92,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
           description: _description.text.trim().isEmpty
               ? null
               : _description.text.trim(),
-          address:
-              _address.text.trim().isEmpty ? null : _address.text.trim(),
+          address: _address.text.trim().isEmpty ? null : _address.text.trim(),
           whatsapp: Validators.normalizePhone(_whatsapp.text),
           primaryColor: _color,
         );
@@ -105,9 +103,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
       return;
     }
     AppHaptics.success();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Local actualizado')),
-    );
+    showAppSnackBar(context, 'Local actualizado');
     if (context.canPop()) {
       context.pop();
     } else {
@@ -120,8 +116,9 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     final AppTokens tokens = context.tokens;
     final UserModel? profile = ref.watch(currentProfileProvider).value;
     final String? tenantId = profile?.tenantId;
-    final TenantSettingsState state =
-        ref.watch(tenantSettingsControllerProvider);
+    final TenantSettingsState state = ref.watch(
+      tenantSettingsControllerProvider,
+    );
     if (tenantId == null) {
       return const Scaffold(
         body: AppEmptyState(
@@ -130,16 +127,16 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
         ),
       );
     }
-    final AsyncValue<TenantModel?> tenantAsync =
-        ref.watch(tenantByIdProvider(tenantId));
+    final AsyncValue<TenantModel?> tenantAsync = ref.watch(
+      tenantByIdProvider(tenantId),
+    );
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: tenantAsync.when(
-          loading: () =>
-              const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: CircularProgressIndicator()),
           error: (Object e, StackTrace s) => AppErrorState(
-            onRetry: () =>
-                ref.invalidate(tenantByIdProvider(tenantId)),
+            onRetry: () => ref.invalidate(tenantByIdProvider(tenantId)),
           ),
           data: (TenantModel? tenant) {
             if (tenant == null) {
@@ -153,8 +150,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                 ? _palette
                 : <String>[..._palette, _color];
             final Color preview = _hexColor(_color);
-            final bool dirty =
-                _isDirty(tenant, state.pendingLogo != null);
+            final bool dirty = _isDirty(tenant, state.pendingLogo != null);
             return Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
@@ -172,12 +168,8 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Mi local',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -209,6 +201,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                                     ),
                                     child: IconButton(
                                       padding: EdgeInsets.zero,
+                                      tooltip: 'Cambiar logo',
                                       iconSize: 16,
                                       icon: const Icon(
                                         Icons.photo_camera_outlined,
@@ -217,11 +210,11 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                                       onPressed: state.saving
                                           ? null
                                           : () => ref
-                                              .read(
-                                                tenantSettingsControllerProvider
-                                                    .notifier,
-                                              )
-                                              .pickLogo(),
+                                                .read(
+                                                  tenantSettingsControllerProvider
+                                                      .notifier,
+                                                )
+                                                .pickLogo(),
                                     ),
                                   ),
                                 ),
@@ -289,8 +282,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                             _ColorDot(
                               hex: hex,
                               selected: hex == _color,
-                              onTap: () =>
-                                  setState(() => _color = hex),
+                              onTap: () => setState(() => _color = hex),
                             ),
                         ],
                       ),
@@ -305,10 +297,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
-                            Container(
-                              height: 64,
-                              color: preview,
-                            ),
+                            Container(height: 64, color: preview),
                             Transform.translate(
                               offset: const Offset(0, -20),
                               child: Column(
@@ -361,9 +350,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                           Expanded(
                             child: Text(
                               '${ShareService.linkBase}/s/${tenant.slug}',
-                              style: TextStyle(
-                                color: tokens.textSecondary,
-                              ),
+                              style: TextStyle(color: tokens.textSecondary),
                             ),
                           ),
                           IconButton(
@@ -381,12 +368,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                                 ),
                               );
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Link copiado'),
-                                  ),
-                                );
+                                showAppSnackBar(context, 'Link copiado');
                               }
                             },
                           ),
@@ -454,30 +436,30 @@ class _SettingsAvatar extends StatelessWidget {
     final Widget child = pendingLogo != null
         ? Image.memory(pendingLogo!, fit: BoxFit.cover)
         : tenant.logoUrl == null
-            ? Center(
-                child: Text(
-                  tenant.name.characters.first.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 38,
-                    fontWeight: FontWeight.w700,
-                  ),
+        ? Center(
+            child: Text(
+              tenant.name.characters.first.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 38,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          )
+        : CachedNetworkImage(
+            imageUrl: tenant.logoUrl!,
+            fit: BoxFit.cover,
+            errorWidget: (_, _, _) => Center(
+              child: Text(
+                tenant.name.characters.first.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 38,
+                  fontWeight: FontWeight.w700,
                 ),
-              )
-            : CachedNetworkImage(
-                imageUrl: tenant.logoUrl!,
-                fit: BoxFit.cover,
-                errorWidget: (_, _, _) => Center(
-                  child: Text(
-                    tenant.name.characters.first.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 38,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              );
+              ),
+            ),
+          );
     return Container(
       width: 96,
       height: 96,

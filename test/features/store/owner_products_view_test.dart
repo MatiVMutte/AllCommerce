@@ -10,6 +10,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class _FakeOwnerProducts extends OwnerProductsNotifier {
+  _FakeOwnerProducts(this.items) : super('t1');
+
+  final List<ProductModel> items;
+
+  @override
+  Future<List<ProductModel>> build() async => items;
+}
+
 void main() {
   final TenantModel tenant = TenantModel(
     id: 't1',
@@ -49,7 +58,8 @@ void main() {
       overrides: [
         currentProfileProvider.overrideWith((Ref ref) async => owner),
         tenantByIdProvider('t1').overrideWith((Ref ref) async => tenant),
-        ownerProductsProvider('t1').overrideWith((Ref ref) async => items),
+        ownerProductsProvider('t1')
+            .overrideWith(() => _FakeOwnerProducts(items)),
       ],
       child: const MaterialApp(home: OwnerProductsView()),
     );

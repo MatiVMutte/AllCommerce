@@ -72,10 +72,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                   const SizedBox(height: 16),
                   const Text(
                     'Revisá tu email',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -114,8 +111,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                 children: <Widget>[
                   const AuthHeader(
                     title: 'Creá tu cuenta',
-                    subtitle:
-                        'Un email y una contraseña alcanzan para empezar',
+                    subtitle: 'Un email y una contraseña alcanzan para empezar',
                   ),
                   const SizedBox(height: 32),
                   LabeledField(
@@ -138,6 +134,9 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                       decoration: InputDecoration(
                         hintText: 'Mínimo 8 caracteres',
                         suffixIcon: IconButton(
+                          tooltip: _obscure
+                              ? 'Mostrar contraseña'
+                              : 'Ocultar contraseña',
                           icon: Icon(
                             _obscure
                                 ? Icons.visibility_outlined
@@ -145,8 +144,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                             size: 20,
                             color: tokens.textSecondary,
                           ),
-                          onPressed: () =>
-                              setState(() => _obscure = !_obscure),
+                          onPressed: () => setState(() => _obscure = !_obscure),
                         ),
                       ),
                       validator: Validators.password,
@@ -162,10 +160,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                         hintText: 'Repetí tu contraseña',
                       ),
                       validator: (String? value) =>
-                          Validators.confirmPassword(
-                        value,
-                        _password.text,
-                      ),
+                          Validators.confirmPassword(value, _password.text),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -175,9 +170,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('Crear cuenta'),
                   ),

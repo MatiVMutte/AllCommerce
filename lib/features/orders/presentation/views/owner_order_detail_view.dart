@@ -7,6 +7,7 @@ import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
+import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/order_status_chip.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
@@ -20,11 +21,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class OwnerOrderDetailView extends ConsumerStatefulWidget {
-  const OwnerOrderDetailView({
-    required this.orderId,
-    this.order,
-    super.key,
-  });
+  const OwnerOrderDetailView({required this.orderId, this.order, super.key});
 
   final String orderId;
   final OrderModel? order;
@@ -34,8 +31,7 @@ class OwnerOrderDetailView extends ConsumerStatefulWidget {
       _OwnerOrderDetailViewState();
 }
 
-class _OwnerOrderDetailViewState
-    extends ConsumerState<OwnerOrderDetailView> {
+class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
   OrderModel? _order;
 
   @override
@@ -64,16 +60,16 @@ class _OwnerOrderDetailViewState
     if (updated != null) {
       AppHaptics.success();
       setState(() => _order = updated);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Pedido marcado como ${next.label}'),
-        ),
+      showAppSnackBar(
+        context,
+        'Pedido marcado como ${next.label}',
+        clearNavBar: false,
       );
     } else {
       showErrorSnackBar(
         context,
-        ref.read(ownerOrdersControllerProvider).error ??
-            Exception('unknown'),
+        ref.read(ownerOrdersControllerProvider).error ?? Exception('unknown'),
+        clearNavBar: false,
       );
     }
   }
@@ -86,8 +82,9 @@ class _OwnerOrderDetailViewState
 
     OrderModel? resolved = _order;
     if (resolved == null && tenantId != null) {
-      final List<OrderModel>? orders =
-          ref.watch(ownerOrdersProvider(tenantId)).value;
+      final List<OrderModel>? orders = ref
+          .watch(ownerOrdersProvider(tenantId))
+          .value;
       for (final OrderModel o in orders ?? <OrderModel>[]) {
         if (o.id == widget.orderId) {
           resolved = o;
@@ -111,16 +108,17 @@ class _OwnerOrderDetailViewState
     final AsyncValue<TenantModel?> tenantAsync = tenantId == null
         ? const AsyncValue<TenantModel?>.data(null)
         : ref.watch(tenantByIdProvider(tenantId));
-    final AsyncValue<List<OrderItemModel>> itemsAsync =
-        ref.watch(orderItemsProvider(order.id));
+    final AsyncValue<List<OrderItemModel>> itemsAsync = ref.watch(
+      orderItemsProvider(order.id),
+    );
     final bool busy =
-        ref.watch(ownerOrdersControllerProvider).busyOrderId ==
-            order.id;
+        ref.watch(ownerOrdersControllerProvider).busyOrderId == order.id;
     final List<OrderStatus> forward = order.status.nextOptions
         .where((OrderStatus s) => s != OrderStatus.rejected)
         .toList();
-    final bool canReject =
-        order.status.nextOptions.contains(OrderStatus.rejected);
+    final bool canReject = order.status.nextOptions.contains(
+      OrderStatus.rejected,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -141,10 +139,7 @@ class _OwnerOrderDetailViewState
             children: <Widget>[
               Text(
                 Formatters.dateTime(order.createdAt),
-                style: TextStyle(
-                  fontSize: 13,
-                  color: tokens.textTertiary,
-                ),
+                style: TextStyle(fontSize: 13, color: tokens.textTertiary),
               ),
               const SizedBox(height: 20),
               const _Section('CLIENTE'),
@@ -155,8 +150,7 @@ class _OwnerOrderDetailViewState
                     radius: 20,
                     backgroundColor: tokens.surfaceMuted,
                     child: Text(
-                      order.customerNameSnapshot.characters.first
-                          .toUpperCase(),
+                      order.customerNameSnapshot.characters.first.toUpperCase(),
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         color: tokens.textPrimary,
@@ -166,8 +160,7 @@ class _OwnerOrderDetailViewState
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
                           order.customerNameSnapshot,
@@ -191,8 +184,7 @@ class _OwnerOrderDetailViewState
               const SizedBox(height: 12),
               tenantAsync.when(
                 loading: () => const SizedBox.shrink(),
-                error: (Object e, StackTrace s) =>
-                    const SizedBox.shrink(),
+                error: (Object e, StackTrace s) => const SizedBox.shrink(),
                 data: (TenantModel? tenant) => tenant == null
                     ? const SizedBox.shrink()
                     : SizedBox(
@@ -202,8 +194,7 @@ class _OwnerOrderDetailViewState
                             Icons.chat_bubble_outline_rounded,
                             size: 18,
                           ),
-                          label:
-                              const Text('Escribir por WhatsApp'),
+                          label: const Text('Escribir por WhatsApp'),
                           onPressed: () => launchUrl(
                             buildWhatsAppUri(
                               order.customerPhoneSnapshot,
@@ -227,8 +218,7 @@ class _OwnerOrderDetailViewState
                   children: <Widget>[
                     for (final OrderItemModel item in items)
                       Padding(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 6),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Row(
                           children: <Widget>[
                             Container(
@@ -238,8 +228,7 @@ class _OwnerOrderDetailViewState
                               ),
                               decoration: BoxDecoration(
                                 color: tokens.surfaceMuted,
-                                borderRadius:
-                                    BorderRadius.circular(999),
+                                borderRadius: BorderRadius.circular(999),
                               ),
                               child: Text(
                                 '${item.quantity}×',
@@ -253,8 +242,7 @@ class _OwnerOrderDetailViewState
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
                                   Text(
                                     item.titleSnapshot,
@@ -266,9 +254,7 @@ class _OwnerOrderDetailViewState
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    Formatters.price(
-                                      item.unitPrice,
-                                    ),
+                                    Formatters.price(item.unitPrice),
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: tokens.textTertiary,
@@ -300,8 +286,7 @@ class _OwnerOrderDetailViewState
               if (order.discount > 0)
                 _SummaryRow(
                   label: 'Descuento',
-                  value:
-                      '-${Formatters.price(order.discount)}',
+                  value: '-${Formatters.price(order.discount)}',
                 ),
               const SizedBox(height: 4),
               Row(
@@ -352,8 +337,7 @@ class _OwnerOrderDetailViewState
                       order.status == OrderStatus.delivered
                           ? 'Pedido entregado'
                           : 'Pedido rechazado',
-                      style:
-                          TextStyle(color: tokens.textSecondary),
+                      style: TextStyle(color: tokens.textSecondary),
                     ),
                   ),
                 ),
@@ -366,13 +350,10 @@ class _OwnerOrderDetailViewState
           ? null
           : SafeArea(
               child: Container(
-                padding:
-                    const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                 decoration: BoxDecoration(
                   color: tokens.surface,
-                  border: Border(
-                    top: BorderSide(color: tokens.border),
-                  ),
+                  border: Border(top: BorderSide(color: tokens.border)),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -383,8 +364,7 @@ class _OwnerOrderDetailViewState
                           ? FilledButton(
                               onPressed: busy
                                   ? null
-                                  : () =>
-                                      _changeStatus(forward[i]),
+                                  : () => _changeStatus(forward[i]),
                               child: Text(
                                 'Marcar '
                                 '${forward[i].label.toLowerCase()}',
@@ -393,8 +373,7 @@ class _OwnerOrderDetailViewState
                           : TextButton(
                               onPressed: busy
                                   ? null
-                                  : () =>
-                                      _changeStatus(forward[i]),
+                                  : () => _changeStatus(forward[i]),
                               child: Text(
                                 'Marcar '
                                 '${forward[i].label.toLowerCase()}',
@@ -404,8 +383,7 @@ class _OwnerOrderDetailViewState
                       TextButton(
                         onPressed: busy
                             ? null
-                            : () =>
-                                _changeStatus(OrderStatus.rejected),
+                            : () => _changeStatus(OrderStatus.rejected),
                         child: Text(
                           'Rechazar pedido',
                           style: TextStyle(color: tokens.danger),
@@ -452,10 +430,7 @@ class _SummaryRow extends StatelessWidget {
       child: Row(
         children: <Widget>[
           Expanded(
-            child: Text(
-              label,
-              style: TextStyle(color: tokens.textSecondary),
-            ),
+            child: Text(label, style: TextStyle(color: tokens.textSecondary)),
           ),
           Text(value),
         ],

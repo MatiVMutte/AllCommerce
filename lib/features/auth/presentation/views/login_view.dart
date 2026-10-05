@@ -79,6 +79,9 @@ class _LoginViewState extends ConsumerState<LoginView> {
                       decoration: InputDecoration(
                         hintText: '••••••••',
                         suffixIcon: IconButton(
+                          tooltip: _obscure
+                              ? 'Mostrar contraseña'
+                              : 'Ocultar contraseña',
                           icon: Icon(
                             _obscure
                                 ? Icons.visibility_outlined
@@ -86,8 +89,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                             size: 20,
                             color: context.tokens.textSecondary,
                           ),
-                          onPressed: () =>
-                              setState(() => _obscure = !_obscure),
+                          onPressed: () => setState(() => _obscure = !_obscure),
                         ),
                       ),
                       validator: Validators.password,
@@ -100,15 +102,12 @@ class _LoginViewState extends ConsumerState<LoginView> {
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('Ingresar'),
                   ),
                   TextButton(
-                    onPressed: () =>
-                        context.push('/forgot-password'),
+                    onPressed: () => context.push('/forgot-password'),
                     child: const Text('¿Olvidaste tu contraseña?'),
                   ),
                   TextButton(

@@ -13,6 +13,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class _FakeOwnerProducts extends OwnerProductsNotifier {
+  _FakeOwnerProducts(this.items) : super('t1');
+
+  final List<ProductModel> items;
+
+  @override
+  Future<List<ProductModel>> build() async => items;
+}
+
 void main() {
   final TenantModel tenant = TenantModel(
     id: 't1',
@@ -74,19 +83,17 @@ void main() {
     ),
   ];
 
-  testWidgets('panel shows name, product counter and new orders',
-      (WidgetTester tester) async {
+  testWidgets('panel shows name, product counter and new orders', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          currentProfileProvider
-              .overrideWith((Ref ref) async => owner),
-          tenantByIdProvider('t1')
-              .overrideWith((Ref ref) async => tenant),
+          currentProfileProvider.overrideWith((Ref ref) async => owner),
+          tenantByIdProvider('t1').overrideWith((Ref ref) async => tenant),
           ownerProductsProvider('t1')
-              .overrideWith((Ref ref) async => products),
-          ownerOrdersProvider('t1')
-              .overrideWith((Ref ref) async => orders),
+              .overrideWith(() => _FakeOwnerProducts(products)),
+          ownerOrdersProvider('t1').overrideWith((Ref ref) async => orders),
         ],
         child: const MaterialApp(home: OwnerHomeView()),
       ),

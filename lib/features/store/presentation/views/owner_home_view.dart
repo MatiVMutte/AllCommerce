@@ -7,6 +7,7 @@ import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/widgets/app_avatar.dart';
 import 'package:all_commerce/core/widgets/app_card.dart';
 import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
+import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
@@ -28,13 +29,14 @@ class OwnerHomeView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<UserModel?> profileAsync =
-        ref.watch(currentProfileProvider);
+    final AsyncValue<UserModel?> profileAsync = ref.watch(
+      currentProfileProvider,
+    );
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: profileAsync.when(
-          loading: () =>
-              const AppSkeletonList(itemCount: 3, itemHeight: 96),
+          loading: () => const AppSkeletonList(itemCount: 3, itemHeight: 96),
           error: (Object error, StackTrace stack) => AppErrorState(
             onRetry: () => ref.invalidate(currentProfileProvider),
           ),
@@ -46,14 +48,14 @@ class OwnerHomeView extends ConsumerWidget {
                 title: 'No encontramos tu local',
               );
             }
-            final AsyncValue<TenantModel?> tenantAsync =
-                ref.watch(tenantByIdProvider(tenantId));
+            final AsyncValue<TenantModel?> tenantAsync = ref.watch(
+              tenantByIdProvider(tenantId),
+            );
             return tenantAsync.when(
               loading: () =>
                   const AppSkeletonList(itemCount: 3, itemHeight: 96),
               error: (Object error, StackTrace stack) => AppErrorState(
-                onRetry: () =>
-                    ref.invalidate(tenantByIdProvider(tenantId)),
+                onRetry: () => ref.invalidate(tenantByIdProvider(tenantId)),
               ),
               data: (TenantModel? tenant) {
                 if (tenant == null) {
@@ -112,10 +114,12 @@ class _OwnerPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens tokens = context.tokens;
-    final List<ProductModel>? products =
-        ref.watch(ownerProductsProvider(tenant.id)).value;
-    final List<OrderModel>? orders =
-        ref.watch(ownerOrdersProvider(tenant.id)).value;
+    final List<ProductModel>? products = ref
+        .watch(ownerProductsProvider(tenant.id))
+        .value;
+    final List<OrderModel>? orders = ref
+        .watch(ownerOrdersProvider(tenant.id))
+        .value;
     final int pending = orders == null ? 0 : pendingCount(orders);
     final bool expiring = tenant.canPublish && tenant.daysLeft <= 3;
     final String planLine = tenant.canPublish
@@ -143,9 +147,7 @@ class _OwnerPanel extends ConsumerWidget {
                     children: <Widget>[
                       Text(
                         tenant.name,
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
+                        style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(fontWeight: FontWeight.w700),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -156,8 +158,8 @@ class _OwnerPanel extends ConsumerWidget {
                           fontSize: 13,
                           color: tenant.canPublish
                               ? (expiring
-                                  ? tokens.warning
-                                  : tokens.textSecondary)
+                                    ? tokens.warning
+                                    : tokens.textSecondary)
                               : tokens.danger,
                         ),
                       ),
@@ -166,6 +168,7 @@ class _OwnerPanel extends ConsumerWidget {
                 ),
                 _CircleIcon(
                   icon: Icons.logout_rounded,
+                  tooltip: 'Cerrar sesión',
                   onTap: () => _signOut(context, ref),
                 ),
               ],
@@ -184,7 +187,7 @@ class _OwnerPanel extends ConsumerWidget {
                       value: products == null
                           ? '—'
                           : '${products.length}/'
-                              '${tenant.plan.maxProducts}',
+                                '${tenant.plan.maxProducts}',
                       label: 'Productos',
                     ),
                     _Divider(tokens: tokens),
@@ -229,8 +232,7 @@ class _OwnerPanel extends ConsumerWidget {
             const _SectionTitle('Tu catálogo'),
             const SizedBox(height: 8),
             AppCard(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: <Widget>[
                   Expanded(
@@ -256,9 +258,7 @@ class _OwnerPanel extends ConsumerWidget {
                         ),
                       );
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Link copiado')),
-                        );
+                        showAppSnackBar(context, 'Link copiado');
                       }
                     },
                   ),
@@ -270,16 +270,13 @@ class _OwnerPanel extends ConsumerWidget {
                     ),
                     tooltip: 'Compartir',
                     onPressed: () async {
-                      final ShareResult result =
-                          await const ShareService().shareLink(
-                        url: ShareService.catalogUrl(tenant.slug),
-                        text: 'Mirá el catálogo de ${tenant.name}',
-                      );
-                      if (context.mounted &&
-                          result == ShareResult.copied) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Link copiado')),
-                        );
+                      final ShareResult result = await const ShareService()
+                          .shareLink(
+                            url: ShareService.catalogUrl(tenant.slug),
+                            text: 'Mirá el catálogo de ${tenant.name}',
+                          );
+                      if (context.mounted && result == ShareResult.copied) {
+                        showAppSnackBar(context, 'Link copiado');
                       }
                     },
                   ),
@@ -303,10 +300,11 @@ class _OwnerPanel extends ConsumerWidget {
 }
 
 class _CircleIcon extends StatelessWidget {
-  const _CircleIcon({required this.icon, required this.onTap});
+  const _CircleIcon({required this.icon, required this.onTap, this.tooltip});
 
   final IconData icon;
   final VoidCallback onTap;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -320,6 +318,7 @@ class _CircleIcon extends StatelessWidget {
       ),
       child: IconButton(
         padding: EdgeInsets.zero,
+        tooltip: tooltip,
         icon: Icon(icon, size: 18, color: tokens.textPrimary),
         onPressed: onTap,
       ),
@@ -387,8 +386,7 @@ class _OrderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     return InkWell(
-      onTap: () =>
-          context.push('/owner/orders/${order.id}', extra: order),
+      onTap: () => context.push('/owner/orders/${order.id}', extra: order),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
@@ -426,10 +424,7 @@ class _OrderRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   Formatters.dateTime(order.createdAt),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: tokens.textTertiary,
-                  ),
+                  style: TextStyle(fontSize: 12, color: tokens.textTertiary),
                 ),
               ],
             ),
@@ -455,8 +450,7 @@ class _PlanBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: tokens.warning.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: tokens.warning.withValues(alpha: 0.3)),
+        border: Border.all(color: tokens.warning.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: <Widget>[
@@ -466,22 +460,19 @@ class _PlanBanner extends StatelessWidget {
             child: Text(
               'Tu prueba terminó. Activá un plan para seguir '
               'publicando.',
-              style: TextStyle(
-                fontSize: 13,
-                color: tokens.textPrimary,
-              ),
+              style: TextStyle(fontSize: 13, color: tokens.textPrimary),
             ),
           ),
           TextButton(
             onPressed: whatsapp.isEmpty
                 ? null
                 : () => launchUrl(
-                      Uri.parse(
-                        'https://wa.me/$whatsapp?text='
-                        '${Uri.encodeComponent('Hola! Quiero activar un plan de AllCommerce para mi local ${tenant.name} (${tenant.slug}).')}',
-                      ),
-                      mode: LaunchMode.externalApplication,
+                    Uri.parse(
+                      'https://wa.me/$whatsapp?text='
+                      '${Uri.encodeComponent('Hola! Quiero activar un plan de AllCommerce para mi local ${tenant.name} (${tenant.slug}).')}',
                     ),
+                    mode: LaunchMode.externalApplication,
+                  ),
             child: const Text('Activar'),
           ),
         ],

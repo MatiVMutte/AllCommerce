@@ -39,16 +39,17 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
         ),
       );
     }
-    final AsyncValue<List<OrderModel>> ordersAsync =
-        ref.watch(ownerOrdersProvider(tenantId));
-    final OrderStatus? statusFilter =
-        ref.watch(ownerOrderStatusFilterProvider);
+    final AsyncValue<List<OrderModel>> ordersAsync = ref.watch(
+      ownerOrdersProvider(tenantId),
+    );
+    final OrderStatus? statusFilter = ref.watch(ownerOrderStatusFilterProvider);
     final int pending = ordersAsync.value == null
         ? 0
         : pendingCount(ordersAsync.value!);
 
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 720),
@@ -62,9 +63,7 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                       Expanded(
                         child: Text(
                           'Pedidos',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
+                          style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ),
@@ -75,18 +74,15 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary,
-                            borderRadius:
-                                BorderRadius.circular(999),
+                            color: Theme.of(context).colorScheme.primary,
+                            borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
                             '$pending nuevos',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onPrimary,
                             ),
                           ),
                         ),
@@ -94,16 +90,13 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                   ),
                 ),
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: TextField(
                     decoration: const InputDecoration(
-                      hintText:
-                          'Buscar por nombre, teléfono o #número',
+                      hintText: 'Buscar por nombre, teléfono o #número',
                       prefixIcon: Icon(Icons.search),
                     ),
-                    onChanged: (String value) =>
-                        setState(() => _query = value),
+                    onChanged: (String value) => setState(() => _query = value),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -111,28 +104,21 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                   height: 40,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: <Widget>[
                       _StatusChip(
                         label: 'Todos',
                         selected: statusFilter == null,
                         onTap: () => ref
-                            .read(
-                              ownerOrderStatusFilterProvider.notifier,
-                            )
+                            .read(ownerOrderStatusFilterProvider.notifier)
                             .select(null),
                       ),
-                      for (final OrderStatus status
-                          in OrderStatus.values)
+                      for (final OrderStatus status in OrderStatus.values)
                         _StatusChip(
                           label: status.label,
                           selected: statusFilter == status,
                           onTap: () => ref
-                              .read(
-                                ownerOrderStatusFilterProvider
-                                    .notifier,
-                              )
+                              .read(ownerOrderStatusFilterProvider.notifier)
                               .select(status),
                         ),
                     ],
@@ -141,15 +127,11 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                 const SizedBox(height: 4),
                 Expanded(
                   child: ordersAsync.when(
-                    loading: () => const AppSkeletonList(
-                      itemCount: 6,
-                      itemHeight: 64,
-                    ),
-                    error: (Object error, StackTrace stack) =>
-                        AppErrorState(
-                      onRetry: () => ref.invalidate(
-                        ownerOrdersProvider(tenantId),
-                      ),
+                    loading: () =>
+                        const AppSkeletonList(itemCount: 6, itemHeight: 64),
+                    error: (Object error, StackTrace stack) => AppErrorState(
+                      onRetry: () =>
+                          ref.invalidate(ownerOrdersProvider(tenantId)),
                     ),
                     data: (List<OrderModel> orders) {
                       final List<OrderModel> filtered = filterOrders(
@@ -171,20 +153,17 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                           onAction: () {
                             setState(() => _query = '');
                             ref
-                                .read(
-                                  ownerOrderStatusFilterProvider
-                                      .notifier,
-                                )
+                                .read(ownerOrderStatusFilterProvider.notifier)
                                 .select(null);
                           },
                         );
                       }
-                      final List<OrderDayGroup> groups =
-                          groupOrdersByDay(filtered);
+                      final List<OrderDayGroup> groups = groupOrdersByDay(
+                        filtered,
+                      );
                       return RefreshIndicator(
-                        onRefresh: () async => ref.invalidate(
-                          ownerOrdersProvider(tenantId),
-                        ),
+                        onRefresh: () async =>
+                            ref.invalidate(ownerOrdersProvider(tenantId)),
                         child: ListView(
                           padding: const EdgeInsets.fromLTRB(
                             16,
@@ -193,34 +172,33 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                             FloatingNavBar.height,
                           ),
                           children: <Widget>[
-                            for (final OrderDayGroup group in groups)
-                              ...<Widget>[
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                    top: 12,
-                                    bottom: 4,
-                                  ),
-                                  child: Text(
-                                    group.label.toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.6,
-                                      color: tokens.textTertiary,
-                                    ),
+                            for (final OrderDayGroup group
+                                in groups) ...<Widget>[
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 12,
+                                  bottom: 4,
+                                ),
+                                child: Text(
+                                  group.label.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.6,
+                                    color: tokens.textTertiary,
                                   ),
                                 ),
-                                for (int i = 0;
-                                    i < group.orders.length;
-                                    i++) ...<Widget>[
-                                  _OrderRow(order: group.orders[i]),
-                                  if (i < group.orders.length - 1)
-                                    Divider(
-                                      height: 1,
-                                      color: tokens.border,
-                                    ),
-                                ],
+                              ),
+                              for (
+                                int i = 0;
+                                i < group.orders.length;
+                                i++
+                              ) ...<Widget>[
+                                _OrderRow(order: group.orders[i]),
+                                if (i < group.orders.length - 1)
+                                  Divider(height: 1, color: tokens.border),
                               ],
+                            ],
                           ],
                         ),
                       );
@@ -257,13 +235,9 @@ class _StatusChip extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 9,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
           decoration: BoxDecoration(
-            color:
-                selected ? tokens.textPrimary : tokens.surfaceMuted,
+            color: selected ? tokens.textPrimary : tokens.surfaceMuted,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
@@ -290,13 +264,12 @@ class _OrderRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens tokens = context.tokens;
-    final List<OrderItemModel>? items =
-        ref.watch(orderItemsProvider(order.id)).value;
-    final String time =
-        DateFormat('HH:mm').format(order.createdAt.toLocal());
+    final List<OrderItemModel>? items = ref
+        .watch(orderItemsProvider(order.id))
+        .value;
+    final String time = DateFormat('HH:mm').format(order.createdAt.toLocal());
     return InkWell(
-      onTap: () =>
-          context.push('/owner/orders/${order.id}', extra: order),
+      onTap: () => context.push('/owner/orders/${order.id}', extra: order),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
@@ -330,13 +303,8 @@ class _OrderRow extends ConsumerWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    items == null
-                        ? time
-                        : '${items.length} ítems · $time',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: tokens.textTertiary,
-                    ),
+                    items == null ? time : '${items.length} ítems · $time',
+                    style: TextStyle(fontSize: 12, color: tokens.textTertiary),
                   ),
                 ],
               ),

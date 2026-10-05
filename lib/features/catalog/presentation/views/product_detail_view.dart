@@ -5,6 +5,7 @@ import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/share_service.dart';
+import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/quantity_stepper.dart';
 import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart';
@@ -27,12 +28,12 @@ class ProductDetailView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<TenantModel?> tenantAsync =
-        ref.watch(tenantBySlugProvider(slug));
+    final AsyncValue<TenantModel?> tenantAsync = ref.watch(
+      tenantBySlugProvider(slug),
+    );
     return tenantAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (Object error, StackTrace stack) => Scaffold(
         body: AppErrorState(
           onRetry: () => ref.invalidate(tenantBySlugProvider(slug)),
@@ -73,13 +74,12 @@ class _ProductDetailScaffold extends ConsumerWidget {
   Future<void> _share(BuildContext context, ProductModel product) async {
     final ShareResult result = await const ShareService().shareLink(
       url: ShareService.productUrl(slug, product.id),
-      text: '${product.title} — ${Formatters.price(product.price)} '
+      text:
+          '${product.title} — ${Formatters.price(product.price)} '
           'en ${tenant.name}',
     );
     if (context.mounted && result == ShareResult.copied) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Link copiado')),
-      );
+      showAppSnackBar(context, 'Link copiado', clearNavBar: false);
     }
   }
 
@@ -94,9 +94,7 @@ class _ProductDetailScaffold extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (Object error, StackTrace stack) => AppErrorState(
           onRetry: () => ref.invalidate(
-            productByIdProvider(
-              (tenantId: tenant.id, productId: productId),
-            ),
+            productByIdProvider((tenantId: tenant.id, productId: productId)),
           ),
         ),
         data: (ProductModel? product) {
@@ -108,10 +106,7 @@ class _ProductDetailScaffold extends ConsumerWidget {
               onAction: () => context.go('/s/$slug'),
             );
           }
-          final Widget image = _ProductImage(
-            product: product,
-            tokens: tokens,
-          );
+          final Widget image = _ProductImage(product: product, tokens: tokens);
           final Widget overlayButtons = SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -120,12 +115,14 @@ class _ProductDetailScaffold extends ConsumerWidget {
                 children: <Widget>[
                   _CircleButton(
                     icon: Icons.arrow_back,
+                    tooltip: 'Volver',
                     onTap: () => context.canPop()
                         ? context.pop()
                         : context.go('/s/$slug'),
                   ),
                   _CircleButton(
                     icon: Icons.share_outlined,
+                    tooltip: 'Compartir producto',
                     onTap: () => _share(context, product),
                   ),
                 ],
@@ -136,8 +133,7 @@ class _ProductDetailScaffold extends ConsumerWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1100),
               child: LayoutBuilder(
-                builder:
-                    (BuildContext context, BoxConstraints constraints) {
+                builder: (BuildContext context, BoxConstraints constraints) {
                   final bool wide = constraints.maxWidth >= 800;
                   if (wide) {
                     return Padding(
@@ -190,15 +186,11 @@ class _ProductDetailScaffold extends ConsumerWidget {
                       ),
                       Positioned.fill(
                         child: SingleChildScrollView(
-                          padding: EdgeInsets.only(
-                            top: imageHeight - 28,
-                          ),
+                          padding: EdgeInsets.only(top: imageHeight - 28),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .scaffoldBackgroundColor,
-                              borderRadius:
-                                  const BorderRadius.vertical(
+                              color: Theme.of(context).scaffoldBackgroundColor,
+                              borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(28),
                               ),
                             ),
@@ -229,10 +221,11 @@ class _ProductDetailScaffold extends ConsumerWidget {
 }
 
 class _CircleButton extends StatelessWidget {
-  const _CircleButton({required this.icon, required this.onTap});
+  const _CircleButton({required this.icon, required this.onTap, this.tooltip});
 
   final IconData icon;
   final VoidCallback onTap;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -246,6 +239,7 @@ class _CircleButton extends StatelessWidget {
       ),
       child: IconButton(
         padding: EdgeInsets.zero,
+        tooltip: tooltip,
         icon: Icon(icon, color: Colors.white, size: 20),
         onPressed: onTap,
       ),
@@ -339,10 +333,8 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
               const SizedBox(height: 10),
               Text(
                 product.title,
-                style:
-                    Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
               Text(
@@ -426,8 +418,7 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
               children: <Widget>[
                 QuantityStepper(
                   quantity: _quantity,
-                  onChanged: (int qty) =>
-                      setState(() => _quantity = qty),
+                  onChanged: (int qty) => setState(() => _quantity = qty),
                 ),
                 const SizedBox(width: 16),
                 Expanded(

@@ -2,11 +2,23 @@ import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/product_upload/data/repositories/product_repository.dart';
 import 'package:all_commerce/features/product_upload/presentation/view_models/product_upload_controller.dart';
 import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
+
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockProductRepository extends Mock implements ProductRepository {}
+
+class _FakeOwnerProducts extends OwnerProductsNotifier {
+  _FakeOwnerProducts(super.tenantId, this.items);
+
+  final List<ProductModel> items;
+
+  @override
+  Future<List<ProductModel>> build() async => items;
+}
 
 void main() {
   late MockProductRepository products;
@@ -33,17 +45,14 @@ void main() {
   setUp(() {
     products = MockProductRepository();
     container = ProviderContainer(
-      overrides: [
-        productRepositoryProvider.overrideWithValue(products),
-      ],
+      overrides: [productRepositoryProvider.overrideWithValue(products)],
     );
     addTearDown(container.dispose);
   });
 
   test('toggleActive calls setActive with inverted value', () async {
-    when(
-      () => products.setActive(any(), any(), any()),
-    ).thenAnswer((_) async {});
+    when(() => products.setActive(any(), any(), any()))
+        .thenAnswer((_) async {});
 
     final bool ok = await controller().toggleActive(product);
 
@@ -63,14 +72,78 @@ void main() {
   });
 
   test('delete error sets state.error', () async {
-    when(() => products.delete(any(), any()))
-        .thenThrow(Exception('boom'));
+    when(() => products.delete(any(), any())).thenThrow(Exception('boom'));
 
     final bool ok = await controller().delete(product);
 
     expect(ok, isFalse);
     expect(readState().error, isNotNull);
     expect(readState().busyProductId, isNull);
+  });
+
+  group('optimistic updates', () {
+    Future<void> seed() async {
+      container.dispose();
+      container = ProviderContainer(
+        overrides: [
+          productRepositoryProvider.overrideWithValue(products),
+          ownerProductsProvider('t1')
+              .overrideWith(() => _FakeOwnerProducts('t1', [product])),
+        ],
+      );
+      await container.read(ownerProductsProvider('t1').future);
+    }
+
+    List<ProductModel> list() =>
+        container.read(ownerProductsProvider('t1')).value!;
+
+    test('toggleActive flips optimistically, then confirms', () async {
+      await seed();
+      final Completer<void> pending = Completer<void>();
+      when(() => products.setActive(any(), any(), any()))
+          .thenAnswer((_) => pending.future);
+
+      final Future<bool> future = controller().toggleActive(product);
+      expect(list().single.isActive, isFalse);
+
+      pending.complete();
+      expect(await future, isTrue);
+    });
+
+    test('toggleActive reverts on failure', () async {
+      await seed();
+      when(() => products.setActive(any(), any(), any()))
+          .thenThrow(Exception('boom'));
+
+      final bool ok = await controller().toggleActive(product);
+
+      expect(ok, isFalse);
+      expect(list().single.isActive, isTrue);
+      expect(readState().error, isNotNull);
+    });
+
+    test('delete removes optimistically, then confirms', () async {
+      await seed();
+      final Completer<void> pending = Completer<void>();
+      when(() => products.delete(any(), any()))
+          .thenAnswer((_) => pending.future);
+
+      final Future<bool> future = controller().delete(product);
+      expect(list(), isEmpty);
+
+      pending.complete();
+      expect(await future, isTrue);
+    });
+
+    test('delete restores the list on failure', () async {
+      await seed();
+      when(() => products.delete(any(), any())).thenThrow(Exception('boom'));
+
+      final bool ok = await controller().delete(product);
+
+      expect(ok, isFalse);
+      expect(list().map((ProductModel p) => p.id), <String>['p1']);
+    });
   });
 
   group('filterOwnerProducts', () {
@@ -88,8 +161,10 @@ void main() {
 
     test('matches title, sku and tags without accents', () {
       expect(
-        filterOwnerProducts(list, query: 'termico')
-            .map((ProductModel p) => p.id),
+        filterOwnerProducts(
+          list,
+          query: 'termico',
+        ).map((ProductModel p) => p.id),
         <String>['p1'],
       );
       expect(
@@ -97,21 +172,27 @@ void main() {
         <String>['p2'],
       );
       expect(
-        filterOwnerProducts(list, query: 'cocina')
-            .map((ProductModel p) => p.id),
+        filterOwnerProducts(
+          list,
+          query: 'cocina',
+        ).map((ProductModel p) => p.id),
         <String>['p1'],
       );
     });
 
     test('active/paused filter', () {
       expect(
-        filterOwnerProducts(list, filter: OwnerFilter.active)
-            .map((ProductModel p) => p.id),
+        filterOwnerProducts(
+          list,
+          filter: OwnerFilter.active,
+        ).map((ProductModel p) => p.id),
         <String>['p1'],
       );
       expect(
-        filterOwnerProducts(list, filter: OwnerFilter.paused)
-            .map((ProductModel p) => p.id),
+        filterOwnerProducts(
+          list,
+          filter: OwnerFilter.paused,
+        ).map((ProductModel p) => p.id),
         <String>['p2'],
       );
       expect(filterOwnerProducts(list).length, 2);

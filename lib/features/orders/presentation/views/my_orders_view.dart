@@ -23,8 +23,9 @@ class MyOrdersView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<OrderModel>> ordersAsync =
-        ref.watch(myOrdersProvider);
+    final AsyncValue<List<OrderModel>> ordersAsync = ref.watch(
+      myOrdersProvider,
+    );
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/'),
@@ -34,13 +35,9 @@ class MyOrdersView extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: ordersAsync.when(
-            loading: () => const AppSkeletonList(
-              itemCount: 4,
-              itemHeight: 88,
-            ),
-            error: (Object e, StackTrace s) => AppErrorState(
-              onRetry: () => ref.invalidate(myOrdersProvider),
-            ),
+            loading: () => const AppSkeletonList(itemCount: 4, itemHeight: 88),
+            error: (Object e, StackTrace s) =>
+                AppErrorState(onRetry: () => ref.invalidate(myOrdersProvider)),
             data: (List<OrderModel> orders) {
               if (orders.isEmpty) {
                 return AppEmptyState(
@@ -50,17 +47,20 @@ class MyOrdersView extends ConsumerWidget {
                   onAction: () => context.go('/'),
                 );
               }
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(
-                  16,
-                  8,
-                  16,
-                  FloatingNavBar.height,
+              return RefreshIndicator(
+                onRefresh: () async => ref.invalidate(myOrdersProvider),
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    FloatingNavBar.height,
+                  ),
+                  itemCount: orders.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (BuildContext context, int index) =>
+                      _MyOrderTile(order: orders[index]),
                 ),
-                itemCount: orders.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (BuildContext context, int index) =>
-                    _MyOrderTile(order: orders[index]),
               );
             },
           ),
@@ -78,8 +78,9 @@ class _MyOrderTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens tokens = context.tokens;
-    final AsyncValue<TenantModel?> tenantAsync =
-        ref.watch(tenantByIdProvider(order.tenantId));
+    final AsyncValue<TenantModel?> tenantAsync = ref.watch(
+      tenantByIdProvider(order.tenantId),
+    );
     final TenantModel? tenant = tenantAsync.value;
     final String tenantName = tenant?.name ?? 'Local';
     return AppCard(
@@ -87,10 +88,7 @@ class _MyOrderTile extends ConsumerWidget {
       child: ExpansionTile(
         shape: const Border(),
         leading: tenant == null
-            ? CircleAvatar(
-                radius: 22,
-                backgroundColor: tokens.surfaceMuted,
-              )
+            ? CircleAvatar(radius: 22, backgroundColor: tokens.surfaceMuted)
             : ClipOval(
                 child: SizedBox(
                   width: 44,
@@ -113,10 +111,7 @@ class _MyOrderTile extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               Formatters.dateTime(order.createdAt),
-              style: TextStyle(
-                color: tokens.textTertiary,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: tokens.textTertiary, fontSize: 12),
             ),
             const SizedBox(height: 6),
             Row(
@@ -136,49 +131,50 @@ class _MyOrderTile extends ConsumerWidget {
         ),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: <Widget>[
-          ref.watch(orderItemsProvider(order.id)).when(
-            loading: () => const Padding(
-              padding: EdgeInsets.all(8),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (Object e, StackTrace s) =>
-                const Text('No se pudieron cargar los items.'),
-            data: (List<OrderItemModel> items) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                for (final OrderItemModel item in items)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
+          ref
+              .watch(orderItemsProvider(order.id))
+              .when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (Object e, StackTrace s) =>
+                    const Text('No se pudieron cargar los items.'),
+                data: (List<OrderItemModel> items) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    for (final OrderItemModel item in items)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Text(
+                                '${item.quantity} x ${item.titleSnapshot}',
+                              ),
+                            ),
+                            Text(Formatters.price(item.lineTotal)),
+                          ],
+                        ),
+                      ),
+                    const Divider(height: 16),
+                    Row(
                       children: <Widget>[
-                        Expanded(
+                        const Expanded(
                           child: Text(
-                            '${item.quantity} x ${item.titleSnapshot}',
+                            'Total',
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
-                        Text(Formatters.price(item.lineTotal)),
+                        Text(
+                          Formatters.price(order.total),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ],
-                    ),
-                  ),
-                const Divider(height: 16),
-                Row(
-                  children: <Widget>[
-                    const Expanded(
-                      child: Text(
-                        'Total',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    Text(
-                      Formatters.price(order.total),
-                      style:
-                          const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
+              ),
           const SizedBox(height: 8),
           if (tenant != null)
             FilledButton.tonalIcon(

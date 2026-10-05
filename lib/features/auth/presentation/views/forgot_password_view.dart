@@ -1,4 +1,5 @@
 import 'package:all_commerce/core/utils/snackbar.dart';
+import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/auth/presentation/widgets/auth_layout.dart';
@@ -10,8 +11,7 @@ class ForgotPasswordView extends ConsumerStatefulWidget {
   const ForgotPasswordView({super.key});
 
   @override
-  ConsumerState<ForgotPasswordView> createState() =>
-      _ForgotPasswordViewState();
+  ConsumerState<ForgotPasswordView> createState() => _ForgotPasswordViewState();
 }
 
 class _ForgotPasswordViewState extends ConsumerState<ForgotPasswordView> {
@@ -31,13 +31,11 @@ class _ForgotPasswordViewState extends ConsumerState<ForgotPasswordView> {
         .sendPasswordReset(_email.text.trim());
     if (!mounted) return;
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Si el email existe, te enviamos un link para recuperar la '
-            'contraseña.',
-          ),
-        ),
+      showAppSnackBar(
+        context,
+        'Si el email existe, te enviamos un link para recuperar la '
+        'contraseña.',
+        clearNavBar: false,
       );
     } else {
       final Object? error = ref.read(authControllerProvider).error;
@@ -62,8 +60,7 @@ class _ForgotPasswordViewState extends ConsumerState<ForgotPasswordView> {
                 children: <Widget>[
                   const AuthHeader(
                     title: 'Recuperar contraseña',
-                    subtitle:
-                        'Te enviamos un link para elegir una nueva',
+                    subtitle: 'Te enviamos un link para elegir una nueva',
                   ),
                   const SizedBox(height: 32),
                   LabeledField(
@@ -84,9 +81,7 @@ class _ForgotPasswordViewState extends ConsumerState<ForgotPasswordView> {
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('Enviar link'),
                   ),

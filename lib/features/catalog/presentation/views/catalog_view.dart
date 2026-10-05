@@ -7,6 +7,7 @@ import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/widgets/app_avatar.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
+import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/core/widgets/price_pill.dart';
@@ -28,8 +29,9 @@ class CatalogView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<TenantModel?> tenantAsync =
-        ref.watch(tenantBySlugProvider(slug));
+    final AsyncValue<TenantModel?> tenantAsync = ref.watch(
+      tenantBySlugProvider(slug),
+    );
     return tenantAsync.when(
       loading: () => const Scaffold(body: AppSkeletonGrid()),
       error: (Object error, StackTrace stack) => Scaffold(
@@ -63,143 +65,147 @@ class _CatalogScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens tokens = context.tokens;
-    final AsyncValue<List<ProductModel>> productsAsync =
-        ref.watch(catalogProductsProvider(tenant.id));
+    final AsyncValue<List<ProductModel>> productsAsync = ref.watch(
+      catalogProductsProvider(tenant.id),
+    );
     final CatalogFilter filter = ref.watch(catalogFilterProvider(slug));
-    final bool isWhiteLabel =
-        ref.read(tenantResolverProvider).isWhiteLabel;
+    final bool isWhiteLabel = ref.read(tenantResolverProvider).isWhiteLabel;
     final Color brand = tenant.primaryColorValue;
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1100),
-          child: CustomScrollView(
-            slivers: <Widget>[
-              SliverAppBar(
-                expandedHeight: 200,
-                pinned: true,
-                backgroundColor: brand,
-                foregroundColor: Colors.white,
-                leading: isWhiteLabel
-                    ? null
-                    : const _OverlayIconButton(
-                        icon: Icons.arrow_back,
-                        fallback: '/',
-                      ),
-                title: Text(
-                  tenant.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
+          child: RefreshIndicator(
+            onRefresh: () async =>
+                ref.invalidate(catalogProductsProvider(tenant.id)),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: <Widget>[
+                SliverAppBar(
+                  expandedHeight: 200,
+                  pinned: true,
+                  backgroundColor: brand,
+                  foregroundColor: Colors.white,
+                  leading: isWhiteLabel
+                      ? null
+                      : const _OverlayIconButton(
+                          icon: Icons.arrow_back,
+                          tooltip: 'Volver',
+                          fallback: '/',
+                        ),
+                  title: Text(
+                    tenant.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  actions: <Widget>[
+                    _OverlayIconButton(
+                      icon: Icons.share_outlined,
+                      tooltip: 'Compartir catálogo',
+                      onPressed: () => _shareCatalog(context),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  flexibleSpace: FlexibleSpaceBar(
+                    collapseMode: CollapseMode.pin,
+                    background: _StoreBanner(tenant: tenant),
                   ),
                 ),
-                actions: <Widget>[
-                  _OverlayIconButton(
-                    icon: Icons.share_outlined,
-                    onPressed: () => _shareCatalog(context),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _SearchChipsHeader(
+                    tokens: tokens,
+                    filter: filter,
+                    products: productsAsync.value ?? const <ProductModel>[],
+                    onQuery: (String q) => ref
+                        .read(catalogFilterProvider(slug).notifier)
+                        .setQuery(q),
+                    onCategory: (ProductCategory c) => ref
+                        .read(catalogFilterProvider(slug).notifier)
+                        .setCategory(c),
+                    onClear: () =>
+                        ref.read(catalogFilterProvider(slug).notifier).clear(),
                   ),
-                  const SizedBox(width: 8),
-                ],
-                flexibleSpace: FlexibleSpaceBar(
-                  collapseMode: CollapseMode.pin,
-                  background: _StoreBanner(tenant: tenant),
                 ),
-              ),
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _SearchChipsHeader(
-                  tokens: tokens,
-                  filter: filter,
-                  products: productsAsync.value ?? const <ProductModel>[],
-                  onQuery: (String q) => ref
-                      .read(catalogFilterProvider(slug).notifier)
-                      .setQuery(q),
-                  onCategory: (ProductCategory c) => ref
-                      .read(catalogFilterProvider(slug).notifier)
-                      .setCategory(c),
-                  onClear: () => ref
-                      .read(catalogFilterProvider(slug).notifier)
-                      .clear(),
-                ),
-              ),
-              ...productsAsync.when(
-                loading: () => <Widget>[
-                  const SliverFillRemaining(child: AppSkeletonGrid()),
-                ],
-                error: (Object error, StackTrace stack) => <Widget>[
-                  SliverFillRemaining(
-                    child: AppErrorState(
-                      onRetry: () => ref.invalidate(
-                        catalogProductsProvider(tenant.id),
+                ...productsAsync.when(
+                  loading: () => <Widget>[
+                    const SliverFillRemaining(child: AppSkeletonGrid()),
+                  ],
+                  error: (Object error, StackTrace stack) => <Widget>[
+                    SliverFillRemaining(
+                      child: AppErrorState(
+                        onRetry: () =>
+                            ref.invalidate(catalogProductsProvider(tenant.id)),
                       ),
                     ),
-                  ),
-                ],
-                data: (List<ProductModel> products) {
-                  if (products.isEmpty) {
-                    return const <Widget>[
-                      SliverFillRemaining(
-                        child: AppEmptyState(
-                          icon: Icons.inventory_2_outlined,
-                          title: AppStrings.noProductsYet,
+                  ],
+                  data: (List<ProductModel> products) {
+                    if (products.isEmpty) {
+                      return const <Widget>[
+                        SliverFillRemaining(
+                          child: AppEmptyState(
+                            icon: Icons.inventory_2_outlined,
+                            title: AppStrings.noProductsYet,
+                          ),
                         ),
-                      ),
-                    ];
-                  }
-                  final List<ProductModel> filtered =
-                      applyCatalogFilter(products, filter);
-                  if (filtered.isEmpty) {
+                      ];
+                    }
+                    final List<ProductModel> filtered = applyCatalogFilter(
+                      products,
+                      filter,
+                    );
+                    if (filtered.isEmpty) {
+                      return <Widget>[
+                        SliverFillRemaining(
+                          child: AppEmptyState(
+                            icon: Icons.search_off_rounded,
+                            title: AppStrings.noProductsFound,
+                            actionLabel: AppStrings.clearFilters,
+                            onAction: () => ref
+                                .read(catalogFilterProvider(slug).notifier)
+                                .clear(),
+                          ),
+                        ),
+                      ];
+                    }
                     return <Widget>[
-                      SliverFillRemaining(
-                        child: AppEmptyState(
-                          icon: Icons.search_off_rounded,
-                          title: AppStrings.noProductsFound,
-                          actionLabel: AppStrings.clearFilters,
-                          onAction: () => ref
-                              .read(catalogFilterProvider(slug).notifier)
-                              .clear(),
+                      SliverPadding(
+                        padding: const EdgeInsets.all(16),
+                        sliver: SliverGrid(
+                          delegate: SliverChildBuilderDelegate(
+                            (BuildContext context, int index) => _ProductCard(
+                              slug: slug,
+                              product: filtered[index],
+                              tenant: tenant,
+                            ),
+                            childCount: filtered.length,
+                          ),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount:
+                                    MediaQuery.of(context).size.width < 600
+                                    ? 2
+                                    : MediaQuery.of(context).size.width < 1000
+                                    ? 3
+                                    : 4,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 0.62,
+                              ),
                         ),
                       ),
                     ];
-                  }
-                  return <Widget>[
-                    SliverPadding(
-                      padding: const EdgeInsets.all(16),
-                      sliver: SliverGrid(
-                        delegate: SliverChildBuilderDelegate(
-                          (BuildContext context, int index) =>
-                              _ProductCard(
-                                slug: slug,
-                                product: filtered[index],
-                                tenant: tenant,
-                              ),
-                          childCount: filtered.length,
-                        ),
-                        gridDelegate:
-                            SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount:
-                                  MediaQuery.of(context).size.width <
-                                          600
-                                      ? 2
-                                      : MediaQuery.of(context)
-                                                  .size
-                                                  .width <
-                                              1000
-                                          ? 3
-                                          : 4,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                              childAspectRatio: 0.62,
-                            ),
-                      ),
-                    ),
-                  ];
-                },
-              ),
-              const SliverPadding(
-                padding: EdgeInsets.only(bottom: FloatingNavBar.height),
-              ),
-            ],
+                  },
+                ),
+                const SliverPadding(
+                  padding: EdgeInsets.only(bottom: FloatingNavBar.height),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -212,9 +218,7 @@ class _CatalogScaffold extends ConsumerWidget {
       text: 'Mirá el catálogo de ${tenant.name}',
     );
     if (context.mounted && result == ShareResult.copied) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Link copiado')),
-      );
+      showAppSnackBar(context, 'Link copiado');
     }
   }
 }
@@ -223,11 +227,13 @@ class _CatalogScaffold extends ConsumerWidget {
 class _OverlayIconButton extends StatelessWidget {
   const _OverlayIconButton({
     required this.icon,
+    this.tooltip,
     this.fallback,
     this.onPressed,
   });
 
   final IconData icon;
+  final String? tooltip;
   final String? fallback;
   final VoidCallback? onPressed;
 
@@ -244,8 +250,10 @@ class _OverlayIconButton extends StatelessWidget {
         ),
         child: IconButton(
           padding: EdgeInsets.zero,
+          tooltip: tooltip,
           icon: Icon(icon, color: Colors.white, size: 20),
-          onPressed: onPressed ??
+          onPressed:
+              onPressed ??
               () {
                 if (context.canPop()) {
                   context.pop();
@@ -289,8 +297,7 @@ class _StoreBanner extends StatelessWidget {
             children: <Widget>[
               AppAvatar(tenant: tenant, size: 64),
               const SizedBox(height: 8),
-              if (tenant.address != null ||
-                  tenant.whatsapp.isNotEmpty)
+              if (tenant.address != null || tenant.whatsapp.isNotEmpty)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
@@ -432,10 +439,7 @@ class _CategoryChip extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 9,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
           decoration: BoxDecoration(
             color: selected ? tokens.textPrimary : tokens.surfaceMuted,
             borderRadius: BorderRadius.circular(999),
@@ -505,9 +509,8 @@ class _ProductCard extends ConsumerWidget {
                       CachedNetworkImage(
                         imageUrl: product.imageUrl!,
                         fit: BoxFit.cover,
-                        placeholder: (_, _) => Container(
-                          color: tokens.surfaceMuted,
-                        ),
+                        placeholder: (_, _) =>
+                            Container(color: tokens.surfaceMuted),
                         errorWidget: (_, _, _) => Container(
                           color: tokens.surfaceMuted,
                           child: Icon(
@@ -547,8 +550,7 @@ class _ProductCard extends ConsumerWidget {
                           ? Container(
                               decoration: BoxDecoration(
                                 color: tokens.surface,
-                                borderRadius:
-                                    BorderRadius.circular(999),
+                                borderRadius: BorderRadius.circular(999),
                               ),
                               child: QuantityStepper(
                                 dense: true,
@@ -612,32 +614,33 @@ class _AddButtonState extends State<_AddButton> {
       onTap: () {
         setState(() => _pressed = true);
         widget.onTap();
-        Future<void>.delayed(
-          const Duration(milliseconds: 180),
-          () {
-            if (mounted) setState(() => _pressed = false);
-          },
-        );
+        Future<void>.delayed(const Duration(milliseconds: 180), () {
+          if (mounted) setState(() => _pressed = false);
+        });
       },
-      child: AnimatedScale(
-        scale: _pressed ? 0.85 : 1,
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutBack,
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            shape: BoxShape.circle,
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                blurRadius: 8,
-                offset: Offset(0, 2),
-                color: Color(0x33000000),
-              ),
-            ],
+      child: Semantics(
+        button: true,
+        label: 'Agregar al carrito',
+        child: AnimatedScale(
+          scale: _pressed ? 0.85 : 1,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutBack,
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              shape: BoxShape.circle,
+              boxShadow: const <BoxShadow>[
+                BoxShadow(
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                  color: Color(0x33000000),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.add, color: Colors.white, size: 20),
           ),
-          child: const Icon(Icons.add, color: Colors.white, size: 20),
         ),
       ),
     );
