@@ -1,4 +1,8 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
+import 'package:all_commerce/features/admin/presentation/views/admin_home_view.dart';
+import 'package:all_commerce/features/admin/presentation/views/admin_plans_view.dart';
+import 'package:all_commerce/features/admin/presentation/views/admin_tenant_view.dart';
+import 'package:all_commerce/features/billing/presentation/views/plans_view.dart';
 import 'package:all_commerce/core/router/return_to.dart';
 import 'package:all_commerce/core/router/router_refresh.dart';
 import 'package:all_commerce/features/cart/presentation/views/cart_view.dart';
@@ -164,6 +168,28 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
           ],
         ),
         GoRoute(
+          path: '/owner/plans',
+          builder: (BuildContext context, GoRouterState state) =>
+              const PlansView(),
+        ),
+        GoRoute(
+          path: '/admin',
+          builder: (BuildContext context, GoRouterState state) =>
+              const AdminHomeView(),
+        ),
+        GoRoute(
+          path: '/admin/tenants/:id',
+          builder: (BuildContext context, GoRouterState state) =>
+              AdminTenantView(
+                tenantId: state.pathParameters['id'] ?? '',
+              ),
+        ),
+        GoRoute(
+          path: '/admin/plans',
+          builder: (BuildContext context, GoRouterState state) =>
+              const AdminPlansView(),
+        ),
+        GoRoute(
           path: '/owner/products/new',
           builder: (BuildContext context, GoRouterState state) =>
               const ProductUploadView(),
@@ -230,6 +256,7 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
         if (profileAsync.isLoading || profileAsync.hasError) return null;
         final UserModel? profile = profileAsync.value;
         if (profile == null) return isOnboarding ? null : '/select-role';
+        if (loc.startsWith('/admin') && !profile.isAdmin) return '/';
         if (profile.isOwner) {
           if (isAuthEntry || isOnboarding || loc == '/') {
             final String? returnTo =

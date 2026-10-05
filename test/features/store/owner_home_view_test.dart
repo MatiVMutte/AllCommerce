@@ -3,6 +3,7 @@ import 'package:all_commerce/core/constants/plans.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
+import 'package:all_commerce/features/billing/data/repositories/ai_usage_repository.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
@@ -94,6 +95,9 @@ void main() {
           ownerProductsProvider('t1')
               .overrideWith(() => _FakeOwnerProducts(products)),
           ownerOrdersProvider('t1').overrideWith((Ref ref) async => orders),
+          aiUsageProvider.overrideWith(
+            (Ref ref) async => const AiUsage(used: 12, limit: 60),
+          ),
         ],
         child: const MaterialApp(home: OwnerHomeView()),
       ),

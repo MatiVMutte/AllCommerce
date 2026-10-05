@@ -14,6 +14,7 @@ import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/core/widgets/order_status_chip.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
+import 'package:all_commerce/features/billing/data/repositories/ai_usage_repository.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:all_commerce/features/orders/presentation/view_models/owner_orders_providers.dart';
@@ -120,6 +121,7 @@ class _OwnerPanel extends ConsumerWidget {
     final List<OrderModel>? orders = ref
         .watch(ownerOrdersProvider(tenant.id))
         .value;
+    final AiUsage? aiUsage = ref.watch(aiUsageProvider).value;
     final int pending = orders == null ? 0 : pendingCount(orders);
     final bool expiring = tenant.canPublish && tenant.daysLeft <= 3;
     final String planLine = tenant.canPublish
@@ -152,20 +154,30 @@ class _OwnerPanel extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      Text(
-                        planLine,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: tenant.canPublish
-                              ? (expiring
-                                    ? tokens.warning
-                                    : tokens.textSecondary)
-                              : tokens.danger,
+                      InkWell(
+                        onTap: () => context.push('/owner/plans'),
+                        child: Text(
+                          planLine,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: tenant.canPublish
+                                ? (expiring
+                                      ? tokens.warning
+                                      : tokens.textSecondary)
+                                : tokens.danger,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
+                if (ref.watch(currentProfileProvider).value?.isAdmin ??
+                    false)
+                  _CircleIcon(
+                    icon: Icons.admin_panel_settings_outlined,
+                    tooltip: 'Administración',
+                    onTap: () => context.push('/admin'),
+                  ),
                 _CircleIcon(
                   icon: Icons.logout_rounded,
                   tooltip: 'Cerrar sesión',
@@ -178,34 +190,78 @@ class _OwnerPanel extends ConsumerWidget {
               _PlanBanner(tenant: tenant),
             ],
             const SizedBox(height: 20),
-            AppCard(
-              padding: EdgeInsets.zero,
-              child: IntrinsicHeight(
-                child: Row(
-                  children: <Widget>[
-                    _MetricCell(
-                      value: products == null
-                          ? '—'
-                          : '${products.length}/'
-                                '${tenant.plan.maxProducts}',
-                      label: 'Productos',
-                    ),
-                    _Divider(tokens: tokens),
-                    _MetricCell(
-                      value: '$pending',
-                      label: 'Pedidos nuevos',
-                      highlight: pending > 0,
-                    ),
-                    _Divider(tokens: tokens),
-                    _MetricCell(
-                      value: tenant.canPublish
-                          ? '${tenant.daysLeft} días'
-                          : 'Vencido',
-                      label: 'Plan',
-                    ),
-                  ],
-                ),
-              ),
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints c) {
+                final List<Widget> cells = <Widget>[
+                  _MetricCell(
+                    value: products == null
+                        ? '—'
+                        : '${products.length}/'
+                              '${tenant.plan.maxProducts}',
+                    label: 'Productos',
+                  ),
+                  _MetricCell(
+                    value: '$pending',
+                    label: 'Pedidos nuevos',
+                    highlight: pending > 0,
+                  ),
+                  _MetricCell(
+                    value: tenant.canPublish
+                        ? '${tenant.daysLeft} días'
+                        : 'Vencido',
+                    label: 'Plan',
+                  ),
+                  _MetricCell(
+                    value: aiUsage == null
+                        ? '—'
+                        : '${aiUsage.used}/${aiUsage.limit ?? '∞'}',
+                    label: 'IA',
+                  ),
+                ];
+                return AppCard(
+                  padding: EdgeInsets.zero,
+                  child: c.maxWidth < 420
+                      ? Column(
+                          children: <Widget>[
+                            IntrinsicHeight(
+                              child: Row(
+                                children: <Widget>[
+                                  cells[0],
+                                  _Divider(tokens: tokens),
+                                  cells[1],
+                                ],
+                              ),
+                            ),
+                            Container(
+                              height: 1,
+                              color: tokens.border,
+                            ),
+                            IntrinsicHeight(
+                              child: Row(
+                                children: <Widget>[
+                                  cells[2],
+                                  _Divider(tokens: tokens),
+                                  cells[3],
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      : IntrinsicHeight(
+                          child: Row(
+                            children: <Widget>[
+                              cells[0],
+                              _Divider(tokens: tokens),
+                              cells[1],
+                              _Divider(tokens: tokens),
+                              cells[2],
+                              _Divider(tokens: tokens),
+                              cells[3],
+                            ],
+                          ),
+                        ),
+                );
+              },
             ),
             const SizedBox(height: 28),
             const _SectionTitle('Últimos pedidos'),
@@ -464,6 +520,10 @@ class _PlanBanner extends StatelessWidget {
             ),
           ),
           TextButton(
+            onPressed: () => context.push('/owner/plans'),
+            child: const Text('Ver planes'),
+          ),
+          TextButton(
             onPressed: whatsapp.isEmpty
                 ? null
                 : () => launchUrl(
@@ -473,7 +533,7 @@ class _PlanBanner extends StatelessWidget {
                     ),
                     mode: LaunchMode.externalApplication,
                   ),
-            child: const Text('Activar'),
+            child: const Text('WhatsApp'),
           ),
         ],
       ),

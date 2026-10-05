@@ -1,6 +1,7 @@
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/core/widgets/made_with_all_commerce.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -115,6 +116,8 @@ class OrderSuccessView extends StatelessWidget {
                     child: const Text('Seguir comprando'),
                   ),
                 ),
+                const SizedBox(height: 16),
+                const MadeWithAllCommerce(),
               ],
             ),
           ),

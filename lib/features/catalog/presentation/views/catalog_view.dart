@@ -10,6 +10,7 @@ import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
+import 'package:all_commerce/core/widgets/made_with_all_commerce.dart';
 import 'package:all_commerce/core/widgets/price_pill.dart';
 import 'package:all_commerce/core/widgets/quantity_stepper.dart';
 import 'package:all_commerce/features/cart/data/models/cart_state.dart';
@@ -196,6 +197,12 @@ class _CatalogScaffold extends ConsumerWidget {
                                 mainAxisSpacing: 16,
                                 childAspectRatio: 0.62,
                               ),
+                        ),
+                      ),
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.only(bottom: 16),
+                          child: MadeWithAllCommerce(),
                         ),
                       ),
                     ];

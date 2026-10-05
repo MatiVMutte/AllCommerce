@@ -1,6 +1,7 @@
 import 'package:all_commerce/core/constants/app_config.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PlanBlockedCard extends StatelessWidget {
@@ -42,9 +43,14 @@ class PlanBlockedCard extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            FilledButton.icon(
-              icon: const Icon(Icons.chat_bubble_outline),
-              label: const Text('Activar plan por WhatsApp'),
+            FilledButton(
+              onPressed: () => context.push('/owner/plans'),
+              child: const Text('Ver planes'),
+            ),
+            const SizedBox(height: 4),
+            TextButton.icon(
+              icon: const Icon(Icons.chat_bubble_outline, size: 18),
+              label: const Text('Escribir por WhatsApp'),
               onPressed: whatsapp.isEmpty
                   ? null
                   : () {

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:all_commerce/core/supabase/supabase_client_provider.dart';
 import 'package:all_commerce/core/utils/auth_error_mapper.dart';
+import 'package:all_commerce/features/billing/data/repositories/ai_usage_repository.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
 import 'package:all_commerce/features/product_upload/data/models/ai_product_suggestion.dart';
@@ -111,6 +112,8 @@ class ProductUploadController extends Notifier<ProductUploadState> {
             'La IA no pudo analizar la foto, completá los datos a mano',
         error: () => e,
       );
+    } finally {
+      ref.invalidate(aiUsageProvider);
     }
   }
 

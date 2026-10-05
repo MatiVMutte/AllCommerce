@@ -22,6 +22,7 @@ class UserModel {
     required this.role,
     required this.fullName,
     this.phone,
+    this.isAdmin = false,
     required this.createdAt,
   });
 
@@ -30,6 +31,7 @@ class UserModel {
   final UserRole role;
   final String fullName;
   final String? phone;
+  final bool isAdmin;
   final DateTime createdAt;
 
   bool get isOwner => role == UserRole.owner;
@@ -41,6 +43,7 @@ class UserModel {
       role: UserRole.fromId(json['role'] as String),
       fullName: json['full_name'] as String,
       phone: json['phone'] as String?,
+      isAdmin: json['is_admin'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -52,6 +55,7 @@ class UserModel {
       'role': role.id,
       'full_name': fullName,
       'phone': phone,
+      'is_admin': isAdmin,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -62,6 +66,7 @@ class UserModel {
     UserRole? role,
     String? fullName,
     String? phone,
+    bool? isAdmin,
     DateTime? createdAt,
   }) {
     return UserModel(
@@ -70,6 +75,7 @@ class UserModel {
       role: role ?? this.role,
       fullName: fullName ?? this.fullName,
       phone: phone ?? this.phone,
+      isAdmin: isAdmin ?? this.isAdmin,
       createdAt: createdAt ?? this.createdAt,
     );
   }

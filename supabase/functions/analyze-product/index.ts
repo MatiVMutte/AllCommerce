@@ -155,10 +155,43 @@ Deno.serve(async (req: Request) => {
     return error(413, "IMAGE_TOO_LARGE", "La imagen supera los 2 MB");
   }
 
-  // 4. Gemini con fallback de modelo --------------------------------------------
+  // 4. Cuota de análisis del mes (reserva; se devuelve si la IA falla) ---------
+  const { data: quota, error: quotaErr } = await supabase.rpc(
+    "consume_ai_analysis",
+  );
+  if (quotaErr) {
+    if (quotaErr.message.includes("AI_LIMIT_REACHED")) {
+      return error(
+        403,
+        "AI_LIMIT_REACHED",
+        "Llegaste al límite de análisis con IA de tu plan este mes",
+      );
+    }
+    if (quotaErr.message.includes("PLAN_EXPIRED")) {
+      return error(403, "PLAN_EXPIRED", "Tu plan está vencido o inactivo");
+    }
+    if (quotaErr.message.includes("OWNER_REQUIRED")) {
+      return error(403, "OWNER_REQUIRED", "Solo los dueños pueden usar la IA");
+    }
+    console.error("quota error", quotaErr);
+    return error(500, "QUOTA_ERROR", "No se pudo verificar tu cuota de IA");
+  }
+
+  // Si la IA falla después de reservar, el análisis no se cobra.
+  async function refundAndError(
+    status: number,
+    code: string,
+    message: string,
+  ): Promise<Response> {
+    const { error: refundErr } = await supabase.rpc("refund_ai_analysis");
+    if (refundErr) console.error("refund error", refundErr);
+    return error(status, code, message);
+  }
+
+  // 5. Gemini con fallback de modelo --------------------------------------------
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) {
-    return error(500, "AI_NOT_CONFIGURED", "Falta configurar la IA");
+    return refundAndError(500, "AI_NOT_CONFIGURED", "Falta configurar la IA");
   }
 
   let model = PRIMARY_MODEL;
@@ -168,28 +201,28 @@ Deno.serve(async (req: Request) => {
     res = await callGemini(model, apiKey, imageBase64, mimeType);
   }
   if (res.status === 429) {
-    return error(429, "AI_RATE_LIMITED", "La IA está ocupada, probá en un minuto");
+    return refundAndError(429, "AI_RATE_LIMITED", "La IA está ocupada, probá en un minuto");
   }
   if (!res.ok) {
     console.error("gemini error", model, res.status, await res.text());
-    return error(502, "AI_UNAVAILABLE", "La IA no respondió, cargá los datos a mano");
+    return refundAndError(502, "AI_UNAVAILABLE", "La IA no respondió, cargá los datos a mano");
   }
 
   const payload = await res.json();
   const text: string | undefined =
     payload?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) {
-    return error(502, "AI_EMPTY", "La IA no devolvió datos");
+    return refundAndError(502, "AI_EMPTY", "La IA no devolvió datos");
   }
 
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(text);
   } catch {
-    return error(502, "AI_INVALID_JSON", "La IA devolvió un formato inesperado");
+    return refundAndError(502, "AI_INVALID_JSON", "La IA devolvió un formato inesperado");
   }
 
-  // 5. Normalizar la salida (nunca confiar ciegamente en el modelo) -------------
+  // 6. Normalizar la salida (nunca confiar ciegamente en el modelo) -------------
   const category = typeof parsed.category === "string" &&
       CATEGORIES.includes(parsed.category)
     ? parsed.category
@@ -205,6 +238,7 @@ Deno.serve(async (req: Request) => {
 
   return json(200, {
     model,
+    quota: { used: quota?.used ?? 0, limit: quota?.limit ?? null },
     product: {
       title: String(parsed.title ?? "").trim().slice(0, 120),
       description: String(parsed.description ?? "").trim().slice(0, 1000),

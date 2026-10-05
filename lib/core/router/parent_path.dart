@@ -29,6 +29,10 @@ String? parentPathOf(String location) {
     if (segs[1] == 'settings') return '/owner';
     return '/owner';
   }
+  if (segs[0] == 'admin') {
+    if (segs.length >= 2) return '/admin';
+    return '/owner'; // '/admin' (customer-admins get redirected to '/')
+  }
   if (loc == '/my-orders' || loc == '/profile') return '/';
   switch (loc) {
     case '/login':

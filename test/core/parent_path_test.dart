@@ -16,6 +16,13 @@ void main() {
     expect(parentPathOf('/owner/orders/o1'), '/owner/orders');
     expect(parentPathOf('/owner/orders'), '/owner');
     expect(parentPathOf('/owner'), isNull);
+    expect(parentPathOf('/owner/plans'), '/owner');
+  });
+
+  test('admin routes', () {
+    expect(parentPathOf('/admin/tenants/t1'), '/admin');
+    expect(parentPathOf('/admin/plans'), '/admin');
+    expect(parentPathOf('/admin'), '/owner');
   });
 
   test('auth routes', () {

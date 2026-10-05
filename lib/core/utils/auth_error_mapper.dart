@@ -13,6 +13,9 @@ abstract final class AuthErrorMapper {
           return 'La imagen supera los 2 MB';
         case 'AI_NOT_CONFIGURED':
           return 'La IA no está configurada todavía (falta la clave)';
+        case 'AI_LIMIT_REACHED':
+          return 'Llegaste al límite de análisis con IA de tu plan este '
+              'mes. Podés cargar el producto a mano o mejorar tu plan.';
         case 'PLAN_EXPIRED':
           return 'Tu período de prueba o plan venció. '
               'Activá un plan para seguir publicando';
@@ -66,6 +69,16 @@ abstract final class AuthErrorMapper {
       }
       if (message.contains('INVALID_QUANTITY')) {
         return 'Cantidad inválida';
+      }
+      if (message.contains('AI_LIMIT_REACHED')) {
+        return 'Llegaste al límite de análisis con IA de tu plan este '
+            'mes. Podés cargar el producto a mano o mejorar tu plan.';
+      }
+      if (message.contains('ADMIN_REQUIRED')) {
+        return 'No tenés permisos de administrador.';
+      }
+      if (message.contains('TENANT_NOT_FOUND')) {
+        return 'El local no existe.';
       }
       if (message.contains('SLUG_TAKEN')) {
         return 'Ese nombre de link ya está en uso, elegí otro';

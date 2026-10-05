@@ -389,6 +389,15 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                               )
                             : const Text('Guardar cambios'),
                       ),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: TextButton(
+                          onPressed: () => context.push('/owner/plans'),
+                          child: Text(
+                            'Tu plan: ${tenant.plan.label} · Ver planes',
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

@@ -10,8 +10,10 @@ import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
+import 'package:all_commerce/features/billing/data/repositories/ai_usage_repository.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/product_upload/data/models/ai_product_suggestion.dart';
+import 'package:all_commerce/features/product_upload/data/services/ai_analyze_service.dart';
 import 'package:all_commerce/features/product_upload/data/models/product_input.dart';
 import 'package:all_commerce/features/product_upload/presentation/view_models/product_upload_controller.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -197,7 +199,19 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       }
       if (next.infoMessage != null &&
           next.infoMessage != previous?.infoMessage) {
-        showAppSnackBar(context, next.infoMessage!, clearNavBar: false);
+        final Object? err = next.error;
+        showAppSnackBar(
+          context,
+          next.infoMessage!,
+          clearNavBar: false,
+          action:
+              err is AiAnalyzeException && err.code == 'AI_LIMIT_REACHED'
+                  ? SnackBarAction(
+                      label: 'Ver planes',
+                      onPressed: () => context.push('/owner/plans'),
+                    )
+                  : null,
+        );
       }
     });
     final AsyncValue<UserModel?> profileAsync = ref.watch(
@@ -286,10 +300,19 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                       _ImageSection(
                         state: state,
                         existingImageUrl: widget.existing?.imageUrl,
-                        onPick: (ImageSource source) => ref
-                            .read(productUploadControllerProvider.notifier)
-                            .pickAndAnalyze(source),
+                        onPick: (ImageSource source) {
+                          final AiUsage? usage =
+                              ref.read(aiUsageProvider).value;
+                          if (usage != null && usage.reached) {
+                            _showAiLimit(context);
+                            return;
+                          }
+                          ref
+                              .read(productUploadControllerProvider.notifier)
+                              .pickAndAnalyze(source);
+                        },
                       ),
+                      const _AiUsageLine(),
                       const SizedBox(height: 20),
                       const _Section('DATOS'),
                       const SizedBox(height: 8),
@@ -450,6 +473,19 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       ],
     );
   }
+
+  void _showAiLimit(BuildContext context) {
+    showAppSnackBar(
+      context,
+      'Llegaste al límite de análisis con IA de tu plan este '
+      'mes. Podés cargar el producto a mano o mejorar tu plan.',
+      clearNavBar: false,
+      action: SnackBarAction(
+        label: 'Ver planes',
+        onPressed: () => context.push('/owner/plans'),
+      ),
+    );
+  }
 }
 
 class _Section extends StatelessWidget {
@@ -466,6 +502,31 @@ class _Section extends StatelessWidget {
         fontWeight: FontWeight.w600,
         letterSpacing: 0.6,
         color: context.tokens.textTertiary,
+      ),
+    );
+  }
+}
+
+/// "IA: 12 de 60 análisis este mes" under the photo zone (warning when
+/// the monthly limit is reached).
+class _AiUsageLine extends ConsumerWidget {
+  const _AiUsageLine();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<AiUsage> usageAsync = ref.watch(aiUsageProvider);
+    final AiUsage? usage = usageAsync.value;
+    if (usage == null) return const SizedBox.shrink();
+    final Color color = usage.reached
+        ? context.tokens.warning
+        : context.tokens.textTertiary;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Text(
+        usage.limit == null
+            ? 'IA: ${usage.used} análisis este mes (ilimitados)'
+            : 'IA: ${usage.used} de ${usage.limit} análisis este mes',
+        style: TextStyle(fontSize: 12, color: color),
       ),
     );
   }

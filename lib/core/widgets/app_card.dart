@@ -7,6 +7,7 @@ class AppCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.onTap,
+    this.border,
     super.key,
   });
 
@@ -14,15 +15,22 @@ class AppCard extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final VoidCallback? onTap;
 
+  /// Overrides the default hairline border (e.g. primary 2px).
+  final BoxBorder? border;
+
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     return Material(
       color: tokens.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: tokens.border),
-      ),
+      shape: border is RoundedRectangleBorder
+          ? border as RoundedRectangleBorder
+          : RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: border is Border
+                  ? (border! as Border).top
+                  : BorderSide(color: tokens.border),
+            ),
       clipBehavior: Clip.antiAlias,
       child: onTap == null
           ? Padding(padding: padding, child: child)

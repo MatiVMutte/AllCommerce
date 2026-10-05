@@ -137,6 +137,16 @@ class ProfileView extends ConsumerWidget {
                         trailing: const Icon(Icons.chevron_right_rounded),
                         onTap: () => context.push('/my-orders'),
                       ),
+                      if (profile?.isAdmin ?? false)
+                        ListTile(
+                          leading: const Icon(
+                            Icons.admin_panel_settings_outlined,
+                          ),
+                          title: const Text('Administración'),
+                          trailing:
+                              const Icon(Icons.chevron_right_rounded),
+                          onTap: () => context.push('/admin'),
+                        ),
                       ListTile(
                         leading: const Icon(Icons.dark_mode_outlined),
                         title: const Text('Tema'),
