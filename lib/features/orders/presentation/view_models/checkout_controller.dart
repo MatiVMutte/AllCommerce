@@ -5,6 +5,7 @@ import 'package:all_commerce/core/constants/payment_method.dart';
 import 'package:all_commerce/features/cart/data/models/cart_item.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:all_commerce/features/orders/data/repositories/order_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class CheckoutState {
@@ -89,6 +90,7 @@ class CheckoutController extends Notifier<CheckoutState> {
       state = state.copyWith(sending: false, order: order);
       return order;
     } catch (e) {
+      debugPrint('placeOrder failed: $e');
       state = state.copyWith(sending: false, error: e);
       return null;
     }

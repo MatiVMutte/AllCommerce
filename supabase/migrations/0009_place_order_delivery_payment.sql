@@ -108,7 +108,7 @@ begin
     where id = (v_item->>'product_id')::uuid and tenant_id = p_tenant_id;
 
     insert into public.order_items (
-      order_id, tenant_id, product_id, title_snapshot, price_snapshot, quantity
+      order_id, tenant_id, product_id, title_snapshot, unit_price, quantity
     ) values (
       v_order.id, p_tenant_id, v_product.id, v_product.title, v_product.price,
       (v_item->>'quantity')::int
