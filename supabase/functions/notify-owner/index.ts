@@ -1,17 +1,71 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
-import * as admin from 'https://esm.sh/firebase-admin@12.7.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const FIREBASE_SERVICE_ACCOUNT = Deno.env.get('FIREBASE_SERVICE_ACCOUNT');
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-interface OrderInfo {
-  id: string;
-  tenant_id: string;
-  order_number: number;
-  total: number;
+interface ServiceAccount {
+  project_id: string;
+  client_email: string;
+  private_key: string;
+}
+
+function base64url(input: ArrayBuffer | string): string {
+  const bytes = typeof input === 'string'
+    ? new TextEncoder().encode(input)
+    : new Uint8Array(input);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function importPrivateKey(pem: string): Promise<CryptoKey> {
+  const body = pem
+    .replace('-----BEGIN PRIVATE KEY-----', '')
+    .replace('-----END PRIVATE KEY-----', '')
+    .replace(/\s+/g, '');
+  const der = Uint8Array.from(atob(body), (c) => c.charCodeAt(0));
+  return crypto.subtle.importKey(
+    'pkcs8',
+    der,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+}
+
+/** OAuth2 access token for FCM using the service account (JWT bearer flow). */
+async function getAccessToken(sa: ServiceAccount): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const claims = base64url(JSON.stringify({
+    iss: sa.client_email,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600,
+  }));
+  const unsigned = `${header}.${claims}`;
+  const key = await importPrivateKey(sa.private_key);
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    new TextEncoder().encode(unsigned),
+  );
+  const jwt = `${unsigned}.${base64url(signature)}`;
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    }),
+  });
+  if (!res.ok) throw new Error(`OAuth error ${res.status}: ${await res.text()}`);
+  return (await res.json()).access_token as string;
 }
 
 Deno.serve(async (req) => {
@@ -19,87 +73,90 @@ Deno.serve(async (req) => {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  const body = await req.json();
+  // Identify the caller from their Supabase JWT.
+  const jwt = req.headers.get('Authorization')?.replace('Bearer ', '');
+  if (!jwt) return new Response('Unauthorized', { status: 401 });
+  const { data: userData } = await admin.auth.getUser(jwt);
+  const callerId = userData.user?.id;
+  if (!callerId) return new Response('Unauthorized', { status: 401 });
 
-  // Accept either a direct order object or a Supabase realtime/webhook payload.
-  const order: OrderInfo | undefined =
-    body?.record ?? (body?.tenant_id ? body : undefined);
+  const body = await req.json().catch(() => ({}));
+  const orderId: string | undefined = body?.id;
+  if (!orderId) return new Response('Missing order id', { status: 400 });
 
-  if (!order?.tenant_id) {
-    return new Response('Missing tenant_id', { status: 400 });
+  // Only the customer who placed the order can trigger its notification.
+  const { data: order } = await admin
+    .from('orders')
+    .select('id, tenant_id, order_number, total, customer_id')
+    .eq('id', orderId)
+    .maybeSingle();
+  if (!order || order.customer_id !== callerId) {
+    return new Response('Forbidden', { status: 403 });
   }
 
-  // Find all users of this tenant.
-  const { data: users, error: usersError } = await supabase
+  const { data: owners } = await admin
     .from('users')
     .select('id')
     .eq('tenant_id', order.tenant_id);
+  const ownerIds = (owners ?? []).map((u) => u.id);
+  if (ownerIds.length === 0) return Response.json({ sent: 0 });
 
-  if (usersError) {
-    console.error('Failed to load users:', usersError);
-    return new Response('Database error', { status: 500 });
-  }
-
-  const userIds = (users ?? []).map((u) => u.id);
-  if (userIds.length === 0) {
-    console.log('No users for tenant', order.tenant_id);
-    return new Response('No users', { status: 200 });
-  }
-
-  // Find device tokens for those users.
-  const { data: devices, error: devicesError } = await supabase
+  const { data: devices } = await admin
     .from('user_devices')
     .select('fcm_token')
-    .in('user_id', userIds);
-
-  if (devicesError) {
-    console.error('Failed to load devices:', devicesError);
-    return new Response('Database error', { status: 500 });
-  }
-
-  const tokens = (devices ?? []).map((d) => d.fcm_token).filter(Boolean);
-  if (tokens.length === 0) {
-    console.log('No device tokens for tenant', order.tenant_id);
-    return new Response('No devices', { status: 200 });
-  }
+    .in('user_id', ownerIds);
+  const tokens = (devices ?? []).map((d) => d.fcm_token as string).filter(Boolean);
+  if (tokens.length === 0) return Response.json({ sent: 0 });
 
   if (!FIREBASE_SERVICE_ACCOUNT) {
-    console.log(
-      'FIREBASE_SERVICE_ACCOUNT not set; skipping push. Tokens:',
-      tokens.length,
-    );
-    return new Response('Firebase not configured', { status: 200 });
+    console.log('FIREBASE_SERVICE_ACCOUNT not set; skipping push');
+    return Response.json({ sent: 0, reason: 'not_configured' });
   }
 
-  try {
-    if (admin.apps.length === 0) {
-      const serviceAccount = JSON.parse(FIREBASE_SERVICE_ACCOUNT);
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-      });
+  const sa: ServiceAccount = JSON.parse(FIREBASE_SERVICE_ACCOUNT);
+  const accessToken = await getAccessToken(sa);
+  const total = Number(order.total).toLocaleString('es-AR');
+
+  let sent = 0;
+  const invalid: string[] = [];
+  for (const token of tokens) {
+    const res = await fetch(
+      `https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: {
+            token,
+            notification: {
+              title: 'Nuevo pedido',
+              body: `Pedido #${order.order_number} por $${total}`,
+            },
+            data: { order_id: order.id, tenant_id: order.tenant_id },
+            android: {
+              priority: 'HIGH',
+              notification: { channel_id: 'order_notifications' },
+            },
+          },
+        }),
+      },
+    );
+    if (res.ok) {
+      sent++;
+    } else if (res.status === 404 || res.status === 400) {
+      invalid.push(token);
+    } else {
+      console.error('FCM error', res.status, await res.text());
     }
-
-    const title = 'Nuevo pedido';
-    const body = `Pedido #${order.order_number} por $${order.total.toLocaleString('es-AR')}`;
-
-    const response = await admin.messaging().sendEachForMulticast({
-      tokens,
-      notification: { title, body },
-      data: { order_id: order.id, tenant_id: order.tenant_id },
-    });
-
-    console.log(
-      'FCM success:',
-      response.successCount,
-      'failure:',
-      response.failureCount,
-    );
-    return Response.json({
-      success: response.successCount,
-      failure: response.failureCount,
-    });
-  } catch (e) {
-    console.error('FCM error:', e);
-    return new Response('FCM error', { status: 500 });
   }
+
+  // Clean up tokens of uninstalled apps.
+  if (invalid.length > 0) {
+    await admin.from('user_devices').delete().in('fcm_token', invalid);
+  }
+
+  return Response.json({ sent, removed: invalid.length });
 });
