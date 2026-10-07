@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:all_commerce/core/firebase/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -5,132 +7,113 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Top-level background message handler required by firebase_messaging.
+/// Required by firebase_messaging. Android already displays messages that
+/// carry a `notification` payload while the app is in background, so there
+/// is nothing else to do here.
 @pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await _showLocalNotification(message.notification, message.data);
-}
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
 
-const String _channelId = 'order_notifications';
-const String _channelName = 'Pedidos';
-const String _channelDescription = 'Avisos cuando entra un pedido nuevo';
+const AndroidNotificationChannel _ordersChannel = AndroidNotificationChannel(
+  'order_notifications',
+  'Pedidos',
+  description: 'Avisos cuando entra un pedido nuevo',
+  importance: Importance.max,
+);
 
-/// Initializes Firebase and local notifications. Safe to call when the .env
-/// does not contain Firebase config: in that case push notifications are
-/// simply disabled and the app relies on in-app realtime alerts.
+/// Push notifications for store owners (Android/iOS only). Disabled when the
+/// .env has no Firebase config, so the app keeps working without it.
 class FirebaseMessagingService {
   FirebaseMessagingService._();
 
-  static final FirebaseMessagingService _instance =
-      FirebaseMessagingService._();
+  static final FirebaseMessagingService instance = FirebaseMessagingService._();
 
-  static FirebaseMessagingService get instance => _instance;
-
-  final FlutterLocalNotificationsPlugin _localNotifications =
+  final FlutterLocalNotificationsPlugin _local =
       FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
+  String? _token;
 
-  /// Returns true when Firebase could be initialized from .env values.
-  bool get isAvailable => DefaultFirebaseOptions.hasConfig;
+  bool get isAvailable => !kIsWeb && DefaultFirebaseOptions.hasConfig;
 
-  /// One-time setup. Should be called after `Supabase.initialize()` so the
-  /// current user can be read when saving the device token.
+  /// Call after `Supabase.initialize()`.
   Future<void> initialize() async {
     if (_initialized || !isAvailable) return;
     _initialized = true;
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+      final FirebaseMessaging messaging = FirebaseMessaging.instance;
+      final NotificationSettings settings = await messaging.requestPermission();
+      if (settings.authorizationStatus == AuthorizationStatus.denied) return;
 
-    final FirebaseMessaging messaging = FirebaseMessaging.instance;
+      await _initLocalNotifications();
+      FirebaseMessaging.onMessage.listen(_showForeground);
 
-    // Request permission (iOS and Android 13+). On older Android it is granted.
-    final NotificationSettings settings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+      _token = await messaging.getToken();
+      messaging.onTokenRefresh.listen((String token) {
+        _token = token;
+        unawaited(_saveToken());
+      });
 
-    if (settings.authorizationStatus == AuthorizationStatus.denied) return;
-
-    // Foreground messages.
-    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-
-    // Background / terminated messages.
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-    // Local notifications for foreground display.
-    await _initLocalNotifications();
-
-    // Save token and keep it updated.
-    await _updateToken(await messaging.getToken());
-    messaging.onTokenRefresh.listen(_updateToken);
+      // Save now if already logged in, and again on every sign-in.
+      await _saveToken();
+      Supabase.instance.client.auth.onAuthStateChange.listen((AuthState s) {
+        if (s.event == AuthChangeEvent.signedIn) unawaited(_saveToken());
+      });
+    } catch (e) {
+      debugPrint('Push notifications disabled: $e');
+    }
   }
 
   Future<void> _initLocalNotifications() async {
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const DarwinInitializationSettings iosSettings =
-        DarwinInitializationSettings();
-    const InitializationSettings initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
+    await _local.initialize(
+      settings: const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        iOS: DarwinInitializationSettings(),
+      ),
     );
-    await _localNotifications.initialize(
-      settings: initSettings,
-      onDidReceiveNotificationResponse: (_) {},
-    );
+    await _local
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(_ordersChannel);
   }
 
-  Future<void> _updateToken(String? token) async {
-    if (token == null || token.isEmpty) return;
+  Future<void> _saveToken() async {
+    final String? token = _token;
     final SupabaseClient client = Supabase.instance.client;
     final String? userId = client.auth.currentUser?.id;
-    if (userId == null) return;
+    if (token == null || token.isEmpty || userId == null) return;
     try {
-      await client.from('user_devices').upsert(<String, dynamic>{
-        'user_id': userId,
-        'fcm_token': token,
-        'platform': defaultTargetPlatform.name,
+      await client.rpc<void>('register_device', params: <String, dynamic>{
+        'p_token': token,
+        'p_platform': defaultTargetPlatform.name,
       });
     } catch (e) {
       debugPrint('Failed to save FCM token: $e');
     }
   }
 
-  Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    await _showLocalNotification(message.notification, message.data);
+  Future<void> _showForeground(RemoteMessage message) async {
+    final RemoteNotification? n = message.notification;
+    if (n == null) return;
+    await _local.show(
+      id: message.hashCode,
+      title: n.title,
+      body: n.body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          _ordersChannel.id,
+          _ordersChannel.name,
+          channelDescription: _ordersChannel.description,
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+        iOS: const DarwinNotificationDetails(),
+      ),
+      payload: message.data['order_id']?.toString(),
+    );
   }
-}
-
-Future<void> _showLocalNotification(
-  RemoteNotification? notification,
-  Map<String, dynamic> data,
-) async {
-  final String title = notification?.title ?? data['title']?.toString() ?? 'AllCommerce';
-  final String body = notification?.body ?? data['body']?.toString() ?? '';
-
-  const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-    _channelId,
-    _channelName,
-    channelDescription: _channelDescription,
-    importance: Importance.max,
-    priority: Priority.high,
-    showWhen: true,
-  );
-  const NotificationDetails details = NotificationDetails(
-    android: androidDetails,
-    iOS: DarwinNotificationDetails(),
-  );
-
-  await FlutterLocalNotificationsPlugin().show(
-    id: 0,
-    title: title,
-    body: body,
-    notificationDetails: details,
-    payload: data['order_id']?.toString(),
-  );
 }
