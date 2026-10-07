@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:all_commerce/core/constants/delivery_method.dart';
 import 'package:all_commerce/core/constants/payment_method.dart';
 import 'package:all_commerce/features/cart/data/models/cart_item.dart';
@@ -83,11 +85,22 @@ class CheckoutController extends Notifier<CheckoutState> {
             paymentMethod: state.paymentMethod,
             paymentNotes: state.paymentNotes,
           );
+      _notifyOwner(order);
       state = state.copyWith(sending: false, order: order);
       return order;
     } catch (e) {
       state = state.copyWith(sending: false, error: e);
       return null;
+    }
+  }
+
+  void _notifyOwner(OrderModel order) {
+    try {
+      unawaited(
+        ref.read(orderRepositoryProvider).notifyOwner(order),
+      );
+    } catch (_) {
+      // Best-effort notification.
     }
   }
 }

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:all_commerce/core/constants/app_config.dart';
+import 'package:all_commerce/core/firebase/firebase_messaging_service.dart';
 import 'package:all_commerce/core/router/app_router.dart';
 import 'package:all_commerce/core/router/parent_path.dart';
 import 'package:all_commerce/core/storage/shared_preferences_provider.dart';
@@ -18,6 +21,7 @@ Future<void> main() async {
     publishableKey: AppConfig.supabaseAnonKey,
   );
   final SharedPreferences prefs = await SharedPreferences.getInstance();
+  unawaited(FirebaseMessagingService.instance.initialize());
   runApp(
     ProviderScope(
       overrides: [

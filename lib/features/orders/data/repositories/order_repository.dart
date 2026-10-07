@@ -52,6 +52,24 @@ class OrderRepository {
     return OrderModel.fromJson(row);
   }
 
+  /// Best-effort notification to the store owner. Failures are ignored so the
+  /// order flow is never blocked by a misconfigured push service.
+  Future<void> notifyOwner(OrderModel order) async {
+    try {
+      await _client.functions.invoke(
+        'notify-owner',
+        body: <String, dynamic>{
+          'id': order.id,
+          'tenant_id': order.tenantId,
+          'order_number': order.orderNumber,
+          'total': order.total,
+        },
+      );
+    } catch (_) {
+      // Do nothing: notification is optional.
+    }
+  }
+
   /// Latest orders for [tenantId], newest first.
   Future<List<OrderModel>> listByTenant(String tenantId) async {
     final List<dynamic> rows = await _client
