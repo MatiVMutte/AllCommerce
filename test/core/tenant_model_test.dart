@@ -70,6 +70,6 @@ void main() {
 
   test('PlanType.fromId resolves pro with 1000 products', () {
     expect(PlanType.fromId('pro').maxProducts, 1000);
-    expect(PlanType.fromId('nope'), PlanType.trial);
+    expect(PlanType.fromId('nope'), PlanType.free);
   });
 }

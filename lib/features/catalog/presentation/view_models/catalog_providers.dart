@@ -1,7 +1,6 @@
 import 'package:all_commerce/core/constants/categories.dart';
 import 'package:all_commerce/core/supabase/supabase_client_provider.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
-import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/utils/text_utils.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/data/repositories/catalog_repository.dart';
@@ -10,11 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final Provider<CatalogRepository> catalogRepositoryProvider =
     Provider<CatalogRepository>(
   (Ref ref) => CatalogRepository(ref.watch(supabaseClientProvider)),
-);
-
-final FutureProvider<List<TenantModel>> activeTenantsProvider =
-    FutureProvider<List<TenantModel>>(
-  (Ref ref) => ref.watch(tenantRepositoryProvider).listActive(),
 );
 
 final catalogProductsProvider =
@@ -115,7 +109,10 @@ List<TenantModel> filterTenants(List<TenantModel> tenants, String query) {
   return tenants
       .where(
         (TenantModel t) =>
-            matches(t.name) || matches(t.description) || matches(t.address),
+            matches(t.name) ||
+            matches(t.description) ||
+            matches(t.address) ||
+            matches(t.zone),
       )
       .toList();
 }

@@ -1,6 +1,6 @@
 import 'package:all_commerce/core/constants/plans.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
-import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
+import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/features/catalog/presentation/views/store_directory_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,13 +18,14 @@ void main() {
       trialStartedAt: DateTime(2025),
       planExpiresAt: DateTime.now().add(const Duration(days: 10)),
       isActive: true,
+      isClaimed: true,
       createdAt: DateTime(2025),
     );
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          activeTenantsProvider.overrideWith((_) async => <TenantModel>[tenantDemo]),
+          activeTenantsProvider(null).overrideWith((_) async => <TenantModel>[tenantDemo]),
         ],
         child: const MaterialApp(home: StoreDirectoryView()),
       ),

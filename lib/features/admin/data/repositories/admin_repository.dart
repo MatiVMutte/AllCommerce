@@ -66,4 +66,25 @@ class AdminRepository {
       },
     );
   }
+
+  Future<void> updateTenantLocation({
+    required String tenantId,
+    required String? zone,
+    required String? address,
+    required double? lat,
+    required double? lng,
+    required bool isClaimed,
+  }) async {
+    await _client.rpc<void>(
+      'admin_update_tenant_location',
+      params: <String, dynamic>{
+        'p_tenant_id': tenantId,
+        'p_zone': zone,
+        'p_address': address,
+        'p_lat': lat,
+        'p_lng': lng,
+        'p_is_claimed': isClaimed,
+      },
+    );
+  }
 }

@@ -76,13 +76,18 @@ class _PlansViewState extends ConsumerState<PlansView> {
                       const SizedBox(height: 16),
                       _TrialBanner(daysLeft: tenant.daysLeft),
                     ],
+                    if (tenant != null && tenant.plan == PlanType.free) ...<Widget>[
+                      const SizedBox(height: 16),
+                      _FreeBanner(productsUsed: tenant.plan.maxProducts),
+                    ],
                     const SizedBox(height: 20),
                     for (final PlanModel plan in visible)
                       _PlanCard(
                         plan: plan,
                         current: plan.id == tenant?.plan,
-                        onChoose: () =>
-                            _contact(context, plan, tenant, profile),
+                        onChoose: plan.id == PlanType.free
+                            ? null
+                            : () => _contact(context, plan, tenant, profile),
                       ),
                     const SizedBox(height: 16),
                     Text(
@@ -164,16 +169,52 @@ class _TrialBanner extends StatelessWidget {
   }
 }
 
+class _FreeBanner extends StatelessWidget {
+  const _FreeBanner({required this.productsUsed});
+
+  final int productsUsed;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: tokens.success.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: tokens.success.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.check_circle_outline, size: 18, color: tokens.success),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Estás en el plan Gratis con $productsUsed productos incluidos. '
+              'Pagá solo cuando quieras crecer.',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: tokens.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PlanCard extends StatelessWidget {
   const _PlanCard({
     required this.plan,
     required this.current,
-    required this.onChoose,
+    this.onChoose,
   });
 
   final PlanModel plan;
   final bool current;
-  final VoidCallback onChoose;
+  final VoidCallback? onChoose;
 
   @override
   Widget build(BuildContext context) {
@@ -265,10 +306,15 @@ class _PlanCard extends StatelessWidget {
                       onPressed: null,
                       child: Text('Plan actual'),
                     )
-                  : FilledButton(
-                      onPressed: onChoose,
-                      child: const Text('Quiero este plan'),
-                    ),
+                  : plan.id == PlanType.free
+                      ? const FilledButton.tonal(
+                          onPressed: null,
+                          child: Text('Incluido gratis'),
+                        )
+                      : FilledButton(
+                          onPressed: onChoose,
+                          child: const Text('Quiero este plan'),
+                        ),
             ),
           ],
         ),

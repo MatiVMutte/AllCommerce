@@ -34,4 +34,22 @@ class TenantRepository {
         .order('name');
     return rows.map(TenantModel.fromJson).toList();
   }
+
+  Future<List<TenantModel>> listActiveByZone(String? zone) async {
+    final PostgrestFilterBuilder<List<Map<String, dynamic>>> query = _client
+        .from('tenants')
+        .select()
+        .eq('is_active', true);
+    final PostgrestTransformBuilder<List<Map<String, dynamic>>> ordered =
+        zone == null || zone.isEmpty
+            ? query.order('name')
+            : query.eq('zone', zone).order('name');
+    final List<Map<String, dynamic>> rows = await ordered;
+    return rows.map(TenantModel.fromJson).toList();
+  }
+
+  Future<List<String>> listZones() async {
+    final List<dynamic> rows = await _client.rpc<List<dynamic>>('public_zones');
+    return rows.whereType<String>().where((String z) => z.isNotEmpty).toList();
+  }
 }

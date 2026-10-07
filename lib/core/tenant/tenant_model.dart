@@ -9,6 +9,9 @@ class TenantModel {
     required this.name,
     this.description,
     this.address,
+    this.zone,
+    this.lat,
+    this.lng,
     required this.whatsapp,
     this.logoUrl,
     required this.primaryColor,
@@ -16,6 +19,7 @@ class TenantModel {
     required this.trialStartedAt,
     required this.planExpiresAt,
     required this.isActive,
+    required this.isClaimed,
     required this.createdAt,
   });
 
@@ -24,6 +28,9 @@ class TenantModel {
   final String name;
   final String? description;
   final String? address;
+  final String? zone;
+  final double? lat;
+  final double? lng;
   final String whatsapp;
   final String? logoUrl;
 
@@ -33,6 +40,7 @@ class TenantModel {
   final DateTime trialStartedAt;
   final DateTime planExpiresAt;
   final bool isActive;
+  final bool isClaimed;
   final DateTime createdAt;
 
   factory TenantModel.fromJson(Map<String, dynamic> json) {
@@ -42,13 +50,19 @@ class TenantModel {
       name: json['name'] as String,
       description: json['description'] as String?,
       address: json['address'] as String?,
+      zone: json['zone'] as String?,
+      lat: (json['lat'] as num?)?.toDouble(),
+      lng: (json['lng'] as num?)?.toDouble(),
       whatsapp: json['whatsapp'] as String,
       logoUrl: json['logo_url'] as String?,
       primaryColor: json['primary_color'] as String,
       plan: PlanType.fromId(json['plan'] as String),
-      trialStartedAt: DateTime.parse(json['trial_started_at'] as String),
+      trialStartedAt: json['trial_started_at'] == null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.parse(json['trial_started_at'] as String),
       planExpiresAt: DateTime.parse(json['plan_expires_at'] as String),
       isActive: json['is_active'] as bool,
+      isClaimed: json['is_claimed'] as bool? ?? true,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -60,6 +74,9 @@ class TenantModel {
       'name': name,
       'description': description,
       'address': address,
+      'zone': zone,
+      'lat': lat,
+      'lng': lng,
       'whatsapp': whatsapp,
       'logo_url': logoUrl,
       'primary_color': primaryColor,
@@ -67,11 +84,17 @@ class TenantModel {
       'trial_started_at': trialStartedAt.toIso8601String(),
       'plan_expires_at': planExpiresAt.toIso8601String(),
       'is_active': isActive,
+      'is_claimed': isClaimed,
       'created_at': createdAt.toIso8601String(),
     };
   }
 
-  bool get canPublish => isActive && planExpiresAt.isAfter(DateTime.now());
+  /// Free-plan tenants can publish forever; paid tenants need an active subscription.
+  bool get canPublish =>
+      isActive && (plan == PlanType.free || planExpiresAt.isAfter(DateTime.now()));
+
+  /// Whether the local has been claimed by its owner. Pre-registered leads are not.
+  bool get isUnclaimedLead => isActive && !isClaimed;
 
   int get daysLeft {
     final int days = planExpiresAt.difference(DateTime.now()).inDays;
@@ -91,6 +114,9 @@ class TenantModel {
     String? name,
     String? description,
     String? address,
+    String? zone,
+    double? lat,
+    double? lng,
     String? whatsapp,
     String? logoUrl,
     String? primaryColor,
@@ -98,6 +124,7 @@ class TenantModel {
     DateTime? trialStartedAt,
     DateTime? planExpiresAt,
     bool? isActive,
+    bool? isClaimed,
     DateTime? createdAt,
   }) {
     return TenantModel(
@@ -106,6 +133,9 @@ class TenantModel {
       name: name ?? this.name,
       description: description ?? this.description,
       address: address ?? this.address,
+      zone: zone ?? this.zone,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
       whatsapp: whatsapp ?? this.whatsapp,
       logoUrl: logoUrl ?? this.logoUrl,
       primaryColor: primaryColor ?? this.primaryColor,
@@ -113,6 +143,7 @@ class TenantModel {
       trialStartedAt: trialStartedAt ?? this.trialStartedAt,
       planExpiresAt: planExpiresAt ?? this.planExpiresAt,
       isActive: isActive ?? this.isActive,
+      isClaimed: isClaimed ?? this.isClaimed,
       createdAt: createdAt ?? this.createdAt,
     );
   }

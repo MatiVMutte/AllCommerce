@@ -18,6 +18,7 @@ void main() {
       plan: plan,
       planExpiresAt: expiresAt ?? DateTime(2025, 7, 15),
       isActive: isActive,
+      isClaimed: true,
       createdAt: DateTime(2025),
       productCount: 0,
       orderCount: 0,

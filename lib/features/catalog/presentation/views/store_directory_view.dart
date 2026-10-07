@@ -1,5 +1,7 @@
+import 'package:all_commerce/core/constants/app_config.dart';
 import 'package:all_commerce/core/constants/app_strings.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
+import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/widgets/app_avatar.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
@@ -8,11 +10,17 @@ import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
+import 'package:all_commerce/features/orders/data/services/whatsapp_message_builder.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+enum _DirectoryView { list, map }
 
 class StoreDirectoryView extends ConsumerStatefulWidget {
   const StoreDirectoryView({this.focusSearch = false, super.key});
@@ -27,6 +35,8 @@ class StoreDirectoryView extends ConsumerStatefulWidget {
 class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
   final FocusNode _searchFocus = FocusNode();
   bool _animated = false;
+  _DirectoryView _view = _DirectoryView.list;
+  String? _zone;
 
   @override
   void initState() {
@@ -44,12 +54,18 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
     super.dispose();
   }
 
+  Future<void> _refresh(WidgetRef ref) async {
+    ref.invalidate(publicZonesProvider);
+    ref.invalidate(activeTenantsProvider(_zone));
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     final AsyncValue<List<TenantModel>> tenants = ref.watch(
-      activeTenantsProvider,
+      activeTenantsProvider(_zone),
     );
+    final AsyncValue<List<String>> zonesAsync = ref.watch(publicZonesProvider);
     final String search = ref.watch(storeSearchProvider);
     final UserModel? profile = ref.watch(currentProfileProvider).value;
     final bool animate = !_animated;
@@ -92,33 +108,60 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                _ZoneChips(
+                  zonesAsync: zonesAsync,
+                  selected: _zone,
+                  onSelected: (String? zone) {
+                    setState(() => _zone = zone);
+                    ref.invalidate(activeTenantsProvider(_zone));
+                  },
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SegmentedButton<_DirectoryView>(
+                    selected: <_DirectoryView>{_view},
+                    onSelectionChanged: (Set<_DirectoryView> value) {
+                      setState(() => _view = value.first);
+                    },
+                    segments: const <ButtonSegment<_DirectoryView>>[
+                      ButtonSegment<_DirectoryView>(
+                        value: _DirectoryView.list,
+                        label: Text('Lista'),
+                        icon: Icon(Icons.list_rounded),
+                      ),
+                      ButtonSegment<_DirectoryView>(
+                        value: _DirectoryView.map,
+                        label: Text('Mapa'),
+                        icon: Icon(Icons.map_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Expanded(
                   child: tenants.when(
                     loading: () =>
                         const AppSkeletonList(itemCount: 4, itemHeight: 132),
                     error: (Object error, StackTrace stack) => AppErrorState(
-                      onRetry: () => ref.invalidate(activeTenantsProvider),
+                      onRetry: () => _refresh(ref),
                     ),
                     data: (List<TenantModel> list) {
-                      if (list.isEmpty) {
-                        return const AppEmptyState(
-                          icon: Icons.storefront_outlined,
-                          title: AppStrings.noStoresYet,
-                        );
-                      }
                       final List<TenantModel> filtered = filterTenants(
                         list,
                         search,
                       );
                       if (filtered.isEmpty) {
                         return const AppEmptyState(
-                          icon: Icons.search_off_rounded,
+                          icon: Icons.storefront_outlined,
                           title: AppStrings.noStoresFound,
                         );
                       }
+                      if (_view == _DirectoryView.map) {
+                        return _DirectoryMap(tenants: filtered);
+                      }
                       return RefreshIndicator(
-                        onRefresh: () async =>
-                            ref.invalidate(activeTenantsProvider),
+                        onRefresh: () async => _refresh(ref),
                         child: ListView.builder(
                           padding: const EdgeInsets.fromLTRB(
                             16,
@@ -161,6 +204,242 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
   }
 }
 
+class _ZoneChips extends StatelessWidget {
+  const _ZoneChips({
+    required this.zonesAsync,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final AsyncValue<List<String>> zonesAsync;
+  final String? selected;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      height: 40,
+      child: zonesAsync.when(
+        loading: () => ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          children: const <Widget>[
+            AppSkeleton(width: 80, height: 32, radius: 999),
+            SizedBox(width: 8),
+            AppSkeleton(width: 100, height: 32, radius: 999),
+          ],
+        ),
+        error: (_, _) => const SizedBox.shrink(),
+        data: (List<String> zones) {
+          return ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: zones.length + 1,
+            itemBuilder: (BuildContext context, int index) {
+              final bool isAll = index == 0;
+              final String? zone = isAll ? null : zones[index - 1];
+              final bool active = selected == zone;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(isAll ? 'Todas' : zone!),
+                  selected: active,
+                  showCheckmark: false,
+                  onSelected: (_) => onSelected(zone),
+                  selectedColor: scheme.primary,
+                  labelStyle: TextStyle(
+                    color: active ? scheme.onPrimary : tokens.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DirectoryMap extends StatelessWidget {
+  const _DirectoryMap({required this.tenants});
+
+  final List<TenantModel> tenants;
+
+  List<TenantModel> get _withCoords => tenants
+      .where(
+        (TenantModel t) => t.lat != null && t.lng != null && !t.isUnclaimedLead,
+      )
+      .toList();
+
+  LatLng get _center {
+    final List<TenantModel> list = _withCoords;
+    if (list.isEmpty) return const LatLng(-34.6, -58.4);
+    final double lat = list.map((TenantModel t) => t.lat!).reduce((a, b) => a + b) / list.length;
+    final double lng = list.map((TenantModel t) => t.lng!).reduce((a, b) => a + b) / list.length;
+    return LatLng(lat, lng);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<TenantModel> points = _withCoords;
+    if (points.isEmpty) {
+      return const AppEmptyState(
+        icon: Icons.map_outlined,
+        title: 'Sin locales en el mapa',
+        subtitle: 'Los locales sin dirección exacta aparecen solo en la lista.',
+      );
+    }
+    return FlutterMap(
+      options: MapOptions(
+        initialCenter: _center,
+        initialZoom: 14,
+      ),
+      children: <Widget>[
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'app.allcommerce',
+        ),
+        MarkerLayer(
+          markers: points.map((TenantModel t) {
+            return Marker(
+              point: LatLng(t.lat!, t.lng!),
+              width: 40,
+              height: 50,
+              child: _MapMarker(
+                tenant: t,
+                onTap: () => _showStoreSheet(context, t),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  void _showStoreSheet(BuildContext context, TenantModel tenant) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext context) => _MapStoreSheet(tenant: tenant),
+    );
+  }
+}
+
+class _MapMarker extends StatelessWidget {
+  const _MapMarker({required this.tenant, required this.onTap});
+
+  final TenantModel tenant;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: <Widget>[
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: tenant.primaryColorValue,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: const <BoxShadow>[
+                BoxShadow(color: Colors.black26, blurRadius: 4),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                tenant.name.isEmpty ? '?' : tenant.name[0].toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Icon(
+            Icons.location_on,
+            color: tenant.primaryColorValue,
+            size: 12,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapStoreSheet extends StatelessWidget {
+  const _MapStoreSheet({required this.tenant});
+
+  final TenantModel tenant;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                AppAvatar(tenant: tenant, size: 48),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        tenant.name,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      if (tenant.address != null)
+                        Text(
+                          tenant.address!,
+                          style: TextStyle(
+                            color: tokens.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (tenant.isUnclaimedLead) ...<Widget>[
+              _ClaimCallout(tenant: tenant),
+              const SizedBox(height: 12),
+            ],
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: tenant.isUnclaimedLead
+                    ? null
+                    : () {
+                        Navigator.of(context).pop();
+                        context.push('/s/${tenant.slug}');
+                      },
+                child: Text(tenant.isUnclaimedLead ? 'Próximamente' : 'Ver catálogo'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _StoreCard extends StatelessWidget {
   const _StoreCard({required this.tenant});
 
@@ -178,7 +457,9 @@ class _StoreCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/s/${tenant.slug}'),
+        onTap: tenant.isUnclaimedLead
+            ? null
+            : () => context.push('/s/${tenant.slug}'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -197,6 +478,30 @@ class _StoreCard extends StatelessWidget {
                                 Container(color: tenant.primaryColorValue),
                           ),
                   ),
+                  if (tenant.isUnclaimedLead)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        alignment: Alignment.center,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: const Text(
+                            'Próximamente',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   Positioned(
                     left: 16,
                     bottom: -20,
@@ -242,7 +547,7 @@ class _StoreCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                  if (tenant.address != null) ...<Widget>[
+                  if (tenant.zone != null || tenant.address != null) ...<Widget>[
                     const SizedBox(height: 6),
                     Row(
                       children: <Widget>[
@@ -254,7 +559,10 @@ class _StoreCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            tenant.address!,
+                            <String>[
+                              if (tenant.zone != null) tenant.zone!,
+                              if (tenant.address != null) tenant.address!,
+                            ].join(' · '),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -266,9 +574,63 @@ class _StoreCard extends StatelessWidget {
                       ],
                     ),
                   ],
+                  if (tenant.isUnclaimedLead) ...<Widget>[
+                    const SizedBox(height: 10),
+                    _ClaimCallout(tenant: tenant),
+                  ],
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ClaimCallout extends StatelessWidget {
+  const _ClaimCallout({required this.tenant});
+
+  final TenantModel tenant;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color primary = Theme.of(context).colorScheme.primary;
+    return InkWell(
+      onTap: () {
+        final String support = AppConfig.supportWhatsapp;
+        if (support.isEmpty) return;
+        launchUrl(
+          buildWhatsAppUri(
+            support,
+            'Hola! Soy el dueño de ${tenant.name} '
+            '(allcommerce.app/s/${tenant.slug}) y quiero reclamar mi local.',
+          ),
+          mode: LaunchMode.externalApplication,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: primary.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.storefront_outlined, size: 16, color: primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '¿Sos el dueño? Reclamá tu local',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: primary,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: primary),
           ],
         ),
       ),

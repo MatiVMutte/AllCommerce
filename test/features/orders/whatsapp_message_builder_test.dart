@@ -17,6 +17,7 @@ TenantModel _tenant() {
     trialStartedAt: DateTime(2024),
     planExpiresAt: DateTime.now().add(const Duration(days: 30)),
     isActive: true,
+      isClaimed: true,
     createdAt: DateTime(2024),
   );
 }

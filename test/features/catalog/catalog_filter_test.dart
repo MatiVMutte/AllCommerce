@@ -102,6 +102,7 @@ void main() {
         trialStartedAt: DateTime(2025),
         planExpiresAt: DateTime.now().add(const Duration(days: 5)),
         isActive: true,
+      isClaimed: true,
         createdAt: DateTime(2025),
       ),
     ];

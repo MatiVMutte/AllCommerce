@@ -34,3 +34,13 @@ final tenantBySlugProvider = FutureProvider.family<TenantModel?, String>(
 final tenantByIdProvider = FutureProvider.family<TenantModel?, String>(
   (Ref ref, String id) => ref.watch(tenantRepositoryProvider).getById(id),
 );
+
+final activeTenantsProvider =
+    FutureProvider.autoDispose.family<List<TenantModel>, String?>(
+  (Ref ref, String? zone) =>
+      ref.watch(tenantRepositoryProvider).listActiveByZone(zone),
+);
+
+final publicZonesProvider = FutureProvider.autoDispose<List<String>>(
+  (Ref ref) => ref.watch(tenantRepositoryProvider).listZones(),
+);

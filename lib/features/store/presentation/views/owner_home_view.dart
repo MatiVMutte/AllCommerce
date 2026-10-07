@@ -1,4 +1,5 @@
 import 'package:all_commerce/core/constants/app_config.dart';
+import 'package:all_commerce/core/constants/plans.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
@@ -141,9 +142,11 @@ class _OwnerPanel extends ConsumerWidget {
     final AiUsage? aiUsage = ref.watch(aiUsageProvider).value;
     final int pending = orders == null ? 0 : pendingCount(orders);
     final bool expiring = tenant.canPublish && tenant.daysLeft <= 3;
-    final String planLine = tenant.canPublish
-        ? 'Plan ${tenant.plan.label} · ${tenant.daysLeft} días restantes'
-        : 'Plan vencido';
+    final String planLine = tenant.plan == PlanType.free
+        ? 'Plan Gratis · ${tenant.plan.maxProducts} productos'
+        : (tenant.canPublish
+            ? 'Plan ${tenant.plan.label} · ${tenant.daysLeft} días restantes'
+            : 'Plan vencido');
 
     return Center(
       child: ConstrainedBox(

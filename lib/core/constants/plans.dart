@@ -1,4 +1,5 @@
 enum PlanType {
+  free('free', 'Gratis', 5),
   trial('trial', 'Prueba', 30),
   inicial('inicial', 'Inicial', 30),
   crecimiento('crecimiento', 'Crecimiento', 150),
@@ -17,6 +18,10 @@ enum PlanType {
     for (final PlanType plan in values) {
       if (plan.id == id) return plan;
     }
-    return PlanType.trial;
+    return PlanType.free;
   }
+
+  bool get isFree => this == PlanType.free;
+
+  bool get isPaid => !isFree && this != PlanType.trial;
 }
