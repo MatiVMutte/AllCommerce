@@ -1,4 +1,6 @@
+import 'package:all_commerce/core/constants/delivery_method.dart';
 import 'package:all_commerce/core/constants/order_status.dart';
+import 'package:all_commerce/core/constants/payment_method.dart';
 import 'package:all_commerce/core/supabase/supabase_client_provider.dart';
 import 'package:all_commerce/features/cart/data/models/cart_item.dart';
 import 'package:all_commerce/features/orders/data/models/order_item_model.dart';
@@ -21,6 +23,10 @@ class OrderRepository {
     required List<CartItem> items,
     String? couponCode,
     String? notes,
+    DeliveryMethod deliveryMethod = DeliveryMethod.pickup,
+    String? deliveryAddress,
+    PaymentMethod paymentMethod = PaymentMethod.cash,
+    String? paymentNotes,
   }) async {
     final Map<String, dynamic> row = await _client.rpc(
       'place_order',
@@ -36,6 +42,11 @@ class OrderRepository {
             .toList(),
         'p_coupon_code': couponCode,
         'p_notes': notes,
+        'p_delivery_method': deliveryMethod.id,
+        'p_delivery_address': deliveryAddress,
+        'p_delivery_cost': 0,
+        'p_payment_method': paymentMethod.id,
+        'p_payment_notes': paymentNotes,
       },
     );
     return OrderModel.fromJson(row);

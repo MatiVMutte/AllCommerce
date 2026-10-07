@@ -1,4 +1,6 @@
+import 'package:all_commerce/core/constants/delivery_method.dart';
 import 'package:all_commerce/core/constants/order_status.dart';
+import 'package:all_commerce/core/constants/payment_method.dart';
 
 class OrderModel {
   const OrderModel({
@@ -14,6 +16,11 @@ class OrderModel {
     required this.total,
     this.couponId,
     this.notes,
+    this.deliveryMethod = DeliveryMethod.pickup,
+    this.deliveryAddress,
+    this.deliveryCost = 0,
+    this.paymentMethod = PaymentMethod.cash,
+    this.paymentNotes,
     required this.createdAt,
   });
 
@@ -29,6 +36,11 @@ class OrderModel {
   final double total;
   final String? couponId;
   final String? notes;
+  final DeliveryMethod deliveryMethod;
+  final String? deliveryAddress;
+  final double deliveryCost;
+  final PaymentMethod paymentMethod;
+  final String? paymentNotes;
   final DateTime createdAt;
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -45,6 +57,14 @@ class OrderModel {
       total: num.parse(json['total'].toString()).toDouble(),
       couponId: json['coupon_id'] as String?,
       notes: json['notes'] as String?,
+      deliveryMethod:
+          DeliveryMethod.fromId(json['delivery_method'] as String? ?? 'pickup'),
+      deliveryAddress: json['delivery_address'] as String?,
+      deliveryCost:
+          num.tryParse(json['delivery_cost']?.toString() ?? '0')?.toDouble() ?? 0,
+      paymentMethod:
+          PaymentMethod.fromId(json['payment_method'] as String? ?? 'cash'),
+      paymentNotes: json['payment_notes'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -62,6 +82,11 @@ class OrderModel {
     double? total,
     String? Function()? couponId,
     String? Function()? notes,
+    DeliveryMethod? deliveryMethod,
+    String? Function()? deliveryAddress,
+    double? deliveryCost,
+    PaymentMethod? paymentMethod,
+    String? Function()? paymentNotes,
     DateTime? createdAt,
   }) {
     return OrderModel(
@@ -79,6 +104,13 @@ class OrderModel {
       total: total ?? this.total,
       couponId: couponId != null ? couponId() : this.couponId,
       notes: notes != null ? notes() : this.notes,
+      deliveryMethod: deliveryMethod ?? this.deliveryMethod,
+      deliveryAddress:
+          deliveryAddress != null ? deliveryAddress() : this.deliveryAddress,
+      deliveryCost: deliveryCost ?? this.deliveryCost,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      paymentNotes:
+          paymentNotes != null ? paymentNotes() : this.paymentNotes,
       createdAt: createdAt ?? this.createdAt,
     );
   }

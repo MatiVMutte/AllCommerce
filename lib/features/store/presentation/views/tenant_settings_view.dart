@@ -42,6 +42,9 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
   final TextEditingController _description = TextEditingController();
   final TextEditingController _address = TextEditingController();
   final TextEditingController _whatsapp = TextEditingController();
+  final TextEditingController _transferAlias = TextEditingController();
+  final TextEditingController _mercadoPagoLink = TextEditingController();
+  bool _acceptsCash = true;
   String _color = '#0052FF';
   bool _initialized = false;
   String? _refreshedTenantId;
@@ -52,6 +55,8 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     _description.dispose();
     _address.dispose();
     _whatsapp.dispose();
+    _transferAlias.dispose();
+    _mercadoPagoLink.dispose();
     super.dispose();
   }
 
@@ -62,12 +67,17 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     // Show the local part without the 549 prefix when possible.
     final String w = tenant.whatsapp;
     _whatsapp.text = w.startsWith('549') ? w.substring(3) : w;
+    _transferAlias.text = tenant.transferAlias ?? '';
+    _mercadoPagoLink.text = tenant.mercadoPagoLink ?? '';
+    _acceptsCash = tenant.acceptsCash;
     _color = tenant.primaryColor;
     _initialized = true;
     _name.addListener(_onChange);
     _description.addListener(_onChange);
     _address.addListener(_onChange);
     _whatsapp.addListener(_onChange);
+    _transferAlias.addListener(_onChange);
+    _mercadoPagoLink.addListener(_onChange);
   }
 
   void _onChange() => setState(() {});
@@ -80,6 +90,9 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
         _description.text.trim() != (tenant.description ?? '') ||
         _address.text.trim() != (tenant.address ?? '') ||
         _whatsapp.text.trim() != currentPhone ||
+        _transferAlias.text.trim() != (tenant.transferAlias ?? '') ||
+        _mercadoPagoLink.text.trim() != (tenant.mercadoPagoLink ?? '') ||
+        _acceptsCash != tenant.acceptsCash ||
         _color != tenant.primaryColor;
   }
 
@@ -96,6 +109,13 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
           address: _address.text.trim().isEmpty ? null : _address.text.trim(),
           whatsapp: Validators.normalizePhone(_whatsapp.text),
           primaryColor: _color,
+          transferAlias: _transferAlias.text.trim().isEmpty
+              ? null
+              : _transferAlias.text.trim(),
+          mercadoPagoLink: _mercadoPagoLink.text.trim().isEmpty
+              ? null
+              : _mercadoPagoLink.text.trim(),
+          acceptsCash: _acceptsCash,
         );
     if (!mounted) return;
     if (updated == null) {
@@ -277,6 +297,67 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                         ),
                         keyboardType: TextInputType.phone,
                         validator: Validators.phone,
+                      ),
+                      const SizedBox(height: 4),
+                      const _Section('COBRO'),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: TextFormField(
+                              controller: _transferAlias,
+                              decoration: const InputDecoration(
+                                labelText: 'Alias/CBU para transferencias',
+                                hintText: 'Ej: mateo.dietetica.mp',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            tooltip: 'Info',
+                            icon: const Icon(Icons.help_outline, size: 20),
+                            onPressed: () => showDialog<void>(
+                              context: context,
+                              builder: (BuildContext context) => AlertDialog(
+                                title: const Text('Pagos'),
+                                content: const Text(
+                                  'Escribí tu alias de Mercado Pago, CVU o CBU. '
+                                  'Los clientes lo verán al elegir "Transferencia".',
+                                ),
+                                actions: <Widget>[
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    child: const Text('Entendido'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _mercadoPagoLink,
+                        decoration: const InputDecoration(
+                          labelText: 'Link de pago Mercado Pago (opcional)',
+                          hintText: 'https://mpago.la/...',
+                        ),
+                        keyboardType: TextInputType.url,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              'Aceptar pago en efectivo',
+                              style: TextStyle(color: tokens.textSecondary),
+                            ),
+                          ),
+                          Switch(
+                            value: _acceptsCash,
+                            onChanged: (bool value) => setState(() => _acceptsCash = value),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       const _Section('APARIENCIA'),

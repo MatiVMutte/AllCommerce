@@ -15,6 +15,9 @@ class TenantModel {
     required this.whatsapp,
     this.logoUrl,
     required this.primaryColor,
+    this.transferAlias,
+    this.mercadoPagoLink,
+    this.acceptsCash = true,
     required this.plan,
     required this.trialStartedAt,
     required this.planExpiresAt,
@@ -36,6 +39,9 @@ class TenantModel {
 
   /// Hex color string, e.g. '#0052FF'.
   final String primaryColor;
+  final String? transferAlias;
+  final String? mercadoPagoLink;
+  final bool acceptsCash;
   final PlanType plan;
   final DateTime trialStartedAt;
   final DateTime planExpiresAt;
@@ -56,6 +62,9 @@ class TenantModel {
       whatsapp: json['whatsapp'] as String,
       logoUrl: json['logo_url'] as String?,
       primaryColor: json['primary_color'] as String,
+      transferAlias: json['transfer_alias'] as String?,
+      mercadoPagoLink: json['mercado_pago_link'] as String?,
+      acceptsCash: json['accepts_cash'] as bool? ?? true,
       plan: PlanType.fromId(json['plan'] as String),
       trialStartedAt: json['trial_started_at'] == null
           ? DateTime.parse(json['created_at'] as String)
@@ -80,6 +89,9 @@ class TenantModel {
       'whatsapp': whatsapp,
       'logo_url': logoUrl,
       'primary_color': primaryColor,
+      'transfer_alias': transferAlias,
+      'mercado_pago_link': mercadoPagoLink,
+      'accepts_cash': acceptsCash,
       'plan': plan.id,
       'trial_started_at': trialStartedAt.toIso8601String(),
       'plan_expires_at': planExpiresAt.toIso8601String(),
@@ -120,6 +132,9 @@ class TenantModel {
     String? whatsapp,
     String? logoUrl,
     String? primaryColor,
+    String? transferAlias,
+    String? mercadoPagoLink,
+    bool? acceptsCash,
     PlanType? plan,
     DateTime? trialStartedAt,
     DateTime? planExpiresAt,
@@ -139,6 +154,9 @@ class TenantModel {
       whatsapp: whatsapp ?? this.whatsapp,
       logoUrl: logoUrl ?? this.logoUrl,
       primaryColor: primaryColor ?? this.primaryColor,
+      transferAlias: transferAlias ?? this.transferAlias,
+      mercadoPagoLink: mercadoPagoLink ?? this.mercadoPagoLink,
+      acceptsCash: acceptsCash ?? this.acceptsCash,
       plan: plan ?? this.plan,
       trialStartedAt: trialStartedAt ?? this.trialStartedAt,
       planExpiresAt: planExpiresAt ?? this.planExpiresAt,

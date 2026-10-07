@@ -33,6 +33,14 @@ String buildOrderMessage({
   if (notes != null && notes.trim().isNotEmpty) {
     buffer.writeln('Notas: ${notes.trim()}');
   }
+  buffer.writeln(
+    'Entrega: ${order.deliveryMethod.label}${order.deliveryAddress != null && order.deliveryAddress!.trim().isNotEmpty ? ' · ${order.deliveryAddress!.trim()}' : ''}',
+  );
+  buffer.writeln('Pago: ${order.paymentMethod.label}');
+  final String? paymentNotes = order.paymentNotes;
+  if (paymentNotes != null && paymentNotes.trim().isNotEmpty) {
+    buffer.writeln('Notas de pago: ${paymentNotes.trim()}');
+  }
   buffer.write('Nombre: $customerName · Tel: $customerPhone');
   return buffer.toString();
 }

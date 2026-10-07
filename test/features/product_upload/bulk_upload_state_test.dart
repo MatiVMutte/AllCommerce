@@ -28,7 +28,7 @@ void main() {
         analyzed: false,
       );
 
-      final BulkUploadState state = const BulkUploadState(drafts: <BulkProductDraft>[]);
+      const BulkUploadState state = BulkUploadState(drafts: <BulkProductDraft>[]);
       expect(state.analyzedCount, 0);
       expect(state.publishableCount, 0);
 

@@ -60,6 +60,8 @@ void main() {
       '• 1 x Remera — \$8.500\n'
       'Subtotal: \$25.500\n'
       'Total: \$25.500\n'
+      'Entrega: Retiro en el local\n'
+      'Pago: Efectivo\n'
       'Nombre: Ana · Tel: 5491199999999',
     );
   });

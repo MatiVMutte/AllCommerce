@@ -43,6 +43,9 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
     String? address,
     required String whatsapp,
     required String primaryColor,
+    String? transferAlias,
+    String? mercadoPagoLink,
+    bool acceptsCash = true,
   }) async {
     final TenantSettingsRepository repo =
         ref.read(tenantSettingsRepositoryProvider);
@@ -58,6 +61,9 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
         address: address,
         whatsapp: whatsapp,
         primaryColor: primaryColor,
+        transferAlias: transferAlias,
+        mercadoPagoLink: mercadoPagoLink,
+        acceptsCash: acceptsCash,
       );
       final Uint8List? logo = state.pendingLogo;
       if (logo != null) {

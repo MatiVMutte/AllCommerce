@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:all_commerce/core/constants/app_strings.dart';
+import 'package:all_commerce/core/constants/delivery_method.dart';
+import 'package:all_commerce/core/constants/payment_method.dart';
 import 'package:all_commerce/core/router/return_to.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
@@ -237,6 +239,10 @@ class _CartViewState extends ConsumerState<CartView> {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        _DeliverySection(tenant: tenant),
+                        const SizedBox(height: 16),
+                        _PaymentSection(tenant: tenant),
                       ],
                     ),
             ),
@@ -320,6 +326,181 @@ class _CartViewState extends ConsumerState<CartView> {
                 ),
         );
       },
+    );
+  }
+}
+
+class _DeliverySection extends ConsumerWidget {
+  const _DeliverySection({required this.tenant});
+
+  final TenantModel tenant;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppTokens tokens = context.tokens;
+    final CheckoutState checkoutState = ref.watch(checkoutControllerProvider);
+    final DeliveryMethod method = checkoutState.deliveryMethod;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            '¿Cómo querés recibirlo?',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: tokens.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: <Widget>[
+              _ChoiceChip(
+                label: DeliveryMethod.pickup.label,
+                selected: method == DeliveryMethod.pickup,
+                onTap: () => ref
+                    .read(checkoutControllerProvider.notifier)
+                    .setDelivery(DeliveryMethod.pickup),
+              ),
+              const SizedBox(width: 8),
+              _ChoiceChip(
+                label: DeliveryMethod.delivery.label,
+                selected: method == DeliveryMethod.delivery,
+                onTap: () => ref
+                    .read(checkoutControllerProvider.notifier)
+                    .setDelivery(DeliveryMethod.delivery),
+              ),
+            ],
+          ),
+          if (method == DeliveryMethod.delivery) ...<Widget>[
+            const SizedBox(height: 12),
+            TextField(
+              onChanged: (String value) => ref
+                  .read(checkoutControllerProvider.notifier)
+                  .setDelivery(DeliveryMethod.delivery, address: value),
+              decoration: const InputDecoration(
+                labelText: 'Dirección de envío',
+                hintText: 'Calle, número, piso, depto',
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentSection extends ConsumerWidget {
+  const _PaymentSection({required this.tenant});
+
+  final TenantModel tenant;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppTokens tokens = context.tokens;
+    final CheckoutState checkoutState = ref.watch(checkoutControllerProvider);
+    final PaymentMethod method = checkoutState.paymentMethod;
+
+    final List<PaymentMethodOption> options = <PaymentMethodOption>[
+      if (tenant.acceptsCash)
+        PaymentMethodOption(PaymentMethod.cash, PaymentMethod.cash.label),
+      if (tenant.transferAlias?.isNotEmpty == true)
+        PaymentMethodOption(
+          PaymentMethod.transfer,
+          '${PaymentMethod.transfer.label} · ${tenant.transferAlias}',
+        ),
+      if (tenant.mercadoPagoLink?.isNotEmpty == true)
+        PaymentMethodOption(
+          PaymentMethod.mercadoPago,
+          PaymentMethod.mercadoPago.label,
+        ),
+    ];
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            '¿Cómo vas a pagar?',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: tokens.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              for (final PaymentMethodOption opt in options)
+                _ChoiceChip(
+                  label: opt.label,
+                  selected: method == opt.method,
+                  onTap: () => ref
+                      .read(checkoutControllerProvider.notifier)
+                      .setPayment(opt.method),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _paymentHint(tenant, method),
+            style: TextStyle(color: tokens.textSecondary, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _paymentHint(TenantModel tenant, PaymentMethod method) {
+    switch (method) {
+      case PaymentMethod.cash:
+        return 'Pagás al retirar o cuando te lo entreguen.';
+      case PaymentMethod.transfer:
+        return 'Alias/CBU: ${tenant.transferAlias}. Envianos el comprobante por WhatsApp.';
+      case PaymentMethod.mercadoPago:
+        return 'Te vamos a mandar el link de pago por WhatsApp.';
+    }
+  }
+}
+
+class PaymentMethodOption {
+  const PaymentMethodOption(this.method, this.label);
+
+  final PaymentMethod method;
+  final String label;
+}
+
+class _ChoiceChip extends StatelessWidget {
+  const _ChoiceChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final Color bg = selected ? Theme.of(context).colorScheme.primaryContainer : tokens.surfaceMuted;
+    final Color fg = selected ? Theme.of(context).colorScheme.onPrimaryContainer : tokens.textSecondary;
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.w600, color: fg, fontSize: 13),
+          ),
+        ),
+      ),
     );
   }
 }

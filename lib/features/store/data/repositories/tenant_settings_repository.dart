@@ -23,6 +23,9 @@ class TenantSettingsRepository {
     String? address,
     required String whatsapp,
     required String primaryColor,
+    String? transferAlias,
+    String? mercadoPagoLink,
+    bool acceptsCash = true,
   }) async {
     final Map<String, dynamic> row = await _client
         .from('tenants')
@@ -32,6 +35,9 @@ class TenantSettingsRepository {
           'address': address,
           'whatsapp': whatsapp,
           'primary_color': primaryColor,
+          'transfer_alias': transferAlias,
+          'mercado_pago_link': mercadoPagoLink,
+          'accepts_cash': acceptsCash,
         })
         .eq('id', tenantId)
         .select()

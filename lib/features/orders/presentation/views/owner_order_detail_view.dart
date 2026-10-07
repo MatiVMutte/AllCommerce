@@ -311,6 +311,36 @@ class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
                   ),
                 ],
               ),
+              const SizedBox(height: 24),
+              const _Section('ENTREGA Y PAGO'),
+              const SizedBox(height: 8),
+              _SummaryRow(
+                label: 'Entrega',
+                value: order.deliveryMethod.label +
+                    (order.deliveryAddress != null &&
+                            order.deliveryAddress!.trim().isNotEmpty
+                        ? ' · ${order.deliveryAddress!.trim()}'
+                        : ''),
+              ),
+              _SummaryRow(
+                label: 'Pago',
+                value: order.paymentMethod.label,
+              ),
+              if (order.paymentNotes != null &&
+                  order.paymentNotes!.trim().isNotEmpty)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: tokens.surfaceMuted,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    order.paymentNotes!,
+                    style: TextStyle(color: tokens.textSecondary),
+                  ),
+                ),
               if (order.notes != null &&
                   order.notes!.trim().isNotEmpty) ...<Widget>[
                 const SizedBox(height: 24),
