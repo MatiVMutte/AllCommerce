@@ -51,6 +51,8 @@ app.*.map.json
 .env
 .env.*
 !.env.example
+android/app/google-services.json
+GoogleService-Info.plist
 # Supabase local
 supabase/.temp/
 supabase/.branches/
