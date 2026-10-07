@@ -12,6 +12,8 @@ class PickedImage {
 }
 
 class ImageService {
+  const ImageService();
+
   static const int _maxBytes = 300 * 1024;
 
   /// Returns null when the user cancels.
@@ -23,6 +25,20 @@ class ImageService {
     );
     if (file == null) return null;
     return PickedImage(bytes: await file.readAsBytes(), name: file.name);
+  }
+
+  /// Returns an empty list when the user cancels.
+  Future<List<PickedImage>> pickMultiple({int limit = 20}) async {
+    final List<XFile> files = await ImagePicker().pickMultiImage(
+      maxWidth: 1600,
+      imageQuality: 85,
+      limit: limit,
+    );
+    final List<PickedImage> result = <PickedImage>[];
+    for (final XFile file in files) {
+      result.add(PickedImage(bytes: await file.readAsBytes(), name: file.name));
+    }
+    return result;
   }
 
   /// Compresses to JPEG (<=1024px, q80); retries at q60 if still over 300 KB.

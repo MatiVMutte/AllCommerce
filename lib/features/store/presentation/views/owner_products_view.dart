@@ -104,6 +104,29 @@ class OwnerProductsView extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push('/owner/products/bulk-upload'),
+                          icon: const Icon(Icons.layers_outlined, size: 18),
+                          label: const Text('Carga masiva'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () => context.push('/owner/products/new'),
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Subir uno'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: _FilterSegmented(),

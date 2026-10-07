@@ -25,6 +25,7 @@ import 'package:all_commerce/features/orders/presentation/views/my_orders_view.d
 import 'package:all_commerce/features/orders/presentation/views/order_success_view.dart';
 import 'package:all_commerce/features/orders/presentation/views/owner_order_detail_view.dart';
 import 'package:all_commerce/features/orders/presentation/views/owner_orders_view.dart';
+import 'package:all_commerce/features/product_upload/presentation/views/bulk_upload_view.dart';
 import 'package:all_commerce/features/product_upload/presentation/views/product_upload_view.dart';
 import 'package:all_commerce/features/store/presentation/views/owner_products_view.dart';
 import 'package:all_commerce/features/store/presentation/views/tenant_settings_view.dart';
@@ -213,6 +214,11 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
                     : null,
                 productId: state.pathParameters['id'] ?? '',
               ),
+        ),
+        GoRoute(
+          path: '/owner/products/bulk-upload',
+          builder: (BuildContext context, GoRouterState state) =>
+              const BulkUploadView(),
         ),
       ],
       redirect: (BuildContext context, GoRouterState state) {

@@ -16,7 +16,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final Provider<ImageService> imageServiceProvider = Provider<ImageService>(
-  (_) => ImageService(),
+  (_) => const ImageService(),
 );
 
 final Provider<AiAnalyzeService> aiAnalyzeServiceProvider =
