@@ -1,5 +1,8 @@
 -- AllCommerce · 0007 · Expose location + claim status in admin overview
 
+-- Cambian las columnas devueltas: Postgres exige borrar la función antes de recrearla.
+drop function if exists public.admin_tenants_overview();
+
 create or replace function public.admin_tenants_overview()
 returns table (
   id uuid,
@@ -46,6 +49,10 @@ as $$
   where private.is_admin()
   order by t.created_at desc
 $$;
+
+-- El drop borró los permisos de 0005: se vuelven a restringir.
+revoke all on function public.admin_tenants_overview() from public, anon;
+grant execute on function public.admin_tenants_overview() to authenticated;
 
 -- Allow admin to update location and claim status.
 create or replace function public.admin_update_tenant_location(

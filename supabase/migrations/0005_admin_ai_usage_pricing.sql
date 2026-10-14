@@ -247,3 +247,8 @@ revoke all on function public.admin_metrics() from public, anon;
 grant execute on function public.admin_set_tenant_plan(uuid, public.plan_type, timestamptz, boolean) to authenticated;
 grant execute on function public.admin_tenants_overview() to authenticated;
 grant execute on function public.admin_metrics() to authenticated;
+
+-- Valor 'free' del plan gratis (lo usa 0006). Se agrega acá, en una transacción anterior,
+-- porque Postgres no permite usar un valor de enum en la misma transacción que lo crea.
+-- Idempotente: en bases que ya tienen 'free' no hace nada.
+alter type public.plan_type add value if not exists 'free';

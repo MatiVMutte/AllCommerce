@@ -2,6 +2,7 @@
 
 -- 1. Plan gratis permanente -------------------------------------------------------------
 -- New signups will land here. No expiration, 5 products, 30 AI analyses/month.
+-- En instalaciones nuevas el valor ya lo agregó 0005; esta línea queda como no-op.
 alter type public.plan_type add value if not exists 'free';
 
 insert into public.plans (id, name, max_products, price_ars, ai_analyses_per_month, sort_order, highlights)
@@ -26,7 +27,7 @@ update public.tenants
 -- 2. Location / zone -------------------------------------------------------------------
 alter table public.tenants
   add column zone text,
-  add column address text,
+  add column if not exists address text, -- ya existe desde 0001
   add column lat numeric(10,8),
   add column lng numeric(11,8);
 
