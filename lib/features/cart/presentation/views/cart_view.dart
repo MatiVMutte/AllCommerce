@@ -196,6 +196,42 @@ class _CartViewState extends ConsumerState<CartView> {
                   : ListView(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       children: <Widget>[
+                        if (!tenant.isOpen)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: tokens.warning.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: tokens.warning.withValues(alpha: 0.35),
+                              ),
+                            ),
+                            child: Row(
+                              children: <Widget>[
+                                Icon(
+                                  Icons.schedule_rounded,
+                                  color: tokens.warning,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    tenant.openingHours != null &&
+                                            tenant.openingHours!
+                                                .trim()
+                                                .isNotEmpty
+                                        ? '${tenant.name} figura como cerrado ahora (${tenant.openingHours}). Podés enviar el pedido igual y lo verán cuando abran.'
+                                        : '${tenant.name} figura como cerrado ahora. Podés enviar el pedido igual y lo verán cuando abran.',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: tokens.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         Padding(
                           padding: const EdgeInsets.only(
                             left: 4,

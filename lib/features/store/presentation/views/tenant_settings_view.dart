@@ -44,7 +44,9 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
   final TextEditingController _whatsapp = TextEditingController();
   final TextEditingController _transferAlias = TextEditingController();
   final TextEditingController _mercadoPagoLink = TextEditingController();
+  final TextEditingController _openingHours = TextEditingController();
   bool _acceptsCash = true;
+  bool _isOpen = true;
   String _color = '#0052FF';
   bool _initialized = false;
   String? _refreshedTenantId;
@@ -57,6 +59,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     _whatsapp.dispose();
     _transferAlias.dispose();
     _mercadoPagoLink.dispose();
+    _openingHours.dispose();
     super.dispose();
   }
 
@@ -69,7 +72,9 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     _whatsapp.text = w.startsWith('549') ? w.substring(3) : w;
     _transferAlias.text = tenant.transferAlias ?? '';
     _mercadoPagoLink.text = tenant.mercadoPagoLink ?? '';
+    _openingHours.text = tenant.openingHours ?? '';
     _acceptsCash = tenant.acceptsCash;
+    _isOpen = tenant.isOpen;
     _color = tenant.primaryColor;
     _initialized = true;
     _name.addListener(_onChange);
@@ -78,6 +83,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     _whatsapp.addListener(_onChange);
     _transferAlias.addListener(_onChange);
     _mercadoPagoLink.addListener(_onChange);
+    _openingHours.addListener(_onChange);
   }
 
   void _onChange() => setState(() {});
@@ -92,7 +98,9 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
         _whatsapp.text.trim() != currentPhone ||
         _transferAlias.text.trim() != (tenant.transferAlias ?? '') ||
         _mercadoPagoLink.text.trim() != (tenant.mercadoPagoLink ?? '') ||
+        _openingHours.text.trim() != (tenant.openingHours ?? '') ||
         _acceptsCash != tenant.acceptsCash ||
+        _isOpen != tenant.isOpen ||
         _color != tenant.primaryColor;
   }
 
@@ -116,6 +124,10 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
               ? null
               : _mercadoPagoLink.text.trim(),
           acceptsCash: _acceptsCash,
+          isOpen: _isOpen,
+          openingHours: _openingHours.text.trim().isEmpty
+              ? null
+              : _openingHours.text.trim(),
         );
     if (!mounted) return;
     if (updated == null) {
@@ -298,7 +310,28 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                         keyboardType: TextInputType.phone,
                         validator: Validators.phone,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 16),
+                      const _Section('ATENCIÓN Y HORARIOS'),
+                      const SizedBox(height: 8),
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        value: _isOpen,
+                        onChanged: (bool value) =>
+                            setState(() => _isOpen = value),
+                        title: const Text('Local abierto ahora'),
+                        subtitle: const Text(
+                          'Se muestra como Abierto o Cerrado en el directorio y en tu catálogo',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _openingHours,
+                        decoration: const InputDecoration(
+                          labelText: 'Horarios de atención (opcional)',
+                          hintText: 'Ej: Lun a Vie 9 a 19 hs · Sáb 9 a 13 hs',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       const _Section('COBRO'),
                       const SizedBox(height: 12),
                       Row(

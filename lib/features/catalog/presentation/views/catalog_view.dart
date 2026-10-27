@@ -306,7 +306,48 @@ class _StoreBanner extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
               AppAvatar(tenant: tenant, size: 64),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (tenant.isOpen ? Colors.green.shade700 : Colors.black54)
+                          .withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      tenant.isOpen ? 'Abierto' : 'Cerrado',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (tenant.openingHours != null &&
+                      tenant.openingHours!.trim().isNotEmpty) ...<Widget>[
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        tenant.openingHours!,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 6),
               if (tenant.address != null || tenant.whatsapp.isNotEmpty)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

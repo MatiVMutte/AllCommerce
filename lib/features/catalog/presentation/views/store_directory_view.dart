@@ -502,6 +502,32 @@ class _StoreCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                  if (!tenant.isUnclaimedLead)
+                    Positioned(
+                      top: 10,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (tenant.isOpen
+                                  ? tokens.success
+                                  : Colors.black87)
+                              .withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          tenant.isOpen ? 'Abierto' : 'Cerrado',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ),
                   Positioned(
                     left: 16,
                     bottom: -20,
@@ -563,6 +589,31 @@ class _StoreCard extends StatelessWidget {
                               if (tenant.zone != null) tenant.zone!,
                               if (tenant.address != null) tenant.address!,
                             ].join(' · '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: tokens.textTertiary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (tenant.openingHours != null &&
+                      tenant.openingHours!.trim().isNotEmpty) ...<Widget>[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: <Widget>[
+                        Icon(
+                          Icons.schedule_outlined,
+                          size: 14,
+                          color: tokens.textTertiary,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            tenant.openingHours!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(

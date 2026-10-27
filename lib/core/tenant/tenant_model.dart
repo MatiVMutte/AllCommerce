@@ -18,6 +18,8 @@ class TenantModel {
     this.transferAlias,
     this.mercadoPagoLink,
     this.acceptsCash = true,
+    this.isOpen = true,
+    this.openingHours,
     required this.plan,
     required this.trialStartedAt,
     required this.planExpiresAt,
@@ -42,6 +44,8 @@ class TenantModel {
   final String? transferAlias;
   final String? mercadoPagoLink;
   final bool acceptsCash;
+  final bool isOpen;
+  final String? openingHours;
   final PlanType plan;
   final DateTime trialStartedAt;
   final DateTime planExpiresAt;
@@ -65,6 +69,8 @@ class TenantModel {
       transferAlias: json['transfer_alias'] as String?,
       mercadoPagoLink: json['mercado_pago_link'] as String?,
       acceptsCash: json['accepts_cash'] as bool? ?? true,
+      isOpen: json['is_open'] as bool? ?? true,
+      openingHours: json['opening_hours'] as String?,
       plan: PlanType.fromId(json['plan'] as String),
       trialStartedAt: json['trial_started_at'] == null
           ? DateTime.parse(json['created_at'] as String)
@@ -92,6 +98,8 @@ class TenantModel {
       'transfer_alias': transferAlias,
       'mercado_pago_link': mercadoPagoLink,
       'accepts_cash': acceptsCash,
+      'is_open': isOpen,
+      'opening_hours': openingHours,
       'plan': plan.id,
       'trial_started_at': trialStartedAt.toIso8601String(),
       'plan_expires_at': planExpiresAt.toIso8601String(),
@@ -135,6 +143,8 @@ class TenantModel {
     String? transferAlias,
     String? mercadoPagoLink,
     bool? acceptsCash,
+    bool? isOpen,
+    String? openingHours,
     PlanType? plan,
     DateTime? trialStartedAt,
     DateTime? planExpiresAt,
@@ -157,6 +167,8 @@ class TenantModel {
       transferAlias: transferAlias ?? this.transferAlias,
       mercadoPagoLink: mercadoPagoLink ?? this.mercadoPagoLink,
       acceptsCash: acceptsCash ?? this.acceptsCash,
+      isOpen: isOpen ?? this.isOpen,
+      openingHours: openingHours ?? this.openingHours,
       plan: plan ?? this.plan,
       trialStartedAt: trialStartedAt ?? this.trialStartedAt,
       planExpiresAt: planExpiresAt ?? this.planExpiresAt,

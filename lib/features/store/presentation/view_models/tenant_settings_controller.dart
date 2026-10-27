@@ -46,6 +46,8 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
     String? transferAlias,
     String? mercadoPagoLink,
     bool acceptsCash = true,
+    bool isOpen = true,
+    String? openingHours,
   }) async {
     final TenantSettingsRepository repo =
         ref.read(tenantSettingsRepositoryProvider);
@@ -64,6 +66,8 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
         transferAlias: transferAlias,
         mercadoPagoLink: mercadoPagoLink,
         acceptsCash: acceptsCash,
+        isOpen: isOpen,
+        openingHours: openingHours,
       );
       final Uint8List? logo = state.pendingLogo;
       if (logo != null) {
@@ -78,6 +82,20 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
     } catch (e) {
       state = TenantSettingsState(pendingLogo: state.pendingLogo, error: e);
       return null;
+    }
+  }
+
+  Future<bool> toggleOpen(TenantModel current) async {
+    final TenantSettingsRepository repo =
+        ref.read(tenantSettingsRepositoryProvider);
+    try {
+      await repo.setOpen(current.id, !current.isOpen);
+      ref.invalidate(tenantByIdProvider(current.id));
+      ref.invalidate(tenantBySlugProvider(current.slug));
+      return true;
+    } catch (e) {
+      state = TenantSettingsState(pendingLogo: state.pendingLogo, error: e);
+      return false;
     }
   }
 }

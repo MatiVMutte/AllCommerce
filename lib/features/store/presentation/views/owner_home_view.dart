@@ -20,6 +20,7 @@ import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:all_commerce/features/orders/presentation/view_models/owner_orders_providers.dart';
 import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
+import 'package:all_commerce/features/store/presentation/view_models/tenant_settings_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -212,7 +213,63 @@ class _OwnerPanel extends ConsumerWidget {
               const SizedBox(height: 16),
               _PlanBanner(tenant: tenant),
             ],
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            AppCard(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: tenant.isOpen ? tokens.success : tokens.textTertiary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          tenant.isOpen ? 'Local abierto' : 'Local cerrado',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: tokens.textPrimary,
+                          ),
+                        ),
+                        if (tenant.openingHours != null &&
+                            tenant.openingHours!.trim().isNotEmpty)
+                          Text(
+                            tenant.openingHours!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: tokens.textSecondary,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: tenant.isOpen,
+                    onChanged: (_) async {
+                      final bool ok = await ref
+                          .read(tenantSettingsControllerProvider.notifier)
+                          .toggleOpen(tenant);
+                      if (ok && context.mounted) {
+                        showAppSnackBar(
+                          context,
+                          !tenant.isOpen
+                              ? 'Tu local figura como Abierto'
+                              : 'Tu local figura como Cerrado',
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints c) {
                 final List<Widget> cells = <Widget>[

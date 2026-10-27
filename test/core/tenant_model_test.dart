@@ -28,12 +28,17 @@ Map<String, dynamic> _tenantJson({DateTime? planExpiresAt, bool isActive = true}
 void main() {
   group('TenantModel', () {
     test('fromJson parses all fields', () {
-      final TenantModel tenant = TenantModel.fromJson(_tenantJson());
+      final Map<String, dynamic> json = _tenantJson();
+      json['is_open'] = false;
+      json['opening_hours'] = 'Lun a Vie 9 a 18 hs';
+      final TenantModel tenant = TenantModel.fromJson(json);
       expect(tenant.slug, 'demo');
       expect(tenant.name, 'Demo Store');
       expect(tenant.plan, PlanType.crecimiento);
       expect(tenant.primaryColorValue, const Color(0xFF165BE3));
       expect(tenant.isActive, isTrue);
+      expect(tenant.isOpen, isFalse);
+      expect(tenant.openingHours, 'Lun a Vie 9 a 18 hs');
     });
 
     test('invalid color falls back to AppColors.primary', () {

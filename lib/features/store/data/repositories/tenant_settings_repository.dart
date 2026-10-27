@@ -26,6 +26,8 @@ class TenantSettingsRepository {
     String? transferAlias,
     String? mercadoPagoLink,
     bool acceptsCash = true,
+    bool isOpen = true,
+    String? openingHours,
   }) async {
     final Map<String, dynamic> row = await _client
         .from('tenants')
@@ -38,11 +40,20 @@ class TenantSettingsRepository {
           'transfer_alias': transferAlias,
           'mercado_pago_link': mercadoPagoLink,
           'accepts_cash': acceptsCash,
+          'is_open': isOpen,
+          'opening_hours': openingHours,
         })
         .eq('id', tenantId)
         .select()
         .single();
     return TenantModel.fromJson(row);
+  }
+
+  Future<void> setOpen(String tenantId, bool isOpen) async {
+    await _client
+        .from('tenants')
+        .update(<String, dynamic>{'is_open': isOpen})
+        .eq('id', tenantId);
   }
 
   /// Uploads a JPEG logo (max 512px, compressed by ImageService).

@@ -166,4 +166,15 @@ void main() {
       isFalse,
     );
   });
+
+  test('toggleOpen calls setOpen with inverted value', () async {
+    when(() => repo.setOpen('t1', false)).thenAnswer((_) async {});
+
+    final bool ok = await container
+        .read(tenantSettingsControllerProvider.notifier)
+        .toggleOpen(tenant);
+
+    expect(ok, isTrue);
+    verify(() => repo.setOpen('t1', false)).called(1);
+  });
 }
