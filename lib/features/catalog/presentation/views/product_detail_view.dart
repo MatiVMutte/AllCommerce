@@ -8,6 +8,7 @@ import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/quantity_stepper.dart';
+import 'package:all_commerce/features/cart/presentation/view_models/cart_controller.dart';
 import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
@@ -298,6 +299,7 @@ class _ProductPanel extends ConsumerStatefulWidget {
 
 class _ProductPanelState extends ConsumerState<_ProductPanel> {
   int _quantity = 1;
+  bool _justAdded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -464,21 +466,48 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: FilledButton(
+                    style: _justAdded
+                        ? FilledButton.styleFrom(
+                            backgroundColor: tokens.success,
+                          )
+                        : null,
                     onPressed: product.isOutOfStock
                         ? null
-                        : () {
+                        : () async {
                             AppHaptics.medium();
-                            addToCartWithConfirm(
+                            final int before = ref
+                                .read(cartProvider)
+                                .items
+                                .fold<int>(0, (int s, i) => s + i.quantity);
+                            await addToCartWithConfirm(
                               context,
                               ref,
                               product,
                               widget.tenant,
                               quantity: _quantity,
                             );
+                            if (!mounted) return;
+                            final int after = ref
+                                .read(cartProvider)
+                                .items
+                                .fold<int>(0, (int s, i) => s + i.quantity);
+                            if (after != before) {
+                              setState(() => _justAdded = true);
+                              Future<void>.delayed(
+                                const Duration(milliseconds: 1100),
+                                () {
+                                  if (mounted) {
+                                    setState(() => _justAdded = false);
+                                  }
+                                },
+                              );
+                            }
                           },
                     child: Text(
                       product.isOutOfStock
                           ? 'Sin stock'
+                          : _justAdded
+                          ? '¡Agregado!'
                           : 'Agregar · '
                                 '${Formatters.price(product.price * _quantity)}',
                     ),

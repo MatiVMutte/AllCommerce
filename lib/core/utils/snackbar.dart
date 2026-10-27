@@ -11,5 +11,6 @@ void showErrorSnackBar(
     context,
     AuthErrorMapper.toMessage(error),
     clearNavBar: clearNavBar,
+    isError: true,
   );
 }

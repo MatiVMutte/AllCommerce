@@ -5,7 +5,6 @@ import 'package:all_commerce/features/cart/presentation/view_models/cart_control
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 /// Adds [product] to the cart; if the cart belongs to another store, asks
 /// the user to confirm replacing it.
@@ -17,7 +16,7 @@ Future<void> addToCartWithConfirm(
   int quantity = 1,
 }) async {
   if (product.isOutOfStock) {
-    showAppSnackBar(context, 'Este producto está agotado');
+    showAppSnackBar(context, 'Este producto está agotado', isError: true);
     return;
   }
   final CartController cart = ref.read(cartProvider.notifier);
@@ -31,20 +30,13 @@ Future<void> addToCartWithConfirm(
       showAppSnackBar(
         context,
         'Solo quedan ${product.stock} unidades disponibles',
+        isError: true,
       );
       return;
     }
   }
   final AddResult result = cart.add(product, tenant, quantity: quantity);
   if (result == AddResult.added) {
-    showAppSnackBar(
-      context,
-      'Agregado al carrito',
-      action: SnackBarAction(
-        label: 'Ver',
-        onPressed: () => context.push('/s/${tenant.slug}/cart'),
-      ),
-    );
     return;
   }
   final bool? replace = await showAppConfirmSheet(
@@ -56,6 +48,5 @@ Future<void> addToCartWithConfirm(
   );
   if (replace == true && context.mounted) {
     cart.replaceWith(product, tenant, quantity: quantity);
-    showAppSnackBar(context, 'Agregado al carrito');
   }
 }
