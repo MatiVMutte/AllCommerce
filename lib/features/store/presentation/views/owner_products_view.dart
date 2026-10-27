@@ -269,6 +269,94 @@ class _OwnerProductRow extends ConsumerWidget {
 
   final ProductModel product;
 
+  Future<void> _adjustStock(BuildContext context, WidgetRef ref) async {
+    final int currentStock = product.stock;
+    bool track = product.trackStock;
+    final TextEditingController ctrl = TextEditingController(
+      text: currentStock.toString(),
+    );
+    final ({int stock, bool track})? result =
+        await showModalBottomSheet<({int stock, bool track})>(
+          context: context,
+          isScrollControlled: true,
+          builder: (BuildContext sheetContext) {
+            return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setSheetState) {
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    20,
+                    20,
+                    MediaQuery.of(context).viewInsets.bottom + 20,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Text(
+                        'Stock · ${product.title}',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 8),
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        value: track,
+                        onChanged: (bool v) {
+                          setSheetState(() {
+                            track = v;
+                            if (v &&
+                                (int.tryParse(ctrl.text.trim()) ?? 0) <= 0) {
+                              ctrl.text = '1';
+                            }
+                          });
+                        },
+                        title: const Text('Controlar stock disponible'),
+                      ),
+                      if (track) ...<Widget>[
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: ctrl,
+                          keyboardType: TextInputType.number,
+                          autofocus: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Unidades disponibles',
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      FilledButton(
+                        onPressed: () {
+                          final int parsed =
+                              int.tryParse(ctrl.text.trim()) ?? 0;
+                          Navigator.of(sheetContext).pop((
+                            stock: track ? parsed : 0,
+                            track: track,
+                          ));
+                        },
+                        child: const Text('Guardar'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+    ctrl.dispose();
+    if (result == null || !context.mounted) return;
+    final bool ok = await ref
+        .read(ownerInventoryControllerProvider.notifier)
+        .updateStock(product, stock: result.stock, trackStock: result.track);
+    if (!context.mounted) return;
+    if (ok) {
+      showAppSnackBar(context, 'Stock actualizado');
+    } else {
+      final Object? error = ref.read(ownerInventoryControllerProvider).error;
+      if (error != null) showErrorSnackBar(context, error);
+    }
+  }
+
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     final bool? confirmed = await showAppConfirmSheet(
       context,
@@ -351,10 +439,35 @@ class _OwnerProductRow extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    '${product.sku == null ? '' : '${product.sku} · '}'
-                    'Stock ${product.stock}',
-                    style: TextStyle(fontSize: 12, color: tokens.textTertiary),
+                  Row(
+                    children: <Widget>[
+                      if (product.sku != null)
+                        Text(
+                          '${product.sku} · ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: tokens.textTertiary,
+                          ),
+                        ),
+                      Text(
+                        product.trackStock
+                            ? (product.stock <= 0
+                                  ? 'Agotado (0)'
+                                  : 'Stock ${product.stock}')
+                            : 'Stock ilimitado',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: product.isOutOfStock || product.isLowStock
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                          color: product.isOutOfStock
+                              ? tokens.danger
+                              : product.isLowStock
+                              ? tokens.warning
+                              : tokens.textTertiary,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -416,6 +529,8 @@ class _OwnerProductRow extends ConsumerWidget {
                     '/owner/products/${product.id}/edit',
                     extra: product,
                   );
+                } else if (value == 'stock') {
+                  _adjustStock(context, ref);
                 } else if (value == 'delete') {
                   _confirmDelete(context, ref);
                 }
@@ -423,6 +538,10 @@ class _OwnerProductRow extends ConsumerWidget {
               itemBuilder: (BuildContext context) =>
                   const <PopupMenuEntry<String>>[
                     PopupMenuItem<String>(value: 'edit', child: Text('Editar')),
+                    PopupMenuItem<String>(
+                      value: 'stock',
+                      child: Text('Ajustar stock'),
+                    ),
                     PopupMenuItem<String>(
                       value: 'delete',
                       child: Text('Eliminar'),

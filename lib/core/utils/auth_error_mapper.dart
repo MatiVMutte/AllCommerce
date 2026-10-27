@@ -61,6 +61,12 @@ abstract final class AuthErrorMapper {
       if (message.contains('PRODUCT_UNAVAILABLE')) {
         return 'Un producto del carrito ya no está disponible';
       }
+      if (message.contains('OUT_OF_STOCK')) {
+        return 'No alcanza el stock disponible de uno de los productos';
+      }
+      if (message.contains('PAYMENT_NOT_CONFIGURED')) {
+        return 'Ese medio de pago no está configurado en el local';
+      }
       if (message.contains('TENANT_INACTIVE')) {
         return 'Este local no está recibiendo pedidos';
       }

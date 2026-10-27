@@ -144,6 +144,29 @@ void main() {
       expect(ok, isFalse);
       expect(list().map((ProductModel p) => p.id), <String>['p1']);
     });
+
+    test('updateStock updates stock and trackStock optimistically', () async {
+      await seed();
+      when(
+        () => products.setStock(
+          any(),
+          any(),
+          stock: any(named: 'stock'),
+          trackStock: any(named: 'trackStock'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final bool ok = await controller().updateStock(
+        product,
+        stock: 8,
+        trackStock: true,
+      );
+
+      expect(ok, isTrue);
+      verify(
+        () => products.setStock('p1', 't1', stock: 8, trackStock: true),
+      ).called(1);
+    });
   });
 
   group('filterOwnerProducts', () {

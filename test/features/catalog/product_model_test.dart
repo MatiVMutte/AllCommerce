@@ -63,4 +63,25 @@ void main() {
     expect(notOnSale.isOnSale, isFalse);
     expect(notOnSale.discountPercent, 0);
   });
+
+  test('track_stock controls isOutOfStock and isLowStock', () {
+    final Map<String, dynamic> untrackedJson = _productJson();
+    untrackedJson['stock'] = 0;
+    untrackedJson['track_stock'] = false;
+    final ProductModel untracked = ProductModel.fromJson(untrackedJson);
+    expect(untracked.isOutOfStock, isFalse);
+    expect(untracked.isLowStock, isFalse);
+
+    final ProductModel trackedOut = untracked.copyWith(trackStock: true);
+    expect(trackedOut.isOutOfStock, isTrue);
+    expect(trackedOut.isLowStock, isFalse);
+
+    final ProductModel trackedLow = trackedOut.copyWith(stock: 2);
+    expect(trackedLow.isOutOfStock, isFalse);
+    expect(trackedLow.isLowStock, isTrue);
+
+    final ProductModel trackedPlenty = trackedOut.copyWith(stock: 10);
+    expect(trackedPlenty.isOutOfStock, isFalse);
+    expect(trackedPlenty.isLowStock, isFalse);
+  });
 }

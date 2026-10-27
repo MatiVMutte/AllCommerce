@@ -593,6 +593,52 @@ class _ProductCard extends ConsumerWidget {
                           ),
                         ),
                       ),
+                    if (product.isOutOfStock)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: tokens.danger,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: const Text(
+                            'Agotado',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (product.isLowStock)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: tokens.warning,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'Últimas ${product.stock}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ),
                     Positioned(
                       left: 8,
                       bottom: 8,
@@ -601,35 +647,39 @@ class _ProductCard extends ConsumerWidget {
                         compareAtPrice: product.compareAtPrice,
                       ),
                     ),
-                    Positioned(
-                      right: 8,
-                      bottom: 8,
-                      child: inCart > 0
-                          ? Container(
-                              decoration: BoxDecoration(
-                                color: tokens.surface,
-                                borderRadius: BorderRadius.circular(999),
+                    if (!product.isOutOfStock)
+                      Positioned(
+                        right: 8,
+                        bottom: 8,
+                        child: inCart > 0
+                            ? Container(
+                                decoration: BoxDecoration(
+                                  color: tokens.surface,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: QuantityStepper(
+                                  dense: true,
+                                  quantity: inCart,
+                                  maxQuantity: product.trackStock
+                                      ? product.stock
+                                      : null,
+                                  onChanged: (int qty) => ref
+                                      .read(cartProvider.notifier)
+                                      .setQuantity(product.id, qty),
+                                ),
+                              )
+                            : _AddButton(
+                                onTap: () {
+                                  AppHaptics.light();
+                                  addToCartWithConfirm(
+                                    context,
+                                    ref,
+                                    product,
+                                    tenant,
+                                  );
+                                },
                               ),
-                              child: QuantityStepper(
-                                dense: true,
-                                quantity: inCart,
-                                onChanged: (int qty) => ref
-                                    .read(cartProvider.notifier)
-                                    .setQuantity(product.id, qty),
-                              ),
-                            )
-                          : _AddButton(
-                              onTap: () {
-                                AppHaptics.light();
-                                addToCartWithConfirm(
-                                  context,
-                                  ref,
-                                  product,
-                                  tenant,
-                                );
-                              },
-                            ),
-                    ),
+                      ),
                   ],
                 ),
               ),

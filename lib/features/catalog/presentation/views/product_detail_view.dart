@@ -381,7 +381,7 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                   ],
                 ],
               ),
-              if (product.stock <= 0)
+              if (product.isOutOfStock)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
@@ -392,7 +392,7 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                     ),
                   ),
                 )
-              else if (product.stock <= 3)
+              else if (product.isLowStock)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
@@ -454,12 +454,17 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
               children: <Widget>[
                 QuantityStepper(
                   quantity: _quantity,
-                  onChanged: (int qty) => setState(() => _quantity = qty),
+                  maxQuantity: product.trackStock ? product.stock : null,
+                  onChanged: (int qty) {
+                    if (qty < 1) return;
+                    if (product.trackStock && qty > product.stock) return;
+                    setState(() => _quantity = qty);
+                  },
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: FilledButton(
-                    onPressed: product.stock <= 0
+                    onPressed: product.isOutOfStock
                         ? null
                         : () {
                             AppHaptics.medium();
@@ -472,8 +477,10 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                             );
                           },
                     child: Text(
-                      'Agregar · '
-                      '${Formatters.price(product.price * _quantity)}',
+                      product.isOutOfStock
+                          ? 'Sin stock'
+                          : 'Agregar · '
+                                '${Formatters.price(product.price * _quantity)}',
                     ),
                   ),
                 ),

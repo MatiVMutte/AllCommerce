@@ -7,18 +7,21 @@ class QuantityStepper extends StatelessWidget {
   const QuantityStepper({
     required this.quantity,
     required this.onChanged,
+    this.maxQuantity,
     this.dense = false,
     super.key,
   });
 
   final int quantity;
   final ValueChanged<int> onChanged;
+  final int? maxQuantity;
   final bool dense;
 
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     final double size = dense ? 28 : 36;
+    final bool canIncrement = maxQuantity == null || quantity < maxQuantity!;
     return Container(
       decoration: BoxDecoration(
         color: tokens.surfaceMuted,
@@ -49,10 +52,12 @@ class QuantityStepper extends StatelessWidget {
           _StepButton(
             icon: Icons.add,
             size: size,
-            onPressed: () {
-              AppHaptics.light();
-              onChanged(quantity + 1);
-            },
+            onPressed: canIncrement
+                ? () {
+                    AppHaptics.light();
+                    onChanged(quantity + 1);
+                  }
+                : null,
           ),
         ],
       ),
@@ -68,7 +73,7 @@ class _StepButton extends StatelessWidget {
   });
 
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final double size;
 
   @override

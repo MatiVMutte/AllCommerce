@@ -16,7 +16,25 @@ Future<void> addToCartWithConfirm(
   TenantModel tenant, {
   int quantity = 1,
 }) async {
+  if (product.isOutOfStock) {
+    showAppSnackBar(context, 'Este producto está agotado');
+    return;
+  }
   final CartController cart = ref.read(cartProvider.notifier);
+  if (product.trackStock) {
+    final int existingQty = ref
+        .read(cartProvider)
+        .items
+        .where((i) => i.productId == product.id)
+        .fold<int>(0, (int sum, i) => sum + i.quantity);
+    if (existingQty + quantity > product.stock) {
+      showAppSnackBar(
+        context,
+        'Solo quedan ${product.stock} unidades disponibles',
+      );
+      return;
+    }
+  }
   final AddResult result = cart.add(product, tenant, quantity: quantity);
   if (result == AddResult.added) {
     showAppSnackBar(

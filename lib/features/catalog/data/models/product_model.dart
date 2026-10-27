@@ -13,6 +13,7 @@ class ProductModel {
     this.sku,
     this.imageUrl,
     this.stock = 0,
+    this.trackStock = false,
     required this.isActive,
     required this.createdAt,
     required this.updatedAt,
@@ -31,6 +32,7 @@ class ProductModel {
   final String? sku;
   final String? imageUrl;
   final int stock;
+  final bool trackStock;
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -39,6 +41,10 @@ class ProductModel {
 
   bool get isOnSale =>
       compareAtPrice != null && compareAtPrice! > price && price > 0;
+
+  bool get isOutOfStock => trackStock && stock <= 0;
+
+  bool get isLowStock => trackStock && stock > 0 && stock <= 3;
 
   int get discountPercent {
     if (!isOnSale) return 0;
@@ -66,6 +72,7 @@ class ProductModel {
       sku: json['sku'] as String?,
       imageUrl: json['image_url'] as String?,
       stock: (json['stock'] as num?)?.toInt() ?? 0,
+      trackStock: json['track_stock'] as bool? ?? false,
       isActive: json['is_active'] as bool,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -85,6 +92,7 @@ class ProductModel {
       'sku': sku,
       'image_url': imageUrl,
       'stock': stock,
+      'track_stock': trackStock,
       'is_active': isActive,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -104,6 +112,7 @@ class ProductModel {
     String? sku,
     String? imageUrl,
     int? stock,
+    bool? trackStock,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -122,6 +131,7 @@ class ProductModel {
       sku: sku ?? this.sku,
       imageUrl: imageUrl ?? this.imageUrl,
       stock: stock ?? this.stock,
+      trackStock: trackStock ?? this.trackStock,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

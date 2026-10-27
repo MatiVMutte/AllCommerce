@@ -68,6 +68,8 @@ void main() {
       'TENANT_INACTIVE': 'Este local no está recibiendo pedidos',
       'INVALID_COUPON': 'El cupón no es válido',
       'INVALID_QUANTITY': 'Cantidad inválida',
+      'OUT_OF_STOCK':
+          'No alcanza el stock disponible de uno de los productos',
     };
     for (final MapEntry<String, String> entry in cases.entries) {
       expect(

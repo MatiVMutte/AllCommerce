@@ -43,6 +43,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
   final TextEditingController _tags = TextEditingController();
   final TextEditingController _sku = TextEditingController();
   final TextEditingController _stock = TextEditingController(text: '0');
+  bool _trackStock = false;
   ProductCategory _category = ProductCategory.other;
   bool _categoryTouched = false;
 
@@ -65,6 +66,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       _tags.text = existing.tags.join(', ');
       _sku.text = existing.sku ?? '';
       _stock.text = existing.stock.toString();
+      _trackStock = existing.trackStock;
       _category = existing.categoryEnum;
       _categoryTouched = true;
     }
@@ -174,7 +176,8 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       price: double.parse(_price.text.trim().replaceAll(',', '.')),
       compareAtPrice: compareAt,
       sku: sku.isEmpty ? null : sku,
-      stock: int.tryParse(_stock.text.trim()) ?? 0,
+      stock: _trackStock ? (int.tryParse(_stock.text.trim()) ?? 0) : 0,
+      trackStock: _trackStock,
     );
     final ProductModel? existing = widget.existing;
     final ProductModel? product = existing == null
@@ -411,22 +414,42 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                           },
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _stock,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: AppStrings.productStock,
-                          ),
-                          validator: (String? value) {
-                            if ((value ?? '').trim().isEmpty) {
-                              return null;
-                            }
-                            if (int.tryParse(value!.trim()) == null) {
-                              return 'Ingresá un número entero';
-                            }
-                            return null;
+                        SwitchListTile.adaptive(
+                          contentPadding: EdgeInsets.zero,
+                          value: _trackStock,
+                          onChanged: (bool value) {
+                            setState(() {
+                              _trackStock = value;
+                              if (value &&
+                                  (int.tryParse(_stock.text.trim()) ?? 0) <= 0) {
+                                _stock.text = '1';
+                              }
+                            });
                           },
+                          title: const Text('Controlar stock disponible'),
+                          subtitle: const Text(
+                            'Descuenta automáticamente con cada pedido y avisa cuando quedan pocas unidades',
+                          ),
                         ),
+                        if (_trackStock) ...<Widget>[
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _stock,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: AppStrings.productStock,
+                            ),
+                            validator: (String? value) {
+                              final int? parsed = int.tryParse(
+                                (value ?? '').trim(),
+                              );
+                              if (parsed == null || parsed < 0) {
+                                return 'Ingresá un número entero mayor o igual a 0';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
                       ],
                       const SizedBox(height: 20),
                       const _Section('CATEGORÍA Y ETIQUETAS'),

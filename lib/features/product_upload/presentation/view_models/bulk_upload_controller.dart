@@ -198,6 +198,7 @@ class BulkUploadController extends Notifier<BulkUploadState> {
           compareAtPrice: compareAt,
           sku: draft.sku?.trim(),
           stock: draft.stock,
+          trackStock: draft.stock > 0,
         );
         final product = await _productRepository.create(input, tenantId);
         final Uint8List compressed =

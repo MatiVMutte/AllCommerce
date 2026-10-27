@@ -22,6 +22,7 @@ class ProductRepository {
           'compare_at_price': input.compareAtPrice,
           'sku': input.sku,
           'stock': input.stock,
+          'track_stock': input.trackStock,
           'is_active': true,
         })
         .select()
@@ -89,6 +90,7 @@ class ProductRepository {
           'compare_at_price': input.compareAtPrice,
           'sku': input.sku,
           'stock': input.stock,
+          'track_stock': input.trackStock,
         })
         .eq('id', productId)
         .eq('tenant_id', tenantId)
@@ -105,6 +107,22 @@ class ProductRepository {
     await _client
         .from('products')
         .update(<String, dynamic>{'is_active': isActive})
+        .eq('id', productId)
+        .eq('tenant_id', tenantId);
+  }
+
+  Future<void> setStock(
+    String productId,
+    String tenantId, {
+    required int stock,
+    required bool trackStock,
+  }) async {
+    await _client
+        .from('products')
+        .update(<String, dynamic>{
+          'stock': stock,
+          'track_stock': trackStock,
+        })
         .eq('id', productId)
         .eq('tenant_id', tenantId);
   }

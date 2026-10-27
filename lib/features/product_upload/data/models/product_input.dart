@@ -8,6 +8,7 @@ class ProductInput {
     this.compareAtPrice,
     this.sku,
     this.stock = 0,
+    this.trackStock = false,
   });
 
   final String title;
@@ -18,4 +19,5 @@ class ProductInput {
   final double? compareAtPrice;
   final String? sku;
   final int stock;
+  final bool trackStock;
 }
