@@ -11,6 +11,8 @@ ProductModel _product({
   String? description,
   String category = 'home',
   List<String> tags = const <String>[],
+  double price = 100,
+  double? compareAtPrice,
 }) {
   return ProductModel(
     id: id,
@@ -19,7 +21,8 @@ ProductModel _product({
     description: description,
     category: category,
     tags: tags,
-    price: 100,
+    price: price,
+    compareAtPrice: compareAtPrice,
     isActive: true,
     createdAt: DateTime(2025),
     updatedAt: DateTime(2025),
@@ -28,7 +31,13 @@ ProductModel _product({
 
 void main() {
   final List<ProductModel> products = <ProductModel>[
-    _product(id: '1', title: 'Vaso térmico', category: 'home'),
+    _product(
+      id: '1',
+      title: 'Vaso térmico',
+      category: 'home',
+      price: 80,
+      compareAtPrice: 100,
+    ),
     _product(id: '2', title: 'Remera lisa', category: 'clothing'),
     _product(
       id: '3',
@@ -86,6 +95,14 @@ void main() {
         ),
       );
       expect(result, isEmpty);
+    });
+
+    test('onlyOnSale filters to discounted products', () {
+      final List<ProductModel> result = applyCatalogFilter(
+        products,
+        const CatalogFilter(onlyOnSale: true),
+      );
+      expect(result.map((ProductModel p) => p.id), <String>['1']);
     });
   });
 

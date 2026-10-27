@@ -9,6 +9,7 @@ class ProductModel {
     required this.category,
     this.tags = const <String>[],
     required this.price,
+    this.compareAtPrice,
     this.sku,
     this.imageUrl,
     this.stock = 0,
@@ -26,6 +27,7 @@ class ProductModel {
   final String category;
   final List<String> tags;
   final double price;
+  final double? compareAtPrice;
   final String? sku;
   final String? imageUrl;
   final int stock;
@@ -35,7 +37,21 @@ class ProductModel {
 
   ProductCategory get categoryEnum => ProductCategory.fromId(category);
 
+  bool get isOnSale =>
+      compareAtPrice != null && compareAtPrice! > price && price > 0;
+
+  int get discountPercent {
+    if (!isOnSale) return 0;
+    return (((compareAtPrice! - price) / compareAtPrice!) * 100)
+        .round()
+        .clamp(1, 99);
+  }
+
   factory ProductModel.fromJson(Map<String, dynamic> json) {
+    final Object? rawCompare = json['compare_at_price'];
+    final double? parsedCompare = rawCompare == null
+        ? null
+        : num.tryParse(rawCompare.toString())?.toDouble();
     return ProductModel(
       id: json['id'] as String,
       tenantId: json['tenant_id'] as String,
@@ -46,6 +62,7 @@ class ProductModel {
           .map((dynamic t) => t as String)
           .toList(),
       price: num.parse(json['price'].toString()).toDouble(),
+      compareAtPrice: parsedCompare,
       sku: json['sku'] as String?,
       imageUrl: json['image_url'] as String?,
       stock: (json['stock'] as num?)?.toInt() ?? 0,
@@ -64,6 +81,7 @@ class ProductModel {
       'category': category,
       'tags': tags,
       'price': price,
+      'compare_at_price': compareAtPrice,
       'sku': sku,
       'image_url': imageUrl,
       'stock': stock,
@@ -81,6 +99,8 @@ class ProductModel {
     String? category,
     List<String>? tags,
     double? price,
+    double? compareAtPrice,
+    bool clearCompareAtPrice = false,
     String? sku,
     String? imageUrl,
     int? stock,
@@ -96,6 +116,9 @@ class ProductModel {
       category: category ?? this.category,
       tags: tags ?? this.tags,
       price: price ?? this.price,
+      compareAtPrice: clearCompareAtPrice
+          ? null
+          : (compareAtPrice ?? this.compareAtPrice),
       sku: sku ?? this.sku,
       imageUrl: imageUrl ?? this.imageUrl,
       stock: stock ?? this.stock,

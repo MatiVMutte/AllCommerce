@@ -31,6 +31,8 @@ abstract final class AppStrings {
   static const String productDescription = 'Descripción';
   static const String productCategory = 'Categoría';
   static const String productPrice = 'Precio';
+  static const String productCompareAtPrice =
+      'Precio anterior (opcional, para oferta)';
   static const String productTags = 'Etiquetas';
   static const String productSku = 'SKU (opcional)';
   static const String productStock = 'Stock';

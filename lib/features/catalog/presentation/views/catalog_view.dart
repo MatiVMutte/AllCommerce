@@ -128,6 +128,9 @@ class _CatalogScaffold extends ConsumerWidget {
                     onCategory: (ProductCategory c) => ref
                         .read(catalogFilterProvider(slug).notifier)
                         .setCategory(c),
+                    onToggleOnSale: () => ref
+                        .read(catalogFilterProvider(slug).notifier)
+                        .toggleOnSale(),
                     onClear: () =>
                         ref.read(catalogFilterProvider(slug).notifier).clear(),
                   ),
@@ -359,6 +362,7 @@ class _SearchChipsHeader extends SliverPersistentHeaderDelegate {
     required this.products,
     required this.onQuery,
     required this.onCategory,
+    required this.onToggleOnSale,
     required this.onClear,
   });
 
@@ -367,6 +371,7 @@ class _SearchChipsHeader extends SliverPersistentHeaderDelegate {
   final List<ProductModel> products;
   final ValueChanged<String> onQuery;
   final ValueChanged<ProductCategory> onCategory;
+  final VoidCallback onToggleOnSale;
   final VoidCallback onClear;
 
   @override
@@ -384,6 +389,7 @@ class _SearchChipsHeader extends SliverPersistentHeaderDelegate {
     final Set<ProductCategory> present = products
         .map((ProductModel p) => p.categoryEnum)
         .toSet();
+    final bool hasOnSale = products.any((ProductModel p) => p.isOnSale);
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -404,9 +410,16 @@ class _SearchChipsHeader extends SliverPersistentHeaderDelegate {
               children: <Widget>[
                 _CategoryChip(
                   label: AppStrings.allCategories,
-                  selected: filter.category == null,
+                  selected: filter.category == null && !filter.onlyOnSale,
                   onTap: onClear,
                 ),
+                if (hasOnSale)
+                  _CategoryChip(
+                    label: 'Ofertas',
+                    icon: Icons.local_offer_rounded,
+                    selected: filter.onlyOnSale,
+                    onTap: onToggleOnSale,
+                  ),
                 for (final ProductCategory category in present)
                   _CategoryChip(
                     label: category.label,
@@ -430,15 +443,20 @@ class _CategoryChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.icon,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
+    final Color fg = selected
+        ? Theme.of(context).scaffoldBackgroundColor
+        : tokens.textPrimary;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: InkWell(
@@ -451,15 +469,22 @@ class _CategoryChip extends StatelessWidget {
             color: selected ? tokens.textPrimary : tokens.surfaceMuted,
             borderRadius: BorderRadius.circular(999),
           ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: selected
-                  ? Theme.of(context).scaffoldBackgroundColor
-                  : tokens.textPrimary,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (icon != null) ...<Widget>[
+                Icon(icon, size: 15, color: fg),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: fg,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -545,10 +570,36 @@ class _ProductCard extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    if (product.isOnSale)
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: tokens.success,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            '-${product.discountPercent}% OFF',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ),
                     Positioned(
                       left: 8,
                       bottom: 8,
-                      child: PricePill(price: product.price),
+                      child: PricePill(
+                        price: product.price,
+                        compareAtPrice: product.compareAtPrice,
+                      ),
                     ),
                     Positioned(
                       right: 8,

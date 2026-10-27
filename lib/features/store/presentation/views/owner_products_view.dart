@@ -359,12 +359,27 @@ class _OwnerProductRow extends ConsumerWidget {
                 ],
               ),
             ),
-            Text(
-              Formatters.price(product.price),
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: paused ? tokens.textTertiary : tokens.textPrimary,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                if (product.isOnSale)
+                  Text(
+                    Formatters.price(product.compareAtPrice!),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: tokens.textTertiary,
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                Text(
+                  Formatters.price(product.price),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: paused ? tokens.textTertiary : tokens.textPrimary,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(width: 4),
             Transform.scale(

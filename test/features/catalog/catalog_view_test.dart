@@ -40,6 +40,7 @@ void main() {
       title: 'Vaso térmico',
       category: 'home',
       price: 100,
+      compareAtPrice: 125,
       isActive: true,
       createdAt: DateTime(2025),
       updatedAt: DateTime(2025),
@@ -78,7 +79,18 @@ void main() {
     expect(find.text('Remera lisa'), findsOneWidget);
     expect(find.byType(PricePill), findsNWidgets(2));
     expect(find.text('\$100'), findsOneWidget);
+    expect(find.text('\$125'), findsOneWidget);
+    expect(find.text('-20% OFF'), findsOneWidget);
+    expect(find.text('Ofertas'), findsOneWidget);
     expect(find.byIcon(Icons.add), findsNWidgets(2));
+
+    await tester.tap(find.text('Ofertas'));
+    await tester.pumpAndSettle();
+    expect(find.text('Vaso térmico'), findsOneWidget);
+    expect(find.text('Remera lisa'), findsNothing);
+
+    await tester.tap(find.text('Ofertas'));
+    await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'vaso');
     await tester.pumpAndSettle();

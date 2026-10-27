@@ -19,6 +19,7 @@ class ProductRepository {
           'category': input.category,
           'tags': input.tags,
           'price': input.price,
+          'compare_at_price': input.compareAtPrice,
           'sku': input.sku,
           'stock': input.stock,
           'is_active': true,
@@ -85,6 +86,7 @@ class ProductRepository {
           'category': input.category,
           'tags': input.tags,
           'price': input.price,
+          'compare_at_price': input.compareAtPrice,
           'sku': input.sku,
           'stock': input.stock,
         })

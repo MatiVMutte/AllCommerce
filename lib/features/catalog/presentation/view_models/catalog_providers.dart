@@ -26,18 +26,25 @@ final productByIdProvider = FutureProvider.family<
 );
 
 class CatalogFilter {
-  const CatalogFilter({this.query = '', this.category});
+  const CatalogFilter({
+    this.query = '',
+    this.category,
+    this.onlyOnSale = false,
+  });
 
   final String query;
   final ProductCategory? category;
+  final bool onlyOnSale;
 
   CatalogFilter copyWith({
     String? query,
     ProductCategory? Function()? category,
+    bool? onlyOnSale,
   }) {
     return CatalogFilter(
       query: query ?? this.query,
       category: category != null ? category() : this.category,
+      onlyOnSale: onlyOnSale ?? this.onlyOnSale,
     );
   }
 }
@@ -59,6 +66,14 @@ class CatalogFilterNotifier extends Notifier<CatalogFilter> {
   void setCategory(ProductCategory category) {
     state = state.copyWith(
       category: () => state.category == category ? null : category,
+      onlyOnSale: false,
+    );
+  }
+
+  void toggleOnSale() {
+    state = state.copyWith(
+      onlyOnSale: !state.onlyOnSale,
+      category: () => null,
     );
   }
 
@@ -77,6 +92,9 @@ List<ProductModel> applyCatalogFilter(
 ) {
   final String query = removeDiacritics(filter.query.trim().toLowerCase());
   return products.where((ProductModel product) {
+    if (filter.onlyOnSale && !product.isOnSale) {
+      return false;
+    }
     if (filter.category != null && product.category != filter.category!.id) {
       return false;
     }

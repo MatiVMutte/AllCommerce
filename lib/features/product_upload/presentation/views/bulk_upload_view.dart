@@ -192,6 +192,7 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
   late final TextEditingController _title;
   late final TextEditingController _description;
   late final TextEditingController _price;
+  late final TextEditingController _compareAtPrice;
   late final TextEditingController _sku;
   late final TextEditingController _stock;
   late final TextEditingController _tags;
@@ -204,6 +205,9 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
     _price = TextEditingController(
       text: widget.draft.price?.toStringAsFixed(0) ?? '',
     );
+    _compareAtPrice = TextEditingController(
+      text: widget.draft.compareAtPrice?.toStringAsFixed(0) ?? '',
+    );
     _sku = TextEditingController(text: widget.draft.sku ?? '');
     _stock = TextEditingController(text: widget.draft.stock.toString());
     _tags = TextEditingController(text: widget.draft.tags.join(', '));
@@ -214,6 +218,7 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
     _title.dispose();
     _description.dispose();
     _price.dispose();
+    _compareAtPrice.dispose();
     _sku.dispose();
     _stock.dispose();
     _tags.dispose();
@@ -227,6 +232,7 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
     _title.text = draft.title;
     _description.text = draft.description ?? '';
     _price.text = draft.price?.toStringAsFixed(0) ?? '';
+    _compareAtPrice.text = draft.compareAtPrice?.toStringAsFixed(0) ?? '';
     _sku.text = draft.sku ?? '';
     _stock.text = draft.stock.toString();
     _tags.text = draft.tags.join(', ');
@@ -234,6 +240,9 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
 
   void _commit() {
     final double? price = double.tryParse(_price.text.replaceAll('.', '').replaceAll(',', '.'));
+    final double? compareAtPrice = double.tryParse(
+      _compareAtPrice.text.replaceAll('.', '').replaceAll(',', '.'),
+    );
     final int? stock = int.tryParse(_stock.text);
     final controller = ref.read(bulkUploadControllerProvider.notifier);
     controller.updateDraft(
@@ -242,6 +251,7 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
         title: _title.text,
         description: _description.text.isEmpty ? null : _description.text,
         price: price,
+        compareAtPrice: compareAtPrice,
         sku: _sku.text.isEmpty ? null : _sku.text,
         stock: stock ?? 0,
         tags: _tags.text
@@ -320,11 +330,26 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
                           onChanged: (_) => _commit(),
                         ),
                         const SizedBox(height: 8),
-                        _Field(
-                          label: 'Precio',
-                          controller: _price,
-                          keyboardType: TextInputType.number,
-                          onChanged: (_) => _commit(),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: _Field(
+                                label: 'Precio',
+                                controller: _price,
+                                keyboardType: TextInputType.number,
+                                onChanged: (_) => _commit(),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _Field(
+                                label: 'Precio ant. (opc)',
+                                controller: _compareAtPrice,
+                                keyboardType: TextInputType.number,
+                                onChanged: (_) => _commit(),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],

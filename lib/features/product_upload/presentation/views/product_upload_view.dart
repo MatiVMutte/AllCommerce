@@ -39,6 +39,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
   final TextEditingController _title = TextEditingController();
   final TextEditingController _description = TextEditingController();
   final TextEditingController _price = TextEditingController();
+  final TextEditingController _compareAtPrice = TextEditingController();
   final TextEditingController _tags = TextEditingController();
   final TextEditingController _sku = TextEditingController();
   final TextEditingController _stock = TextEditingController(text: '0');
@@ -55,6 +56,12 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       _price.text = existing.price == existing.price.roundToDouble()
           ? existing.price.toStringAsFixed(0)
           : existing.price.toString();
+      if (existing.compareAtPrice != null) {
+        final double cap = existing.compareAtPrice!;
+        _compareAtPrice.text = cap == cap.roundToDouble()
+            ? cap.toStringAsFixed(0)
+            : cap.toString();
+      }
       _tags.text = existing.tags.join(', ');
       _sku.text = existing.sku ?? '';
       _stock.text = existing.stock.toString();
@@ -66,6 +73,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       _title,
       _description,
       _price,
+      _compareAtPrice,
       _tags,
       _sku,
     ]) {
@@ -78,6 +86,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
     _title.dispose();
     _description.dispose();
     _price.dispose();
+    _compareAtPrice.dispose();
     _tags.dispose();
     _sku.dispose();
     _stock.dispose();
@@ -147,6 +156,10 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
   Future<void> _save(TenantModel tenant) async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final String sku = _sku.text.trim();
+    final String compareRaw = _compareAtPrice.text.trim().replaceAll(',', '.');
+    final double? compareAt = compareRaw.isEmpty
+        ? null
+        : double.tryParse(compareRaw);
     final ProductInput input = ProductInput(
       title: _title.text.trim(),
       description: _description.text.trim().isEmpty
@@ -159,6 +172,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
           .where((String t) => t.isNotEmpty)
           .toList(),
       price: double.parse(_price.text.trim().replaceAll(',', '.')),
+      compareAtPrice: compareAt,
       sku: sku.isEmpty ? null : sku,
       stock: int.tryParse(_stock.text.trim()) ?? 0,
     );
@@ -364,6 +378,34 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                             );
                             if (parsed == null || parsed <= 0) {
                               return 'Ingresá un precio válido';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _compareAtPrice,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: AppStrings.productCompareAtPrice,
+                            helperText:
+                                'Si es mayor al precio actual, se muestra tachado con el % de descuento',
+                          ),
+                          validator: (String? value) {
+                            final String raw =
+                                (value ?? '').trim().replaceAll(',', '.');
+                            if (raw.isEmpty) return null;
+                            final double? parsed = double.tryParse(raw);
+                            if (parsed == null || parsed <= 0) {
+                              return 'Ingresá un precio anterior válido';
+                            }
+                            final double? currentPrice = double.tryParse(
+                              _price.text.trim().replaceAll(',', '.'),
+                            );
+                            if (currentPrice != null && parsed <= currentPrice) {
+                              return 'El precio anterior debe ser mayor al precio actual';
                             }
                             return null;
                           },

@@ -12,6 +12,7 @@ class BulkProductDraft {
     this.tags = const <String>[],
     this.sku,
     this.price,
+    this.compareAtPrice,
     this.stock = 0,
     required this.imageBytes,
     required this.fileName,
@@ -29,6 +30,7 @@ class BulkProductDraft {
   final List<String> tags;
   final String? sku;
   final double? price;
+  final double? compareAtPrice;
   final int stock;
   final Uint8List imageBytes;
   final String fileName;
@@ -45,6 +47,7 @@ class BulkProductDraft {
     List<String>? tags,
     String? sku,
     double? price,
+    double? compareAtPrice,
     int? stock,
     Uint8List? imageBytes,
     String? fileName,
@@ -62,6 +65,7 @@ class BulkProductDraft {
       tags: tags ?? this.tags,
       sku: sku ?? this.sku,
       price: price ?? this.price,
+      compareAtPrice: compareAtPrice ?? this.compareAtPrice,
       stock: stock ?? this.stock,
       imageBytes: imageBytes ?? this.imageBytes,
       fileName: fileName ?? this.fileName,

@@ -184,12 +184,18 @@ class BulkUploadController extends Notifier<BulkUploadState> {
 
       _setDraft(i, draft.copyWith(publishing: true));
       try {
+        final double actualPrice = draft.price ?? 0;
+        final double? compareAt = draft.compareAtPrice != null &&
+                draft.compareAtPrice! > actualPrice
+            ? draft.compareAtPrice
+            : null;
         final ProductInput input = ProductInput(
           title: draft.title.trim(),
           description: draft.description?.trim(),
           category: draft.category,
           tags: draft.tags,
-          price: draft.price ?? 0,
+          price: actualPrice,
+          compareAtPrice: compareAt,
           sku: draft.sku?.trim(),
           stock: draft.stock,
         );

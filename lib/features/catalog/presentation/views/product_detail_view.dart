@@ -337,13 +337,49 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                     ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
-              Text(
-                Formatters.price(product.price),
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
+                runSpacing: 6,
+                children: <Widget>[
+                  Text(
+                    Formatters.price(product.price),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  if (product.isOnSale) ...<Widget>[
+                    Text(
+                      Formatters.price(product.compareAtPrice!),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: tokens.textTertiary,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tokens.success.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '-${product.discountPercent}% OFF',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: tokens.success,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
               if (product.stock <= 0)
                 Padding(

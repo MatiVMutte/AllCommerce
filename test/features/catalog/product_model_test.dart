@@ -49,4 +49,18 @@ void main() {
       ProductCategory.other,
     );
   });
+
+  test('compare_at_price enables sale flag and discount percentage', () {
+    final Map<String, dynamic> json = _productJson(price: 7500);
+    json['compare_at_price'] = '10000';
+    final ProductModel product = ProductModel.fromJson(json);
+    expect(product.compareAtPrice, 10000.0);
+    expect(product.isOnSale, isTrue);
+    expect(product.discountPercent, 25);
+
+    final ProductModel notOnSale =
+        product.copyWith(clearCompareAtPrice: true);
+    expect(notOnSale.isOnSale, isFalse);
+    expect(notOnSale.discountPercent, 0);
+  });
 }
