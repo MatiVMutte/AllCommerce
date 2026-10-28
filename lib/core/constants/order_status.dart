@@ -22,18 +22,22 @@ enum OrderStatus {
     return OrderStatus.requested;
   }
 
+  /// Filled-chip background. Fixed semantic palette (not theme colors)
+  /// so a status can never blend with buttons or brand elements:
+  /// amber = new, blue = in progress, green = ready, slate = closed,
+  /// red = rejected.
   Color color(ColorScheme scheme) {
     switch (this) {
       case OrderStatus.requested:
-        return scheme.primary;
+        return const Color(0xFFF59E0B);
       case OrderStatus.preparing:
-        return scheme.tertiary;
+        return const Color(0xFF2563EB);
       case OrderStatus.ready:
-        return const Color(0xFF2E7D32);
+        return const Color(0xFF16A34A);
       case OrderStatus.delivered:
-        return scheme.onSurfaceVariant;
+        return const Color(0xFF64748B);
       case OrderStatus.rejected:
-        return scheme.error;
+        return const Color(0xFFDC2626);
     }
   }
 
