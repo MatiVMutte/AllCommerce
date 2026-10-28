@@ -1,5 +1,6 @@
 import 'package:all_commerce/core/constants/app_config.dart';
 import 'package:all_commerce/core/constants/plans.dart';
+import 'package:all_commerce/core/router/customer_mode.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
@@ -198,13 +199,25 @@ class _OwnerPanel extends ConsumerWidget {
                   ),
                 ),
                 AppRefreshButton(onRefresh: () => _refresh(ref)),
+                const SizedBox(width: 6),
+                _CircleIcon(
+                  icon: Icons.travel_explore_rounded,
+                  tooltip: 'Explorar locales (modo cliente)',
+                  onTap: () {
+                    ref.read(customerModeProvider.notifier).enterCustomerMode();
+                    context.go('/');
+                  },
+                ),
                 if (ref.watch(currentProfileProvider).value?.isAdmin ??
-                    false)
+                    false) ...<Widget>[
+                  const SizedBox(width: 6),
                   _CircleIcon(
                     icon: Icons.admin_panel_settings_outlined,
                     tooltip: 'Administración',
                     onTap: () => context.push('/admin'),
                   ),
+                ],
+                const SizedBox(width: 6),
                 _CircleIcon(
                   icon: Icons.logout_rounded,
                   tooltip: 'Cerrar sesión',

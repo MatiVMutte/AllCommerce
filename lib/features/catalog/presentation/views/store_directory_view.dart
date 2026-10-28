@@ -1,5 +1,6 @@
 import 'package:all_commerce/core/constants/app_config.dart';
 import 'package:all_commerce/core/constants/app_strings.dart';
+import 'package:all_commerce/core/router/customer_mode.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
@@ -98,6 +99,19 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      if (profile?.isOwner ?? false) ...<Widget>[
+                        FilledButton.tonalIcon(
+                          icon: const Icon(Icons.storefront_rounded, size: 18),
+                          label: const Text('Mi negocio'),
+                          onPressed: () {
+                            ref
+                                .read(customerModeProvider.notifier)
+                                .exitCustomerMode();
+                            context.go('/owner');
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       AppRefreshButton(onRefresh: () => _refresh(ref)),
                     ],
                   ),

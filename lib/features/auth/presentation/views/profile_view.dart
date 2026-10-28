@@ -1,5 +1,7 @@
+import 'package:all_commerce/core/router/customer_mode.dart';
 import 'package:all_commerce/core/router/return_to.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
+import 'package:all_commerce/core/widgets/app_card.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:flutter/material.dart';
@@ -128,6 +130,92 @@ class ProfileView extends ConsumerWidget {
                     ),
                   ),
                 const SizedBox(height: 32),
+                if (profile != null && profile.isOwner) ...<Widget>[
+                  AppCard(
+                    onTap: () {
+                      ref
+                          .read(customerModeProvider.notifier)
+                          .exitCustomerMode();
+                      context.go('/owner');
+                    },
+                    child: Row(
+                      children: <Widget>[
+                        CircleAvatar(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          child: const Icon(
+                            Icons.storefront_rounded,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                'Panel de mi negocio',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: tokens.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                'Administrá tus productos, pedidos y ventas',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: tokens.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ] else if (profile != null && !profile.isOwner) ...<Widget>[
+                  AppCard(
+                    onTap: () => context.push('/onboarding/business'),
+                    child: Row(
+                      children: <Widget>[
+                        CircleAvatar(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          child: const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                '¿Tenés un comercio?',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: tokens.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                'Creá tu catálogo gratis con IA en 1 minuto',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: tokens.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 Card(
                   child: Column(
                     children: <Widget>[

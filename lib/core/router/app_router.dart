@@ -3,6 +3,7 @@ import 'package:all_commerce/features/admin/presentation/views/admin_home_view.d
 import 'package:all_commerce/features/admin/presentation/views/admin_plans_view.dart';
 import 'package:all_commerce/features/admin/presentation/views/admin_tenant_view.dart';
 import 'package:all_commerce/features/billing/presentation/views/plans_view.dart';
+import 'package:all_commerce/core/router/customer_mode.dart';
 import 'package:all_commerce/core/router/return_to.dart';
 import 'package:all_commerce/core/router/router_refresh.dart';
 import 'package:all_commerce/features/cart/presentation/views/cart_view.dart';
@@ -264,14 +265,19 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
         if (profile == null) return isOnboarding ? null : '/select-role';
         if (loc.startsWith('/admin') && !profile.isAdmin) return '/';
         if (profile.isOwner) {
-          if (isAuthEntry || isOnboarding || loc == '/') {
+          final bool inCustomerMode = ref.read(customerModeProvider);
+          if (isAuthEntry ||
+              isOnboarding ||
+              (loc == '/' && !inCustomerMode)) {
             final String? returnTo =
                 ref.read(returnToProvider.notifier).consume();
             return returnTo ?? '/owner';
           }
           return null;
         }
-        // customer
+        // customer: allow '/onboarding/business' so an existing customer can
+        // open their own store and upgrade their account to owner.
+        if (loc == '/onboarding/business') return null;
         if (isAuthEntry || isOnboarding || loc.startsWith('/owner')) {
           final String? returnTo =
               ref.read(returnToProvider.notifier).consume();

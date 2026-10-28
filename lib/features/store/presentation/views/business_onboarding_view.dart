@@ -2,10 +2,13 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
+import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/auth/presentation/widgets/auth_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class BusinessOnboardingView extends ConsumerStatefulWidget {
   const BusinessOnboardingView({super.key});
@@ -28,6 +31,13 @@ class _BusinessOnboardingViewState
   @override
   void initState() {
     super.initState();
+    final UserModel? existing = ref.read(currentProfileProvider).value;
+    if (existing != null) {
+      _fullName.text = existing.fullName;
+      if (existing.phone != null && existing.phone!.isNotEmpty) {
+        _whatsapp.text = existing.phone!;
+      }
+    }
     _storeName.addListener(() {
       if (!_slugEdited) {
         _slug.value = TextEditingValue(
@@ -66,18 +76,26 @@ class _BusinessOnboardingViewState
     if (tenant == null && mounted) {
       final Object? error = ref.read(authControllerProvider).error;
       if (error != null) showErrorSnackBar(context, error);
+      return;
     }
-    // On success the router redirect takes it to '/owner'.
+    if (tenant != null && mounted) {
+      context.go('/owner');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     final bool loading = ref.watch(authControllerProvider).isLoading;
+    final bool hasCustomerProfile =
+        ref.watch(currentProfileProvider).value != null;
     final bool slugValid =
         Validators.slug(_slug.text.trim()) == null &&
             _slug.text.trim().isNotEmpty;
     return Scaffold(
+      appBar: hasCustomerProfile
+          ? AppBar(leading: const AppBackButton(fallback: '/profile'))
+          : null,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
