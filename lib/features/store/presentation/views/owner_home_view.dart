@@ -19,6 +19,7 @@ import 'package:all_commerce/features/auth/presentation/view_models/auth_provide
 import 'package:all_commerce/features/billing/data/repositories/ai_usage_repository.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
+import 'package:all_commerce/features/orders/data/models/sales_metrics.dart';
 import 'package:all_commerce/features/orders/presentation/view_models/owner_orders_providers.dart';
 import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
 import 'package:all_commerce/features/store/presentation/view_models/tenant_settings_controller.dart';
@@ -346,6 +347,12 @@ class _OwnerPanel extends ConsumerWidget {
               },
             ),
             const SizedBox(height: 28),
+            const _SectionTitle('Ventas del mes'),
+            const SizedBox(height: 8),
+            _SalesCard(
+              metricsAsync: ref.watch(ownerSalesMetricsProvider(tenant.id)),
+            ),
+            const SizedBox(height: 28),
             const _SectionTitle('Últimos pedidos'),
             const SizedBox(height: 8),
             if (orders == null)
@@ -441,6 +448,7 @@ class _OwnerPanel extends ConsumerWidget {
     ref.invalidate(tenantByIdProvider(tenant.id));
     ref.invalidate(ownerProductsProvider(tenant.id));
     ref.invalidate(ownerOrdersProvider(tenant.id));
+    ref.invalidate(ownerSalesMetricsProvider(tenant.id));
     ref.invalidate(aiUsageProvider);
     await ref
         .read(tenantByIdProvider(tenant.id).future)
@@ -627,6 +635,205 @@ class _PlanBanner extends StatelessWidget {
                     mode: LaunchMode.externalApplication,
                   ),
             child: const Text('WhatsApp'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+const List<String> _monthNames = <String>[
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+
+/// "Ventas del mes": total del mes, comparativa con el mes anterior y
+/// top 3 productos más pedidos.
+class _SalesCard extends StatelessWidget {
+  const _SalesCard({required this.metricsAsync});
+
+  final AsyncValue<SalesMetrics> metricsAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return metricsAsync.when(
+      loading: () => const AppSkeleton(height: 120),
+      error: (Object e, StackTrace s) => const SizedBox.shrink(),
+      data: (SalesMetrics m) {
+        final double? delta = m.monthOverMonthDelta;
+        return AppCard(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          Formatters.price(m.monthTotal),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${m.monthCount} pedidos en '
+                          '${_monthNames[DateTime.now().month - 1]}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: tokens.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (delta != null)
+                    _DeltaPill(delta: delta)
+                  else if (m.monthCount > 0 && m.prevCount == 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tokens.surfaceMuted,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        'Primer mes',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: tokens.textSecondary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              if (m.topProducts.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 14),
+                Divider(height: 1, color: tokens.border),
+                const SizedBox(height: 10),
+                Text(
+                  'MÁS PEDIDOS',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.6,
+                    color: tokens.textTertiary,
+                  ),
+                ),
+                for (final (int i, SalesTopProduct p)
+                    in m.topProducts.indexed)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Row(
+                      children: <Widget>[
+                        Container(
+                          width: 22,
+                          height: 22,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: tokens.surfaceMuted,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '${i + 1}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: tokens.textSecondary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            p.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: tokens.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${p.quantity} u.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: tokens.textTertiary,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          Formatters.price(p.revenue),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: tokens.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Green/red pill with the month-over-month percent change.
+class _DeltaPill extends StatelessWidget {
+  const _DeltaPill({required this.delta});
+
+  final double delta;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final bool up = delta >= 0;
+    final Color color = up ? tokens.success : tokens.danger;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            up ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+            size: 14,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '${delta > 0 ? '+' : ''}${delta.toStringAsFixed(0)}%',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
         ],
       ),

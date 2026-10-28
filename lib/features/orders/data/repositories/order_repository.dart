@@ -5,6 +5,7 @@ import 'package:all_commerce/core/supabase/supabase_client_provider.dart';
 import 'package:all_commerce/features/cart/data/models/cart_item.dart';
 import 'package:all_commerce/features/orders/data/models/order_item_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
+import 'package:all_commerce/features/orders/data/models/sales_metrics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -68,6 +69,16 @@ class OrderRepository {
     } catch (_) {
       // Do nothing: notification is optional.
     }
+  }
+
+  /// Monthly sales totals + top products for [tenantId]. The RPC only
+  /// answers for the tenant owned by the current user.
+  Future<SalesMetrics> salesMetrics(String tenantId) async {
+    final dynamic data = await _client.rpc<dynamic>(
+      'owner_sales_metrics',
+      params: <String, dynamic>{'p_tenant_id': tenantId},
+    );
+    return SalesMetrics.fromJson(data as Map<String, dynamic>);
   }
 
   /// Latest orders for [tenantId], newest first.

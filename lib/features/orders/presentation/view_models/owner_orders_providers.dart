@@ -3,6 +3,7 @@ import 'package:all_commerce/core/utils/text_utils.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/orders/data/models/order_item_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
+import 'package:all_commerce/features/orders/data/models/sales_metrics.dart';
 import 'package:all_commerce/features/orders/data/repositories/order_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,6 +19,13 @@ final ownerOrdersProvider =
     FutureProvider.autoDispose.family<List<OrderModel>, String>(
   (Ref ref, String tenantId) =>
       ref.watch(orderRepositoryProvider).listByTenant(tenantId),
+);
+
+/// Monthly sales snapshot (totals + top products) for the owner's tenant.
+final ownerSalesMetricsProvider =
+    FutureProvider.autoDispose.family<SalesMetrics, String>(
+  (Ref ref, String tenantId) =>
+      ref.watch(orderRepositoryProvider).salesMetrics(tenantId),
 );
 
 final orderItemsProvider =
