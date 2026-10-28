@@ -2,6 +2,7 @@ import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/core/widgets/app_card.dart';
+import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/features/admin/data/models/admin_models.dart';
@@ -61,6 +62,22 @@ class _AdminHomeViewState extends ConsumerState<AdminHomeView> {
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/'),
         title: const Text('AllCommerce · Admin'),
+        actions: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: AppRefreshButton(
+              onRefresh: () async {
+                ref.invalidate(adminMetricsProvider);
+                ref.invalidate(adminTenantsProvider);
+                await ref
+                    .read(adminTenantsProvider.future)
+                    .catchError(
+                      (Object _) => const <AdminTenantRow>[],
+                    );
+              },
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         bottom: false,

@@ -5,6 +5,7 @@ import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/widgets/app_avatar.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/core/widgets/app_card.dart';
+import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
@@ -30,6 +31,19 @@ class MyOrdersView extends ConsumerWidget {
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/'),
         title: const Text('Mis pedidos'),
+        actions: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: AppRefreshButton(
+              onRefresh: () async {
+                ref.invalidate(myOrdersProvider);
+                await ref
+                    .read(myOrdersProvider.future)
+                    .catchError((Object _) => const <OrderModel>[]);
+              },
+            ),
+          ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(

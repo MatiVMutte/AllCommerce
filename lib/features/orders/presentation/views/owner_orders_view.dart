@@ -1,6 +1,7 @@
 import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
+import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
@@ -67,6 +68,15 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ),
+                      AppRefreshButton(
+                        onRefresh: () async {
+                          ref.invalidate(ownerOrdersProvider(tenantId));
+                          await ref
+                              .read(ownerOrdersProvider(tenantId).future)
+                              .catchError((Object _) => const <OrderModel>[]);
+                        },
+                      ),
+                      const SizedBox(width: 8),
                       if (pending > 0)
                         Container(
                           padding: const EdgeInsets.symmetric(

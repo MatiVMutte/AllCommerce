@@ -5,6 +5,7 @@ import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
+import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
@@ -65,6 +66,17 @@ class OwnerProductsView extends ConsumerWidget {
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ),
+                      AppRefreshButton(
+                        onRefresh: () async {
+                          ref.invalidate(ownerProductsProvider(tenantId));
+                          await ref
+                              .read(ownerProductsProvider(tenantId).future)
+                              .catchError(
+                                (Object _) => const <ProductModel>[],
+                              );
+                        },
+                      ),
+                      const SizedBox(width: 8),
                       if (tenant != null)
                         Container(
                           padding: const EdgeInsets.symmetric(

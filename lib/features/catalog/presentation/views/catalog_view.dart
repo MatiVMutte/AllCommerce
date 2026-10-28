@@ -105,6 +105,13 @@ class _CatalogScaffold extends ConsumerWidget {
                   ),
                   actions: <Widget>[
                     _OverlayIconButton(
+                      icon: Icons.refresh_rounded,
+                      tooltip: 'Actualizar',
+                      onPressed: () => ref.invalidate(
+                        catalogProductsProvider(tenant.id),
+                      ),
+                    ),
+                    _OverlayIconButton(
                       icon: Icons.share_outlined,
                       tooltip: 'Compartir catálogo',
                       onPressed: () => _shareCatalog(context),

@@ -8,6 +8,7 @@ import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/widgets/app_avatar.dart';
 import 'package:all_commerce/core/widgets/app_card.dart';
 import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
+import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
@@ -195,6 +196,7 @@ class _OwnerPanel extends ConsumerWidget {
                     ],
                   ),
                 ),
+                AppRefreshButton(onRefresh: () => _refresh(ref)),
                 if (ref.watch(currentProfileProvider).value?.isAdmin ??
                     false)
                   _CircleIcon(

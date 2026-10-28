@@ -4,6 +4,7 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/widgets/app_avatar.dart';
+import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
@@ -57,6 +58,9 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
   Future<void> _refresh(WidgetRef ref) async {
     ref.invalidate(publicZonesProvider);
     ref.invalidate(activeTenantsProvider(_zone));
+    await ref
+        .read(activeTenantsProvider(_zone).future)
+        .catchError((Object _) => const <TenantModel>[]);
   }
 
   @override
@@ -80,12 +84,21 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                  child: Text(
-                    profile == null
-                        ? 'Hola'
-                        : 'Hola, ${profile.fullName.split(' ').first}',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                  padding: const EdgeInsets.fromLTRB(24, 24, 16, 0),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          profile == null
+                              ? 'Hola'
+                              : 'Hola, ${profile.fullName.split(' ').first}',
+                          style: Theme.of(context).textTheme.headlineMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      AppRefreshButton(onRefresh: () => _refresh(ref)),
+                    ],
                   ),
                 ),
                 Padding(
