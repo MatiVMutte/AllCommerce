@@ -203,7 +203,10 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                         );
                       }
                       if (_view == _DirectoryView.map) {
-                        return _DirectoryMap(tenants: filtered);
+                        return _DirectoryMap(
+                          tenants: filtered,
+                          myTenantId: profile?.tenantId,
+                        );
                       }
                       return RefreshIndicator(
                         onRefresh: () async => _refresh(ref),
@@ -360,9 +363,12 @@ class _ZoneChips extends StatelessWidget {
 }
 
 class _DirectoryMap extends StatelessWidget {
-  const _DirectoryMap({required this.tenants});
+  const _DirectoryMap({required this.tenants, this.myTenantId});
 
   final List<TenantModel> tenants;
+
+  /// Tenant id of the signed-in owner, to flag their own store's marker.
+  final String? myTenantId;
 
   List<TenantModel> get _withCoords => tenants
       .where(
@@ -400,12 +406,14 @@ class _DirectoryMap extends StatelessWidget {
         ),
         MarkerLayer(
           markers: points.map((TenantModel t) {
+            final bool isMine = t.id == myTenantId;
             return Marker(
               point: LatLng(t.lat!, t.lng!),
-              width: 40,
-              height: 50,
+              width: isMine ? 72 : 40,
+              height: isMine ? 76 : 50,
               child: _MapMarker(
                 tenant: t,
+                isMine: isMine,
                 onTap: () => _showStoreSheet(context, t),
               ),
             );
@@ -420,23 +428,55 @@ class _DirectoryMap extends StatelessWidget {
       context: context,
       useRootNavigator: true,
       useSafeArea: true,
-      builder: (BuildContext context) => _MapStoreSheet(tenant: tenant),
+      builder: (BuildContext context) => _MapStoreSheet(
+        tenant: tenant,
+        isMine: tenant.id == myTenantId,
+      ),
     );
   }
 }
 
 class _MapMarker extends StatelessWidget {
-  const _MapMarker({required this.tenant, required this.onTap});
+  const _MapMarker({
+    required this.tenant,
+    required this.onTap,
+    this.isMine = false,
+  });
 
   final TenantModel tenant;
   final VoidCallback onTap;
+  final bool isMine;
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: <Widget>[
+          if (isMine)
+            Container(
+              margin: const EdgeInsets.only(bottom: 2),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 3,
+              ),
+              decoration: BoxDecoration(
+                color: scheme.primary,
+                borderRadius: BorderRadius.circular(999),
+                boxShadow: const <BoxShadow>[
+                  BoxShadow(color: Colors.black26, blurRadius: 4),
+                ],
+              ),
+              child: const Text(
+                'Tu local',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 10,
+                ),
+              ),
+            ),
           Container(
             width: 36,
             height: 36,
@@ -472,9 +512,10 @@ class _MapMarker extends StatelessWidget {
 }
 
 class _MapStoreSheet extends StatelessWidget {
-  const _MapStoreSheet({required this.tenant});
+  const _MapStoreSheet({required this.tenant, this.isMine = false});
 
   final TenantModel tenant;
+  final bool isMine;
 
   @override
   Widget build(BuildContext context) {
@@ -499,12 +540,43 @@ class _MapStoreSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(
-                        tenant.name,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
+                      Row(
+                        children: <Widget>[
+                          Flexible(
+                            child: Text(
+                              tenant.name,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          if (isMine) ...<Widget>[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                'Tu local',
+                                style: TextStyle(
+                                  color:
+                                      Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       if (tenant.address != null)
                         Text(
