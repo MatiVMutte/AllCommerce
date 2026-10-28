@@ -100,15 +100,24 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                         ),
                       ),
                       if (profile?.isOwner ?? false) ...<Widget>[
-                        FilledButton.tonalIcon(
-                          icon: const Icon(Icons.storefront_rounded, size: 18),
-                          label: const Text('Mi negocio'),
-                          onPressed: () {
-                            ref
-                                .read(customerModeProvider.notifier)
-                                .exitCustomerMode();
-                            context.go('/owner');
-                          },
+                        Flexible(
+                          child: FilledButton.tonalIcon(
+                            icon: const Icon(
+                              Icons.storefront_rounded,
+                              size: 18,
+                            ),
+                            label: const Text(
+                              'Mi negocio',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            onPressed: () {
+                              ref
+                                  .read(customerModeProvider.notifier)
+                                  .exitCustomerMode();
+                              context.go('/owner');
+                            },
+                          ),
                         ),
                         const SizedBox(width: 8),
                       ],
@@ -249,7 +258,7 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                     crossAxisCount: columns,
                                     crossAxisSpacing: 16,
                                     mainAxisSpacing: 16,
-                                    mainAxisExtent: 236,
+                                    mainAxisExtent: 252,
                                   ),
                               itemCount: filtered.length,
                               itemBuilder: (BuildContext context, int index) {
