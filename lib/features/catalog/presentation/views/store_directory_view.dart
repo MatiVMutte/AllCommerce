@@ -382,6 +382,8 @@ class _DirectoryMap extends StatelessWidget {
   void _showStoreSheet(BuildContext context, TenantModel tenant) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       builder: (BuildContext context) => _MapStoreSheet(tenant: tenant),
     );
   }
@@ -443,7 +445,12 @@ class _MapStoreSheet extends StatelessWidget {
     final AppTokens tokens = context.tokens;
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          20 + MediaQuery.viewPaddingOf(context).bottom,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

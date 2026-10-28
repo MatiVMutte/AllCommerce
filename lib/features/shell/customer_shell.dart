@@ -18,8 +18,15 @@ class CustomerShell extends ConsumerWidget {
     if (cart.isEmpty || slug == null) {
       showModalBottomSheet<void>(
         context: context,
+        useRootNavigator: true,
+        useSafeArea: true,
         builder: (BuildContext context) => Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+          padding: EdgeInsets.fromLTRB(
+            24,
+            0,
+            24,
+            32 + MediaQuery.viewPaddingOf(context).bottom,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[

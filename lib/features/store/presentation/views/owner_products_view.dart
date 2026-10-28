@@ -290,6 +290,8 @@ class _OwnerProductRow extends ConsumerWidget {
     final ({int stock, bool track})? result =
         await showModalBottomSheet<({int stock, bool track})>(
           context: context,
+          useRootNavigator: true,
+          useSafeArea: true,
           isScrollControlled: true,
           builder: (BuildContext sheetContext) {
             return StatefulBuilder(
@@ -299,7 +301,9 @@ class _OwnerProductRow extends ConsumerWidget {
                     20,
                     20,
                     20,
-                    MediaQuery.of(context).viewInsets.bottom + 20,
+                    MediaQuery.viewInsetsOf(context).bottom +
+                        MediaQuery.viewPaddingOf(context).bottom +
+                        20,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
