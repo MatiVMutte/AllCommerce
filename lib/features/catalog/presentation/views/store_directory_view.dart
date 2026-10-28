@@ -215,6 +215,8 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                     (BuildContext context, int index) {
                                   final Widget card = _StoreCard(
                                     tenant: filtered[index],
+                                    isMine: profile?.tenantId ==
+                                        filtered[index].id,
                                   );
                                   return animate
                                       ? card
@@ -254,6 +256,8 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                 final Widget card = _StoreCard(
                                   tenant: filtered[index],
                                   bottomMargin: 0,
+                                  isMine: profile?.tenantId ==
+                                      filtered[index].id,
                                 );
                                 return animate
                                     ? card
@@ -531,10 +535,17 @@ class _MapStoreSheet extends StatelessWidget {
 }
 
 class _StoreCard extends StatelessWidget {
-  const _StoreCard({required this.tenant, this.bottomMargin = 16});
+  const _StoreCard({
+    required this.tenant,
+    this.bottomMargin = 16,
+    this.isMine = false,
+  });
 
   final TenantModel tenant;
   final double bottomMargin;
+
+  /// True when this store belongs to the signed-in owner (customer mode).
+  final bool isMine;
 
   @override
   Widget build(BuildContext context) {
@@ -589,6 +600,32 @@ class _StoreCard extends StatelessWidget {
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (isMine)
+                    Positioned(
+                      top: 10,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Text(
+                          'Tu local',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
                           ),
                         ),
                       ),
