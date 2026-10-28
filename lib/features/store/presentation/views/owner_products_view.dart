@@ -439,35 +439,38 @@ class _OwnerProductRow extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Row(
-                    children: <Widget>[
-                      if (product.sku != null)
-                        Text(
-                          '${product.sku} · ',
+                  Text.rich(
+                    TextSpan(
+                      children: <InlineSpan>[
+                        if (product.sku != null &&
+                            product.sku!.trim().isNotEmpty)
+                          TextSpan(
+                            text: '${product.sku} · ',
+                            style: TextStyle(color: tokens.textTertiary),
+                          ),
+                        TextSpan(
+                          text: product.trackStock
+                              ? (product.stock <= 0
+                                    ? 'Agotado (0)'
+                                    : 'Stock ${product.stock}')
+                              : 'Stock ilimitado',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: tokens.textTertiary,
+                            fontWeight:
+                                product.isOutOfStock || product.isLowStock
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            color: product.isOutOfStock
+                                ? tokens.danger
+                                : product.isLowStock
+                                ? tokens.warning
+                                : tokens.textTertiary,
                           ),
                         ),
-                      Text(
-                        product.trackStock
-                            ? (product.stock <= 0
-                                  ? 'Agotado (0)'
-                                  : 'Stock ${product.stock}')
-                            : 'Stock ilimitado',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: product.isOutOfStock || product.isLowStock
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                          color: product.isOutOfStock
-                              ? tokens.danger
-                              : product.isLowStock
-                              ? tokens.warning
-                              : tokens.textTertiary,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ],
               ),
