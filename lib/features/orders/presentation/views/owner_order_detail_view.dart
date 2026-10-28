@@ -14,10 +14,12 @@ import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/orders/data/models/order_item_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
+import 'package:all_commerce/features/orders/data/services/order_ticket_pdf.dart';
 import 'package:all_commerce/features/orders/data/services/whatsapp_message_builder.dart';
 import 'package:all_commerce/features/orders/presentation/view_models/owner_orders_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class OwnerOrderDetailView extends ConsumerStatefulWidget {
@@ -38,6 +40,40 @@ class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
   void initState() {
     super.initState();
     _order = widget.order;
+  }
+
+  /// Generates the ticket PDF and opens the system share/print sheet.
+  Future<void> _shareTicket() async {
+    final OrderModel order = _order!;
+    try {
+      final List<OrderItemModel> items = await ref.read(
+        orderItemsProvider(order.id).future,
+      );
+      final String? tenantId =
+          ref.read(currentProfileProvider).value?.tenantId;
+      final String tenantName = tenantId == null
+          ? ''
+          : ref.read(tenantByIdProvider(tenantId)).value?.name ?? '';
+      if (!mounted) return;
+      final bytes = await buildOrderTicketPdf(
+        order: order,
+        items: items,
+        tenantName: tenantName,
+      );
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: 'pedido-${order.orderNumber}.pdf',
+      );
+    } catch (_) {
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          'No se pudo generar el ticket',
+          isError: true,
+          clearNavBar: false,
+        );
+      }
+    }
   }
 
   Future<void> _changeStatus(OrderStatus next) async {
@@ -130,6 +166,13 @@ class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
             OrderStatusChip(status: order.status),
           ],
         ),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.print_outlined),
+            tooltip: 'Ticket PDF',
+            onPressed: _shareTicket,
+          ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(
