@@ -25,6 +25,10 @@ Future<void> main() async {
   );
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   unawaited(FirebaseMessagingService.instance.initialize());
+  // Que el framework reciba SIEMPRE el botón atrás (Android 15+ no se lo
+  // entrega si el Navigator no reporta canHandlePop). Sin esto, atrás en
+  // una pantalla raíz cierra la app sin pasar por didPopRoute.
+  unawaited(SystemNavigator.setFrameworkHandlesBack(true));
   runApp(
     ProviderScope(
       overrides: [
@@ -106,6 +110,13 @@ class _AllCommerceAppState extends ConsumerState<AllCommerceApp>
       themeMode: ThemeMode.system,
       routerConfig: ref.watch(routerProvider),
       debugShowCheckedModeBanner: false,
+      // El Navigator re-evalúa canHandlePop en cada cambio de historial y
+      // volvería a false en la raíz; lo anclamos en true para que el
+      // sistema siempre delegue el atrás en didPopRoute.
+      onNavigationNotification: (NavigationNotification _) {
+        unawaited(SystemNavigator.setFrameworkHandlesBack(true));
+        return true;
+      },
       builder: (BuildContext context, Widget? child) {
         return Stack(
           children: <Widget>[
