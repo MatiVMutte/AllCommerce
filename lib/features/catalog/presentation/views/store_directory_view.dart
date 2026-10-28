@@ -75,7 +75,7 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
         bottom: false,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
+            constraints: const BoxConstraints(maxWidth: 1080),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -162,33 +162,80 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                       }
                       return RefreshIndicator(
                         onRefresh: () async => _refresh(ref),
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(
-                            16,
-                            4,
-                            16,
-                            FloatingNavBar.height,
-                          ),
-                          itemCount: filtered.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final Widget card = _StoreCard(
-                              tenant: filtered[index],
+                        child: LayoutBuilder(
+                          builder:
+                              (BuildContext context, BoxConstraints box) {
+                            final bool multiColumn = box.maxWidth >= 680;
+                            if (!multiColumn) {
+                              return ListView.builder(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  4,
+                                  16,
+                                  FloatingNavBar.height,
+                                ),
+                                itemCount: filtered.length,
+                                itemBuilder:
+                                    (BuildContext context, int index) {
+                                  final Widget card = _StoreCard(
+                                    tenant: filtered[index],
+                                  );
+                                  return animate
+                                      ? card
+                                            .animate()
+                                            .fadeIn(
+                                              duration: 300.ms,
+                                              delay: (index * 40).ms,
+                                            )
+                                            .slideY(
+                                              begin: 0.08,
+                                              end: 0,
+                                              duration: 300.ms,
+                                              delay: (index * 40).ms,
+                                              curve: Curves.easeOutCubic,
+                                            )
+                                      : card;
+                                },
+                              );
+                            }
+                            final int columns = box.maxWidth >= 980 ? 3 : 2;
+                            return GridView.builder(
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                4,
+                                16,
+                                FloatingNavBar.height,
+                              ),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: columns,
+                                    crossAxisSpacing: 16,
+                                    mainAxisSpacing: 16,
+                                    mainAxisExtent: 236,
+                                  ),
+                              itemCount: filtered.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                final Widget card = _StoreCard(
+                                  tenant: filtered[index],
+                                  bottomMargin: 0,
+                                );
+                                return animate
+                                    ? card
+                                          .animate()
+                                          .fadeIn(
+                                            duration: 300.ms,
+                                            delay: (index * 40).ms,
+                                          )
+                                          .slideY(
+                                            begin: 0.08,
+                                            end: 0,
+                                            duration: 300.ms,
+                                            delay: (index * 40).ms,
+                                            curve: Curves.easeOutCubic,
+                                          )
+                                    : card;
+                              },
                             );
-                            return animate
-                                ? card
-                                      .animate()
-                                      .fadeIn(
-                                        duration: 300.ms,
-                                        delay: (index * 40).ms,
-                                      )
-                                      .slideY(
-                                        begin: 0.08,
-                                        end: 0,
-                                        duration: 300.ms,
-                                        delay: (index * 40).ms,
-                                        curve: Curves.easeOutCubic,
-                                      )
-                                : card;
                           },
                         ),
                       );
@@ -441,15 +488,16 @@ class _MapStoreSheet extends StatelessWidget {
 }
 
 class _StoreCard extends StatelessWidget {
-  const _StoreCard({required this.tenant});
+  const _StoreCard({required this.tenant, this.bottomMargin = 16});
 
   final TenantModel tenant;
+  final double bottomMargin;
 
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: bottomMargin),
       decoration: BoxDecoration(
         color: tokens.surface,
         borderRadius: BorderRadius.circular(20),

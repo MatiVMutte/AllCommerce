@@ -57,49 +57,56 @@ class FloatingNavBar extends StatelessWidget {
           right: 16,
           bottom: 16 + MediaQuery.of(context).padding.bottom,
         ),
-        child: SizedBox(
-          height: 76,
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.bottomCenter,
-            children: <Widget>[
-              Container(
-                height: 64,
-                decoration: BoxDecoration(
-                  color: tokens.navBackground,
-                  borderRadius: BorderRadius.circular(999),
-                  border:
-                      dark ? Border.all(color: tokens.border) : null,
-                  boxShadow: dark
-                      ? null
-                      : const <BoxShadow>[
-                          BoxShadow(
-                            blurRadius: 24,
-                            offset: Offset(0, 8),
-                            color: Color(0x14000000),
-                          ),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: SizedBox(
+              height: 76,
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.bottomCenter,
+                children: <Widget>[
+                  Container(
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: tokens.navBackground,
+                      borderRadius: BorderRadius.circular(999),
+                      border:
+                          dark ? Border.all(color: tokens.border) : null,
+                      boxShadow: dark
+                          ? null
+                          : const <BoxShadow>[
+                              BoxShadow(
+                                blurRadius: 24,
+                                offset: Offset(0, 8),
+                                color: Color(0x14000000),
+                              ),
+                            ],
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        for (int i = 0; i < items.length; i++) ...<Widget>[
+                          if (i == items.length ~/ 2)
+                            const SizedBox(width: 72),
+                          Expanded(child: _NavItem(item: items[i])),
                         ],
-                ),
-                child: Row(
-                  children: <Widget>[
-                    for (int i = 0; i < items.length; i++) ...<Widget>[
-                      if (i == items.length ~/ 2)
-                        const SizedBox(width: 72),
-                      Expanded(child: _NavItem(item: items[i])),
-                    ],
-                  ],
-                ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 20,
+                    child: _CenterButton(
+                      icon: centerIcon,
+                      badgeCount: centerBadgeCount,
+                      enabled: centerEnabled,
+                      onTap: onCenterTap,
+                    ),
+                  ),
+                ],
               ),
-              Positioned(
-                bottom: 20,
-                child: _CenterButton(
-                  icon: centerIcon,
-                  badgeCount: centerBadgeCount,
-                  enabled: centerEnabled,
-                  onTap: onCenterTap,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

@@ -18,6 +18,7 @@ void showAppSnackBar(
   messenger.showSnackBar(
     SnackBar(
       behavior: SnackBarBehavior.floating,
+      width: MediaQuery.sizeOf(context).width >= 600 ? 420 : null,
       elevation: 6,
       duration: Duration(milliseconds: action != null ? 3200 : 1800),
       backgroundColor: isError ? tokens.danger : const Color(0xEE18181B),
@@ -25,12 +26,14 @@ void showAppSnackBar(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(999),
       ),
-      margin: EdgeInsets.fromLTRB(
-        24,
-        0,
-        24,
-        clearNavBar ? FloatingNavBar.height + 12 : 16,
-      ),
+      margin: MediaQuery.sizeOf(context).width >= 600
+          ? null
+          : EdgeInsets.fromLTRB(
+              24,
+              0,
+              24,
+              clearNavBar ? FloatingNavBar.height + 12 : 16,
+            ),
       content: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
