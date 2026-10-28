@@ -47,10 +47,17 @@ class _AllCommerceAppState extends ConsumerState<AllCommerceApp>
     // Registered before the Router's RootBackButtonDispatcher (created
     // when MaterialApp builds below us), so handlePopRoute hits us first.
     WidgetsBinding.instance.addObserver(this);
+    _splashTimer = Timer(const Duration(milliseconds: 650), () {
+      if (mounted) setState(() => _showSplash = false);
+    });
   }
+
+  Timer? _splashTimer;
+  bool _showSplash = true;
 
   @override
   void dispose() {
+    _splashTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -81,6 +88,79 @@ class _AllCommerceAppState extends ConsumerState<AllCommerceApp>
       themeMode: ThemeMode.system,
       routerConfig: ref.watch(routerProvider),
       debugShowCheckedModeBanner: false,
+      builder: (BuildContext context, Widget? child) {
+        return Stack(
+          children: <Widget>[
+            ?child,
+            IgnorePointer(
+              ignoring: !_showSplash,
+              child: AnimatedOpacity(
+                opacity: _showSplash ? 1 : 0,
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                child: const _BrandSplashOverlay(),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _BrandSplashOverlay extends StatelessWidget {
+  const _BrandSplashOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF0052FF),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: const <BoxShadow>[
+                  BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.shopping_bag_rounded,
+                size: 40,
+                color: Color(0xFF0052FF),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'AllCommerce',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.6,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Tu catálogo inteligente',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
