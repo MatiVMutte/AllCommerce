@@ -6,7 +6,10 @@ import 'package:all_commerce/core/router/app_router.dart';
 import 'package:all_commerce/core/router/parent_path.dart';
 import 'package:all_commerce/core/storage/shared_preferences_provider.dart';
 import 'package:all_commerce/core/theme/app_theme.dart';
+import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -74,8 +77,23 @@ class _AllCommerceAppState extends ConsumerState<AllCommerceApp>
     final String loc =
         router.routerDelegate.currentConfiguration.uri.path;
     final String? parent = parentPathOf(loc);
-    if (parent == null) return false;
-    router.go(parent);
+    if (parent != null) {
+      router.go(parent);
+      return true;
+    }
+    // En una pantalla raíz Android cerraría la app: pedir confirmación.
+    if (defaultTargetPlatform != TargetPlatform.android) return false;
+    final BuildContext? ctx =
+        router.routerDelegate.navigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return false;
+    final bool exit = await showAppConfirmSheet(
+          ctx,
+          title: '¿Salir de AllCommerce?',
+          message: '¿Seguro que querés salir de la aplicación?',
+          confirmLabel: 'Salir',
+        ) ??
+        false;
+    if (exit) await SystemNavigator.pop();
     return true;
   }
 
