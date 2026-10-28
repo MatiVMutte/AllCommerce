@@ -1,10 +1,12 @@
 import 'package:all_commerce/core/constants/plans.dart';
+import 'package:all_commerce/core/storage/shared_preferences_provider.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/features/catalog/presentation/views/store_directory_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('store directory shows active tenant', (tester) async {
@@ -22,9 +24,13 @@ void main() {
       createdAt: DateTime(2025),
     );
 
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           activeTenantsProvider(null).overrideWith((_) async => <TenantModel>[tenantDemo]),
         ],
         child: const MaterialApp(home: StoreDirectoryView()),

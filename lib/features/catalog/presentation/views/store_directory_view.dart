@@ -11,6 +11,7 @@ import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
+import 'package:all_commerce/features/catalog/presentation/view_models/favorites_providers.dart';
 import 'package:all_commerce/features/orders/data/services/whatsapp_message_builder.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -163,6 +164,14 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                       final List<TenantModel> filtered = filterTenants(
                         list,
                         search,
+                      );
+                      final Set<String> favs = ref.watch(
+                        favoriteStoresProvider,
+                      );
+                      filtered.sort(
+                        (TenantModel a, TenantModel b) =>
+                            (favs.contains(a.id) ? 0 : 1) -
+                            (favs.contains(b.id) ? 0 : 1),
                       );
                       if (filtered.isEmpty) {
                         return const AppEmptyState(
@@ -621,13 +630,23 @@ class _StoreCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    tenant.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 17,
-                      color: tokens.textPrimary,
-                    ),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          tenant.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 17,
+                            color: tokens.textPrimary,
+                          ),
+                        ),
+                      ),
+                      if (!tenant.isUnclaimedLead)
+                        _FavHeart(tenantId: tenant.id),
+                    ],
                   ),
                   if (tenant.description != null) ...<Widget>[
                     const SizedBox(height: 4),
@@ -753,6 +772,29 @@ class _ClaimCallout extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Heart toggle to mark a store as favorite (persisted locally).
+class _FavHeart extends ConsumerWidget {
+  const _FavHeart({required this.tenantId});
+
+  final String tenantId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bool fav = ref.watch(favoriteStoresProvider).contains(tenantId);
+    return IconButton(
+      iconSize: 22,
+      visualDensity: VisualDensity.compact,
+      tooltip: fav ? 'Quitar de favoritos' : 'Agregar a favoritos',
+      icon: Icon(
+        fav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+        color: fav ? const Color(0xFFEF4444) : context.tokens.textTertiary,
+      ),
+      onPressed: () =>
+          ref.read(favoriteStoresProvider.notifier).toggle(tenantId),
     );
   }
 }
