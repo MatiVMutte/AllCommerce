@@ -33,7 +33,16 @@ class FirebaseMessagingService {
   bool _initialized = false;
   String? _token;
 
-  bool get isAvailable => !kIsWeb && DefaultFirebaseOptions.hasConfig;
+  /// firebase_messaging only exists for Android, iOS, macOS and Web; on
+  /// Windows/Linux it throws UnsupportedError, so skip initializing there
+  /// instead of relying on the catch below.
+  bool get isAvailable {
+    if (!DefaultFirebaseOptions.hasConfig) return false;
+    return kIsWeb ||
+        defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
+  }
 
   /// Call after `Supabase.initialize()`.
   Future<void> initialize() async {
