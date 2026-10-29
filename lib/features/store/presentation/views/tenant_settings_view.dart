@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:all_commerce/core/constants/app_strings.dart';
+import 'package:all_commerce/core/services/nominatim_geocoder.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
@@ -123,17 +126,36 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
         initial: (_lat != null && _lng != null)
             ? LatLng(_lat!, _lng!)
             : null,
+        initialQuery: _address.text.trim(),
       ),
     );
     if (result == null || !mounted) return;
     setState(() {
       _lat = result.point?.latitude;
       _lng = result.point?.longitude;
+      if (result.addressLabel != null &&
+          result.addressLabel!.trim().isNotEmpty &&
+          _address.text.trim().isEmpty) {
+        _address.text = result.addressLabel!.trim();
+      }
     });
   }
 
   Future<void> _save(TenantModel tenant) async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    double? lat = _lat;
+    double? lng = _lng;
+    final String addrText = _address.text.trim();
+    if ((lat == null || lng == null) && addrText.length >= 4) {
+      final List<AddressSuggestion> found =
+          await const NominatimGeocoder().search(addrText);
+      if (found.isNotEmpty) {
+        lat = found.first.point.latitude;
+        lng = found.first.point.longitude;
+        _lat = lat;
+        _lng = lng;
+      }
+    }
     final TenantModel? updated = await ref
         .read(tenantSettingsControllerProvider.notifier)
         .save(
@@ -142,9 +164,9 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
           description: _description.text.trim().isEmpty
               ? null
               : _description.text.trim(),
-          address: _address.text.trim().isEmpty ? null : _address.text.trim(),
-          lat: _lat,
-          lng: _lng,
+          address: addrText.isEmpty ? null : addrText,
+          lat: lat,
+          lng: lng,
           whatsapp: Validators.normalizePhone(_whatsapp.text),
           primaryColor: _color,
           transferAlias: _transferAlias.text.trim().isEmpty
@@ -731,37 +753,121 @@ class _ColorDot extends StatelessWidget {
 }
 
 /// Result of the map location picker: null point = remove location.
-/// Result of the map location picker: null point = remove location.
 class LocationPickResult {
-  const LocationPickResult(this.point);
+  const LocationPickResult(this.point, {this.addressLabel});
 
   final LatLng? point;
+  final String? addressLabel;
 }
 
-/// Bottom sheet with a map where the owner taps to pin their store.
+/// Bottom sheet with address search (Nominatim) + interactive map pin.
 class LocationPickerSheet extends StatefulWidget {
-  const LocationPickerSheet({this.initial, super.key});
+  const LocationPickerSheet({
+    this.initial,
+    this.initialQuery = '',
+    this.geocoder = const NominatimGeocoder(),
+    super.key,
+  });
 
   final LatLng? initial;
+  final String initialQuery;
+  final NominatimGeocoder geocoder;
 
   @override
   State<LocationPickerSheet> createState() => LocationPickerSheetState();
 }
 
 class LocationPickerSheetState extends State<LocationPickerSheet> {
+  final MapController _mapController = MapController();
+  late final TextEditingController _queryController;
+  Timer? _debounce;
   LatLng? _picked;
+  String? _pickedLabel;
+  List<AddressSuggestion> _suggestions = const <AddressSuggestion>[];
+  bool _searching = false;
+  bool _mapReady = false;
 
   @override
   void initState() {
     super.initState();
     _picked = widget.initial;
+    _queryController = TextEditingController(text: widget.initialQuery);
+    if (_picked == null && widget.initialQuery.trim().length >= 3) {
+      unawaited(_runSearch(widget.initialQuery, autoSelectFirst: true));
+    }
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _queryController.dispose();
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  void _onQueryChanged(String value) {
+    _debounce?.cancel();
+    if (value.trim().length < 3) {
+      setState(() {
+        _suggestions = const <AddressSuggestion>[];
+        _searching = false;
+      });
+      return;
+    }
+    setState(() => _searching = true);
+    _debounce = Timer(
+      const Duration(milliseconds: 450),
+      () => _runSearch(value),
+    );
+  }
+
+  Future<void> _runSearch(
+    String value, {
+    bool autoSelectFirst = false,
+  }) async {
+    final List<AddressSuggestion> results =
+        await widget.geocoder.search(value);
+    if (!mounted) return;
+    if (autoSelectFirst && results.isNotEmpty && _picked == null) {
+      _selectSuggestion(results.first, keepRemaining: results.length > 1);
+      if (results.length > 1) {
+        setState(() {
+          _suggestions = results;
+          _searching = false;
+        });
+      }
+      return;
+    }
+    setState(() {
+      _suggestions = results;
+      _searching = false;
+    });
+  }
+
+  void _selectSuggestion(
+    AddressSuggestion suggestion, {
+    bool keepRemaining = false,
+  }) {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _picked = suggestion.point;
+      _pickedLabel = suggestion.shortLabel;
+      _queryController.text = suggestion.shortLabel;
+      if (!keepRemaining) {
+        _suggestions = const <AddressSuggestion>[];
+      }
+      _searching = false;
+    });
+    if (_mapReady) {
+      _mapController.move(suggestion.point, 16);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final AppTokens tokens = context.tokens;
-    final double height = MediaQuery.sizeOf(context).height * 0.78;
+    final double height = MediaQuery.sizeOf(context).height * 0.84;
     return SizedBox(
       height: height,
       child: Column(
@@ -780,24 +886,116 @@ class LocationPickerSheetState extends State<LocationPickerSheet> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Tocá el mapa donde está tu local para que aparezca en el mapa del directorio.',
+                  'Escribí la dirección y elegila de la lista, o tocá el mapa para ajustar el pin.',
                   style: TextStyle(fontSize: 13, color: tokens.textSecondary),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _queryController,
+                  textInputAction: TextInputAction.search,
+                  onChanged: _onQueryChanged,
+                  onSubmitted: (String v) => _runSearch(
+                    v,
+                    autoSelectFirst: true,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Ej: Yatay 448, Valentín Alsina',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: _searching
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          )
+                        : (_queryController.text.isNotEmpty
+                            ? IconButton(
+                                tooltip: 'Limpiar',
+                                icon: const Icon(Icons.close_rounded),
+                                onPressed: () {
+                                  _queryController.clear();
+                                  _onQueryChanged('');
+                                },
+                              )
+                            : null),
+                  ),
                 ),
               ],
             ),
           ),
+          if (_suggestions.isNotEmpty)
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 196),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Material(
+                  color: tokens.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: BorderSide(color: tokens.border),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    itemCount: _suggestions.length,
+                    separatorBuilder: (_, _) =>
+                        Divider(height: 1, color: tokens.border),
+                    itemBuilder: (BuildContext context, int index) {
+                      final AddressSuggestion item = _suggestions[index];
+                      return ListTile(
+                        dense: true,
+                        leading: Icon(
+                          Icons.place_outlined,
+                          color: scheme.primary,
+                        ),
+                        title: Text(
+                          item.shortLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          item.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: tokens.textSecondary,
+                          ),
+                        ),
+                        onTap: () => _selectSuggestion(item),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: FlutterMap(
+                  mapController: _mapController,
                   options: MapOptions(
                     initialCenter:
                         _picked ?? const LatLng(-34.6, -58.4),
-                    initialZoom: _picked != null ? 15 : 11,
-                    onTap: (_, LatLng latLng) =>
-                        setState(() => _picked = latLng),
+                    initialZoom: _picked != null ? 16 : 11,
+                    onMapReady: () {
+                      _mapReady = true;
+                      if (_picked != null) {
+                        _mapController.move(_picked!, 16);
+                      }
+                    },
+                    onTap: (_, LatLng latLng) => setState(() {
+                      _picked = latLng;
+                      _suggestions = const <AddressSuggestion>[];
+                    }),
                   ),
                   children: <Widget>[
                     TileLayer(
@@ -848,8 +1046,12 @@ class LocationPickerSheetState extends State<LocationPickerSheet> {
                   child: FilledButton(
                     onPressed: _picked == null
                         ? null
-                        : () => Navigator.of(context)
-                            .pop(LocationPickResult(_picked)),
+                        : () => Navigator.of(context).pop(
+                              LocationPickResult(
+                                _picked,
+                                addressLabel: _pickedLabel,
+                              ),
+                            ),
                     child: const Text('Usar esta ubicación'),
                   ),
                 ),

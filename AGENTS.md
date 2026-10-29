@@ -15,10 +15,6 @@ Si hay que ver logs de otras tags nativas (Firebase, plugins), repetir con
 persist.log.tag.<TAG>. Tags alternativa menos granular: persist.log.tag con
 valor de nivel (ej. V) abre todo, pero ensucia el log.
 
-## FilledButton/OutlinedButton in Row = layout crash
+## FilledButton / OutlinedButton dentro de un Row = crash de layout
 
-app_theme.dart의 버튼 테마가 `minimumSize: Size.fromHeight(52)` (= Size(∞,52))라서
-모든 FilledButton/OutlinedButton의 최소 너비가 무한대다. Column 등 너비가
-제한된 곳에선 전체 너비 버튼으로 보이지만, Row·가로 스크롤처럼 폭이
-unbounded인 곳에 넣으면 "BoxConstraints forces an infinite width"로 crash →
-화면이 통째로 멈춘다. Row 안 버튼은 반드시 Expanded/Flexible로 감쌀 것.
+En `app_theme.dart` los estilos de botones tienen `minimumSize: Size.fromHeight(52)` (`Size(∞, 52)`), por lo que todo `FilledButton` y `OutlinedButton` tiene ancho mínimo infinito. En un `Column` con ancho acotado se ve como botón a todo lo ancho, pero dentro de un `Row` o scroll horizontal sin ancho acotado lanza `BoxConstraints forces an infinite width` y congela la pantalla. Siempre envolver botones dentro de un `Row` con `Expanded` o `Flexible`.
