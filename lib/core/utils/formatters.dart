@@ -11,8 +11,8 @@ abstract final class Formatters {
     return '\$${format.format(value)}';
   }
 
-  /// 'dd/MM HH:mm' — short timestamp for order lists.
+  /// 'dd/MM HH:mm' — short timestamp for order lists (local timezone).
   static String dateTime(DateTime value) {
-    return DateFormat('dd/MM HH:mm').format(value);
+    return DateFormat('dd/MM HH:mm').format(value.toLocal());
   }
 }

@@ -4,6 +4,7 @@ import 'package:all_commerce/core/firebase/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -52,16 +53,27 @@ class FirebaseMessagingService {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
 
       final FirebaseMessaging messaging = FirebaseMessaging.instance;
       final NotificationSettings settings = await messaging.requestPermission();
       if (settings.authorizationStatus == AuthorizationStatus.denied) return;
 
-      await _initLocalNotifications();
-      FirebaseMessaging.onMessage.listen(_showForeground);
+      // flutter_local_notifications does not exist on web; foreground
+      // messages there fall back to the in-app order alert.
+      if (!kIsWeb) {
+        await _initLocalNotifications();
+        FirebaseMessaging.onMessage.listen(_showForeground);
+      }
 
-      _token = await messaging.getToken();
+      // Web requires a VAPID key (Firebase Console → Cloud Messaging →
+      // Web Push certificates). Without it getToken throws and push is
+      // skipped for this platform, which the catch below absorbs.
+      _token = await messaging.getToken(
+        vapidKey: kIsWeb ? dotenv.env['FIREBASE_VAPID_KEY']?.trim() : null,
+      );
       messaging.onTokenRefresh.listen((String token) {
         _token = token;
         unawaited(_saveToken());
@@ -86,7 +98,8 @@ class FirebaseMessagingService {
     );
     await _local
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(_ordersChannel);
   }
 
@@ -96,10 +109,13 @@ class FirebaseMessagingService {
     final String? userId = client.auth.currentUser?.id;
     if (token == null || token.isEmpty || userId == null) return;
     try {
-      await client.rpc<void>('register_device', params: <String, dynamic>{
-        'p_token': token,
-        'p_platform': defaultTargetPlatform.name,
-      });
+      await client.rpc<void>(
+        'register_device',
+        params: <String, dynamic>{
+          'p_token': token,
+          'p_platform': defaultTargetPlatform.name,
+        },
+      );
     } catch (e) {
       debugPrint('Failed to save FCM token: $e');
     }

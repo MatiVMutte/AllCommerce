@@ -8,6 +8,7 @@ import 'package:all_commerce/core/router/parent_path.dart';
 import 'package:all_commerce/core/storage/shared_preferences_provider.dart';
 import 'package:all_commerce/core/theme/app_theme.dart';
 import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
+import 'package:all_commerce/features/orders/presentation/widgets/new_order_watcher.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -34,9 +35,7 @@ Future<void> main() async {
   unawaited(SystemNavigator.setFrameworkHandlesBack(true));
   runApp(
     ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ],
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       child: const AllCommerceApp(),
     ),
   );
@@ -81,8 +80,7 @@ class _AllCommerceAppState extends ConsumerState<AllCommerceApp>
       router.pop();
       return true;
     }
-    final String loc =
-        router.routerDelegate.currentConfiguration.uri.path;
+    final String loc = router.routerDelegate.currentConfiguration.uri.path;
     final String? parent = parentPathOf(loc);
     if (parent != null) {
       router.go(parent);
@@ -90,10 +88,10 @@ class _AllCommerceAppState extends ConsumerState<AllCommerceApp>
     }
     // En una pantalla raíz Android cerraría la app: pedir confirmación.
     if (defaultTargetPlatform != TargetPlatform.android) return false;
-    final BuildContext? ctx =
-        router.routerDelegate.navigatorKey.currentContext;
+    final BuildContext? ctx = router.routerDelegate.navigatorKey.currentContext;
     if (ctx == null || !ctx.mounted) return false;
-    final bool exit = await showAppConfirmSheet(
+    final bool exit =
+        await showAppConfirmSheet(
           ctx,
           title: '¿Salir de AllCommerce?',
           message: '¿Seguro que querés salir de la aplicación?',
@@ -112,6 +110,7 @@ class _AllCommerceAppState extends ConsumerState<AllCommerceApp>
       darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.system,
       routerConfig: ref.watch(routerProvider),
+      scaffoldMessengerKey: rootScaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       // El Navigator re-evalúa canHandlePop en cada cambio de historial y
       // volvería a false en la raíz; lo anclamos en true para que el
@@ -121,19 +120,21 @@ class _AllCommerceAppState extends ConsumerState<AllCommerceApp>
         return true;
       },
       builder: (BuildContext context, Widget? child) {
-        return Stack(
-          children: <Widget>[
-            ?child,
-            IgnorePointer(
-              ignoring: !_showSplash,
-              child: AnimatedOpacity(
-                opacity: _showSplash ? 1 : 0,
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeOutCubic,
-                child: const _BrandSplashOverlay(),
+        return NewOrderWatcher(
+          child: Stack(
+            children: <Widget>[
+              ?child,
+              IgnorePointer(
+                ignoring: !_showSplash,
+                child: AnimatedOpacity(
+                  opacity: _showSplash ? 1 : 0,
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOutCubic,
+                  child: const _BrandSplashOverlay(),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -168,7 +169,9 @@ class _BrandSplashOverlay extends StatelessWidget {
           Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: wide ? const _WideBrandSplash() : const _CompactBrandSplash(),
+              child: wide
+                  ? const _WideBrandSplash()
+                  : const _CompactBrandSplash(),
             ),
           ),
         ],
@@ -221,9 +224,7 @@ class _WideBrandSplash extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -247,11 +248,7 @@ class _WideBrandSplash extends StatelessWidget {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      Icon(
-                        Icons.auto_awesome,
-                        size: 13,
-                        color: Colors.white,
-                      ),
+                      Icon(Icons.auto_awesome, size: 13, color: Colors.white),
                       SizedBox(width: 5),
                       Text(
                         'IMPULSADO CON IA',
@@ -341,47 +338,57 @@ class _AllCommerceGlyphPainter extends CustomPainter {
       ..strokeWidth = 4
       ..strokeJoin = StrokeJoin.round
       ..strokeCap = StrokeCap.round;
-    final Paint blueFill = Paint()
-      ..color = const Color(0xFF0A68CC);
+    final Paint blueFill = Paint()..color = const Color(0xFF0A68CC);
     final Paint navyStroke = Paint()
       ..color = const Color(0xFF142882)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
-    final Paint navyFill = Paint()
-      ..color = const Color(0xFF142882);
+    final Paint navyFill = Paint()..color = const Color(0xFF142882);
 
-    c.drawPath(Path()
-      ..moveTo(37, 44)
-      ..lineTo(37, 64)
-      ..lineTo(54, 74)
-      ..lineTo(71, 64)
-      ..lineTo(71, 44), blueStroke);
+    c.drawPath(
+      Path()
+        ..moveTo(37, 44)
+        ..lineTo(37, 64)
+        ..lineTo(54, 74)
+        ..lineTo(71, 64)
+        ..lineTo(71, 44),
+      blueStroke,
+    );
 
-    c.drawPath(Path()
-      ..moveTo(36, 38)
-      ..lineTo(72, 38)
-      ..lineTo(72, 44)
-      ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-      ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-      ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-      ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-      ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-      ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-      ..close(), blueFill);
+    c.drawPath(
+      Path()
+        ..moveTo(36, 38)
+        ..lineTo(72, 38)
+        ..lineTo(72, 44)
+        ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+        ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+        ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+        ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+        ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+        ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+        ..close(),
+      blueFill,
+    );
 
-    c.drawPath(Path()
-      ..moveTo(49.5, 58)
-      ..lineTo(49.5, 54.5)
-      ..arcTo(const Rect.fromLTWH(49.5, 50, 9, 9), math.pi, math.pi, false)
-      ..lineTo(58.5, 58), navyStroke);
+    c.drawPath(
+      Path()
+        ..moveTo(49.5, 58)
+        ..lineTo(49.5, 54.5)
+        ..arcTo(const Rect.fromLTWH(49.5, 50, 9, 9), math.pi, math.pi, false)
+        ..lineTo(58.5, 58),
+      navyStroke,
+    );
 
-    c.drawPath(Path()
-      ..moveTo(46.5, 58)
-      ..lineTo(61.5, 58)
-      ..lineTo(60.4, 66)
-      ..lineTo(47.6, 66)
-      ..close(), navyFill);
+    c.drawPath(
+      Path()
+        ..moveTo(46.5, 58)
+        ..lineTo(61.5, 58)
+        ..lineTo(60.4, 66)
+        ..lineTo(47.6, 66)
+        ..close(),
+      navyFill,
+    );
   }
 
   @override

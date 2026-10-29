@@ -6,6 +6,20 @@ const FIREBASE_SERVICE_ACCOUNT = Deno.env.get('FIREBASE_SERVICE_ACCOUNT');
 
 const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+function json(body: unknown, status = 200): Response {
+  return Response.json(body, {
+    status,
+    headers: corsHeaders,
+  });
+}
+
 interface ServiceAccount {
   project_id: string;
   client_email: string;
@@ -69,20 +83,28 @@ async function getAccessToken(sa: ServiceAccount): Promise<string> {
 }
 
 Deno.serve(async (req) => {
+  // The browser sends a CORS preflight before the real POST — answer it or
+  // web clients can never reach this function.
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
+    return new Response('Method not allowed', {
+      status: 405,
+      headers: corsHeaders,
+    });
   }
 
   // Identify the caller from their Supabase JWT.
   const jwt = req.headers.get('Authorization')?.replace('Bearer ', '');
-  if (!jwt) return new Response('Unauthorized', { status: 401 });
+  if (!jwt) return json('Unauthorized', 401);
   const { data: userData } = await admin.auth.getUser(jwt);
   const callerId = userData.user?.id;
-  if (!callerId) return new Response('Unauthorized', { status: 401 });
+  if (!callerId) return json('Unauthorized', 401);
 
   const body = await req.json().catch(() => ({}));
   const orderId: string | undefined = body?.id;
-  if (!orderId) return new Response('Missing order id', { status: 400 });
+  if (!orderId) return json('Missing order id', 400);
 
   // Only the customer who placed the order can trigger its notification.
   const { data: order } = await admin
@@ -91,7 +113,7 @@ Deno.serve(async (req) => {
     .eq('id', orderId)
     .maybeSingle();
   if (!order || order.customer_id !== callerId) {
-    return new Response('Forbidden', { status: 403 });
+    return json('Forbidden', 403);
   }
 
   const { data: owners } = await admin
@@ -99,18 +121,18 @@ Deno.serve(async (req) => {
     .select('id')
     .eq('tenant_id', order.tenant_id);
   const ownerIds = (owners ?? []).map((u) => u.id);
-  if (ownerIds.length === 0) return Response.json({ sent: 0 });
+  if (ownerIds.length === 0) return json({ sent: 0 });
 
   const { data: devices } = await admin
     .from('user_devices')
     .select('fcm_token')
     .in('user_id', ownerIds);
   const tokens = (devices ?? []).map((d) => d.fcm_token as string).filter(Boolean);
-  if (tokens.length === 0) return Response.json({ sent: 0 });
+  if (tokens.length === 0) return json({ sent: 0 });
 
   if (!FIREBASE_SERVICE_ACCOUNT) {
     console.log('FIREBASE_SERVICE_ACCOUNT not set; skipping push');
-    return Response.json({ sent: 0, reason: 'not_configured' });
+    return json({ sent: 0, reason: 'not_configured' });
   }
 
   const sa: ServiceAccount = JSON.parse(FIREBASE_SERVICE_ACCOUNT);
@@ -158,5 +180,5 @@ Deno.serve(async (req) => {
     await admin.from('user_devices').delete().in('fcm_token', invalid);
   }
 
-  return Response.json({ sent, removed: invalid.length });
+  return json({ sent, removed: invalid.length });
 });

@@ -544,36 +544,46 @@ class _MetricCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    final Widget cell = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Column(
-        children: <Widget>[
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: highlight
-                  ? Theme.of(context).colorScheme.primary
-                  : tokens.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: tokens.textTertiary),
-          ),
-        ],
-      ),
+    final Color primary = Theme.of(context).colorScheme.primary;
+    Widget dot = Container(
+      width: 7,
+      height: 7,
+      decoration: BoxDecoration(color: primary, shape: BoxShape.circle),
     );
+    if (AppMotion.loopsEnabled(context)) {
+      dot = Pulse(
+        infinite: true,
+        duration: const Duration(milliseconds: 1800),
+        child: dot,
+      );
+    }
     return Expanded(
-      child: highlight && AppMotion.loopsEnabled(context)
-          ? Pulse(
-              infinite: true,
-              duration: const Duration(milliseconds: 1400),
-              child: cell,
-            )
-          : cell,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: highlight ? primary : tokens.textPrimary,
+                  ),
+                ),
+                if (highlight) ...<Widget>[const SizedBox(width: 5), dot],
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, color: tokens.textTertiary),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
