@@ -32,6 +32,8 @@ void main() {
     expect(parentPathOf('/welcome'), '/');
     expect(parentPathOf('/register'), '/login');
     expect(parentPathOf('/forgot-password'), '/login');
+    expect(parentPathOf('/terms'), '/profile');
+    expect(parentPathOf('/privacy'), '/profile');
   });
 
   test('roots return null', () {

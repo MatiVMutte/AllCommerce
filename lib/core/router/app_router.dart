@@ -21,6 +21,7 @@ import 'package:all_commerce/features/auth/presentation/views/welcome_view.dart'
 import 'package:all_commerce/features/catalog/presentation/views/catalog_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/product_detail_view.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
+import 'package:all_commerce/features/legal/presentation/views/legal_view.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:all_commerce/features/orders/presentation/views/my_orders_view.dart';
 import 'package:all_commerce/features/orders/presentation/views/order_success_view.dart';
@@ -128,6 +129,16 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
               const ForgotPasswordView(),
         ),
         GoRoute(
+          path: '/terms',
+          builder: (BuildContext context, GoRouterState state) =>
+              const TermsView(),
+        ),
+        GoRoute(
+          path: '/privacy',
+          builder: (BuildContext context, GoRouterState state) =>
+              const PrivacyView(),
+        ),
+        GoRoute(
           path: '/select-role',
           builder: (BuildContext context, GoRouterState state) =>
               const RoleSelectView(),
@@ -231,6 +242,8 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
           '/register',
           '/forgot-password',
           '/profile',
+          '/terms',
+          '/privacy',
         };
         const Set<String> authEntryPaths = <String>{
           '/welcome',

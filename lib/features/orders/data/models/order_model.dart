@@ -48,7 +48,7 @@ class OrderModel {
       id: json['id'] as String,
       orderNumber: num.parse(json['order_number'].toString()).toInt(),
       tenantId: json['tenant_id'] as String,
-      customerId: json['customer_id'] as String,
+      customerId: (json['customer_id'] as String?) ?? '',
       customerNameSnapshot: json['customer_name_snapshot'] as String,
       customerPhoneSnapshot: json['customer_phone_snapshot'] as String,
       status: OrderStatus.fromId(json['status'] as String),

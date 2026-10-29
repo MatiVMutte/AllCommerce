@@ -41,6 +41,9 @@ String? parentPathOf(String location) {
     case '/register':
     case '/forgot-password':
       return '/login';
+    case '/terms':
+    case '/privacy':
+      return '/profile';
     default:
       // /select-role, /onboarding/* -> router decides, Android may close.
       return null;

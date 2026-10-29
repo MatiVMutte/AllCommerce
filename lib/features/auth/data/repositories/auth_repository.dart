@@ -93,4 +93,11 @@ class AuthRepository {
     );
     return TenantModel.fromJson(row);
   }
+
+  /// Deletes the current user's account and (if owner) their tenant via the
+  /// `delete_my_account` security-definer RPC, then clears the local session.
+  Future<void> deleteAccount() async {
+    await _client.rpc<void>('delete_my_account');
+    await _client.auth.signOut(scope: SignOutScope.local);
+  }
 }

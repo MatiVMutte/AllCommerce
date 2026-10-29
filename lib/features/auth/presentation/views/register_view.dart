@@ -178,6 +178,48 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                     onPressed: () => context.push('/login'),
                     child: const Text('Ya tengo cuenta'),
                   ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        'Al registrarte aceptás los ',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: tokens.textSecondary,
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () => context.push('/terms'),
+                        child: Text(
+                          'Términos',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        ' y la ',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: tokens.textSecondary,
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () => context.push('/privacy'),
+                        child: Text(
+                          'Política de privacidad',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

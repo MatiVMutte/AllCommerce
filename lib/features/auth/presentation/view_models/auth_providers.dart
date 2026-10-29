@@ -121,6 +121,20 @@ class AuthController extends Notifier<AsyncValue<void>> {
     ref.invalidate(tenantBySlugProvider);
     ref.invalidate(aiUsageProvider);
   }
+
+  Future<bool> deleteAccount() async {
+    state = const AsyncLoading<void>();
+    final AsyncValue<void> result = await AsyncValue.guard(
+      () => _repository.deleteAccount(),
+    );
+    state = result;
+    if (result.hasError) return false;
+    ref.invalidate(currentProfileProvider);
+    ref.invalidate(tenantByIdProvider);
+    ref.invalidate(tenantBySlugProvider);
+    ref.invalidate(aiUsageProvider);
+    return true;
+  }
 }
 
 final NotifierProvider<AuthController, AsyncValue<void>>

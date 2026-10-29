@@ -1,7 +1,10 @@
 import 'package:all_commerce/core/router/customer_mode.dart';
 import 'package:all_commerce/core/router/return_to.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
+import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/widgets/app_card.dart';
+import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
+import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +14,33 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileView extends ConsumerWidget {
   const ProfileView({super.key});
+
+  Future<void> _confirmDeleteAccount(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool isOwner,
+  }) async {
+    final bool? confirmed = await showAppConfirmSheet(
+      context,
+      title: '¿Eliminar tu cuenta?',
+      message: isOwner
+          ? 'Se eliminará tu cuenta, tu local, todos tus productos y los pedidos recibidos. Esta acción no se puede deshacer.'
+          : 'Se eliminará tu cuenta y tus datos personales de forma permanente. Esta acción no se puede deshacer.',
+      confirmLabel: 'Sí, eliminar mi cuenta',
+      destructive: true,
+    );
+    if (confirmed != true || !context.mounted) return;
+    final bool ok =
+        await ref.read(authControllerProvider.notifier).deleteAccount();
+    if (!context.mounted) return;
+    if (!ok) {
+      final Object? error = ref.read(authControllerProvider).error;
+      if (error != null) showErrorSnackBar(context, error);
+      return;
+    }
+    showAppSnackBar(context, 'Tu cuenta fue eliminada');
+    context.go('/');
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -67,6 +97,21 @@ class ProfileView extends ConsumerWidget {
                       },
                       child: const Text('Crear cuenta'),
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    children: <Widget>[
+                      TextButton(
+                        onPressed: () => context.push('/terms'),
+                        child: const Text('Términos y condiciones'),
+                      ),
+                      TextButton(
+                        onPressed: () => context.push('/privacy'),
+                        child: const Text('Privacidad'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -245,6 +290,18 @@ class ProfileView extends ConsumerWidget {
                           onChanged: null,
                         ),
                       ),
+                      ListTile(
+                        leading: const Icon(Icons.description_outlined),
+                        title: const Text('Términos y condiciones'),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => context.push('/terms'),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.privacy_tip_outlined),
+                        title: const Text('Política de privacidad'),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => context.push('/privacy'),
+                      ),
                     ],
                   ),
                 ),
@@ -256,6 +313,20 @@ class ProfileView extends ConsumerWidget {
                     child: const Text('Cerrar sesión'),
                   ),
                 ),
+                if (!(profile?.isAdmin ?? false))
+                  Center(
+                    child: TextButton(
+                      onPressed: () => _confirmDeleteAccount(
+                        context,
+                        ref,
+                        isOwner: profile?.isOwner ?? false,
+                      ),
+                      child: Text(
+                        'Eliminar mi cuenta',
+                        style: TextStyle(color: tokens.danger, fontSize: 13),
+                      ),
+                    ),
+                  ),
               ],
             );
           },
