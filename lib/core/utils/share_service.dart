@@ -13,10 +13,16 @@ class ShareService {
 
   final ShareSender _sender;
 
-  /// Public web base for links ('allcommerce.app' by default).
-  static String get linkBase => AppConfig.publicBaseUrl.isEmpty
-      ? 'allcommerce.app'
-      : AppConfig.publicBaseUrl;
+  /// Public web base for links ('allcommerce.pages.dev' by default).
+  /// Accepts either a bare host (`allcommerce.pages.dev`) or a full URL
+  /// (`https://allcommerce.pages.dev/`).
+  static String get linkBase {
+    final String raw = AppConfig.publicBaseUrl.trim();
+    if (raw.isEmpty) return 'allcommerce.pages.dev';
+    return raw
+        .replaceFirst(RegExp(r'^https?://'), '')
+        .replaceAll(RegExp(r'/+$'), '');
+  }
 
   static String catalogUrl(String slug) => 'https://$linkBase/s/$slug';
 
