@@ -1,7 +1,6 @@
-// Genera los íconos de AllCommerce ({ bolsa + chispa IA }) para Android,
-// Web y Windows.
+// Genera los íconos de AllCommerce (hexágono-tienda con toldo + bolsita)
+// para Android, Web y Windows.
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -18,94 +17,70 @@ void paintAllCommerceGlyph(ui.Canvas c, double s) {
   final ui.Paint blueStroke = ui.Paint()
     ..color = const ui.Color(0xFF0A68CC)
     ..style = ui.PaintingStyle.stroke
-    ..strokeWidth = 4.2
+    ..strokeWidth = 4
     ..strokeJoin = ui.StrokeJoin.round
     ..strokeCap = ui.StrokeCap.round;
   final ui.Paint blueFill = ui.Paint()
-    ..color = const ui.Color(0xFF0A68CC)
-    ..style = ui.PaintingStyle.fill;
+    ..color = const ui.Color(0xFF0A68CC);
   final ui.Paint navyStroke = ui.Paint()
     ..color = const ui.Color(0xFF142882)
     ..style = ui.PaintingStyle.stroke
-    ..strokeWidth = 4.2
-    ..strokeJoin = ui.StrokeJoin.round
+    ..strokeWidth = 4
     ..strokeCap = ui.StrokeCap.round;
+  final ui.Paint navyFill = ui.Paint()
+    ..color = const ui.Color(0xFF142882);
 
-  // Llave izquierda {
-  final ui.Path leftBrace = ui.Path()
-    ..moveTo(29, 36)
-    ..cubicTo(24, 36, 24, 41, 24, 46)
-    ..lineTo(24, 50)
-    ..cubicTo(24, 52.5, 22, 54, 19.5, 54)
-    ..cubicTo(22, 54, 24, 55.5, 24, 58)
-    ..lineTo(24, 62)
-    ..cubicTo(24, 67, 24, 72, 29, 72);
-  c.drawPath(leftBrace, navyStroke);
+  // Lados y base del hexágono.
+  c.drawPath(ui.Path()
+    ..moveTo(37, 44)
+    ..lineTo(37, 64)
+    ..lineTo(54, 74)
+    ..lineTo(71, 64)
+    ..lineTo(71, 44), blueStroke);
 
-  // Llave derecha }
-  final ui.Path rightBrace = ui.Path()
-    ..moveTo(79, 36)
-    ..cubicTo(84, 36, 84, 41, 84, 46)
-    ..lineTo(84, 50)
-    ..cubicTo(84, 52.5, 86, 54, 88.5, 54)
-    ..cubicTo(86, 54, 84, 55.5, 84, 58)
-    ..lineTo(84, 62)
-    ..cubicTo(84, 67, 84, 72, 79, 72);
-  c.drawPath(rightBrace, navyStroke);
+  // Toldo sólido con borde ondulado.
+  c.drawPath(ui.Path()
+    ..moveTo(36, 38)
+    ..lineTo(72, 38)
+    ..lineTo(72, 44)
+    ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+    ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+    ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+    ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+    ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+    ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+    ..close(), blueFill);
 
-  // Manija de la bolsa (arco superior)
-  final ui.Path handle = ui.Path()
-    ..moveTo(45.5, 45)
-    ..lineTo(45.5, 40.5)
-    ..arcTo(
-      const ui.Rect.fromLTWH(45.5, 32, 17, 17),
-      math.pi,
-      math.pi,
-      false,
-    )
-    ..lineTo(62.5, 45);
-  c.drawPath(handle, blueStroke);
+  // Manija de la bolsita.
+  c.drawPath(ui.Path()
+    ..moveTo(49.5, 58)
+    ..lineTo(49.5, 54.5)
+    ..arcTo(const ui.Rect.fromLTWH(49.5, 50, 9, 9), 3.14159, 3.14159, false)
+    ..lineTo(58.5, 58), navyStroke);
 
-  // Cuerpo de la bolsa
-  final ui.Path bag = ui.Path()
-    ..moveTo(38, 45)
-    ..lineTo(70, 45)
-    ..lineTo(68, 72)
-    ..lineTo(40, 72)
-    ..close();
-  c.drawPath(bag, blueStroke);
-
-  // Chispa / estrella de IA dentro de la bolsa
-  final ui.Path spark = ui.Path()
-    ..moveTo(54, 50.5)
-    ..lineTo(56, 56.5)
-    ..lineTo(62, 58.5)
-    ..lineTo(56, 60.5)
-    ..lineTo(54, 66.5)
-    ..lineTo(52, 60.5)
-    ..lineTo(46, 58.5)
-    ..lineTo(52, 56.5)
-    ..close();
-  c.drawPath(spark, blueFill);
+  // Cuerpo de la bolsita (relleno).
+  c.drawPath(ui.Path()
+    ..moveTo(46.5, 58)
+    ..lineTo(61.5, 58)
+    ..lineTo(60.4, 66)
+    ..lineTo(47.6, 66)
+    ..close(), navyFill);
 }
 
 Future<Uint8List> renderIcon(
   int size, {
   bool round = false,
   double pad = 0,
-  double glyphScale = 0.95,
+  double glyphScale = 1.1,
 }) async {
   final ui.PictureRecorder rec = ui.PictureRecorder();
   final ui.Canvas canvas = ui.Canvas(rec);
   final ui.Paint white = ui.Paint()..color = const ui.Color(0xFFFFFFFF);
-  // Logo circular: esquinas transparentes y glifo dentro del círculo.
   canvas.drawCircle(ui.Offset(size / 2, size / 2), size / 2, white);
   canvas.save();
-  canvas.clipPath(
-    ui.Path()
-      ..addOval(ui.Rect.fromCircle(
-          center: ui.Offset(size / 2, size / 2), radius: size / 2)),
-  );
+  canvas.clipPath(ui.Path()
+    ..addOval(ui.Rect.fromCircle(
+        center: ui.Offset(size / 2, size / 2), radius: size / 2)));
   final double base = size * (1 - pad * 2);
   canvas.translate(size / 2, size / 2);
   canvas.scale(glyphScale);
@@ -113,9 +88,8 @@ Future<Uint8List> renderIcon(
   paintAllCommerceGlyph(canvas, base);
   canvas.restore();
   final ui.Image img = await rec.endRecording().toImage(size, size);
-  final ByteData? data =
-      await img.toByteData(format: ui.ImageByteFormat.png);
-  return data!.buffer.asUint8List();
+  return (await img.toByteData(format: ui.ImageByteFormat.png))!
+      .buffer.asUint8List();
 }
 
 Future<void> writeIco(
@@ -133,18 +107,10 @@ Future<void> writeIco(
     out.add(<int>[1, 0]);
     out.add(<int>[32, 0]);
     final int len = pngs[i].length;
-    out.add(<int>[
-      len & 0xFF,
-      (len >> 8) & 0xFF,
-      (len >> 16) & 0xFF,
-      (len >> 24) & 0xFF,
-    ]);
-    out.add(<int>[
-      offset & 0xFF,
-      (offset >> 8) & 0xFF,
-      (offset >> 16) & 0xFF,
-      (offset >> 24) & 0xFF,
-    ]);
+    out.add(<int>[len & 0xFF, (len >> 8) & 0xFF,
+        (len >> 16) & 0xFF, (len >> 24) & 0xFF]);
+    out.add(<int>[offset & 0xFF, (offset >> 8) & 0xFF,
+        (offset >> 16) & 0xFF, (offset >> 24) & 0xFF]);
     offset += len;
   }
   for (final Uint8List p in pngs) {
@@ -157,23 +123,20 @@ Future<void> generateAllPlatformIcons() async {
   for (final MapEntry<String, int> e in _densities.entries) {
     final String dir = 'android/app/src/main/res/mipmap-${e.key}';
     await File('$dir/ic_launcher.png')
-        .writeAsBytes(await renderIcon(e.value, round: false));
+        .writeAsBytes(await renderIcon(e.value));
     await File('$dir/ic_launcher_round.png')
-        .writeAsBytes(await renderIcon(e.value, round: true));
+        .writeAsBytes(await renderIcon(e.value));
   }
-  await File('web/favicon.png')
-      .writeAsBytes(await renderIcon(64, round: false));
-  await File('web/icons/Icon-192.png')
-      .writeAsBytes(await renderIcon(192, round: false));
-  await File('web/icons/Icon-512.png')
-      .writeAsBytes(await renderIcon(512, round: false));
+  await File('web/favicon.png').writeAsBytes(await renderIcon(64));
+  await File('web/icons/Icon-192.png').writeAsBytes(await renderIcon(192));
+  await File('web/icons/Icon-512.png').writeAsBytes(await renderIcon(512));
   await File('web/icons/Icon-maskable-192.png')
-      .writeAsBytes(await renderIcon(192, round: false, pad: 0.16));
+      .writeAsBytes(await renderIcon(192, pad: 0.18));
   await File('web/icons/Icon-maskable-512.png')
-      .writeAsBytes(await renderIcon(512, round: false, pad: 0.16));
+      .writeAsBytes(await renderIcon(512, pad: 0.18));
   const List<int> sizes = <int>[16, 32, 48, 64, 128, 256];
   final List<Uint8List> pngs = <Uint8List>[
-    for (final int s in sizes) await renderIcon(s, round: false),
+    for (final int s in sizes) await renderIcon(s),
   ];
   await writeIco('windows/runner/resources/app_icon.ico', pngs, sizes);
 }

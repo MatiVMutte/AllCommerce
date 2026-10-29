@@ -336,65 +336,50 @@ class _AllCommerceGlyphPainter extends CustomPainter {
     final Paint blueStroke = Paint()
       ..color = const Color(0xFF0A68CC)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.4
+      ..strokeWidth = 4
       ..strokeJoin = StrokeJoin.round
       ..strokeCap = StrokeCap.round;
     final Paint blueFill = Paint()
-      ..color = const Color(0xFF0A68CC)
-      ..style = PaintingStyle.fill;
+      ..color = const Color(0xFF0A68CC);
     final Paint navyStroke = Paint()
       ..color = const Color(0xFF142882)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.4
-      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
+    final Paint navyFill = Paint()
+      ..color = const Color(0xFF142882);
 
-    final Path leftBrace = Path()
-      ..moveTo(29, 36)
-      ..cubicTo(24, 36, 24, 41, 24, 46)
-      ..lineTo(24, 50)
-      ..cubicTo(24, 52.5, 22, 54, 19.5, 54)
-      ..cubicTo(22, 54, 24, 55.5, 24, 58)
-      ..lineTo(24, 62)
-      ..cubicTo(24, 67, 24, 72, 29, 72);
-    c.drawPath(leftBrace, navyStroke);
+    c.drawPath(Path()
+      ..moveTo(37, 44)
+      ..lineTo(37, 64)
+      ..lineTo(54, 74)
+      ..lineTo(71, 64)
+      ..lineTo(71, 44), blueStroke);
 
-    final Path rightBrace = Path()
-      ..moveTo(79, 36)
-      ..cubicTo(84, 36, 84, 41, 84, 46)
-      ..lineTo(84, 50)
-      ..cubicTo(84, 52.5, 86, 54, 88.5, 54)
-      ..cubicTo(86, 54, 84, 55.5, 84, 58)
-      ..lineTo(84, 62)
-      ..cubicTo(84, 67, 84, 72, 79, 72);
-    c.drawPath(rightBrace, navyStroke);
+    c.drawPath(Path()
+      ..moveTo(36, 38)
+      ..lineTo(72, 38)
+      ..lineTo(72, 44)
+      ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+      ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+      ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+      ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+      ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+      ..relativeQuadraticBezierTo(-3, 6, -6, 0)
+      ..close(), blueFill);
 
-    final Path handle = Path()
-      ..moveTo(45.5, 45)
-      ..lineTo(45.5, 40.5)
-      ..arcTo(const Rect.fromLTWH(45.5, 32, 17, 17), math.pi, math.pi, false)
-      ..lineTo(62.5, 45);
-    c.drawPath(handle, blueStroke);
+    c.drawPath(Path()
+      ..moveTo(49.5, 58)
+      ..lineTo(49.5, 54.5)
+      ..arcTo(const Rect.fromLTWH(49.5, 50, 9, 9), math.pi, math.pi, false)
+      ..lineTo(58.5, 58), navyStroke);
 
-    final Path bag = Path()
-      ..moveTo(38, 45)
-      ..lineTo(70, 45)
-      ..lineTo(68, 72)
-      ..lineTo(40, 72)
-      ..close();
-    c.drawPath(bag, blueStroke);
-
-    final Path spark = Path()
-      ..moveTo(54, 50.5)
-      ..lineTo(56, 56.5)
-      ..lineTo(62, 58.5)
-      ..lineTo(56, 60.5)
-      ..lineTo(54, 66.5)
-      ..lineTo(52, 60.5)
-      ..lineTo(46, 58.5)
-      ..lineTo(52, 56.5)
-      ..close();
-    c.drawPath(spark, blueFill);
+    c.drawPath(Path()
+      ..moveTo(46.5, 58)
+      ..lineTo(61.5, 58)
+      ..lineTo(60.4, 66)
+      ..lineTo(47.6, 66)
+      ..close(), navyFill);
   }
 
   @override
