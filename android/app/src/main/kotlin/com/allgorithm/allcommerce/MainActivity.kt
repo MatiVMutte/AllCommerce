@@ -1,4 +1,4 @@
-package com.example.all_commerce
+package com.allgorithm.allcommerce
 
 import io.flutter.embedding.android.FlutterActivity
 

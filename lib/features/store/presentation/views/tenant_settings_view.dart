@@ -1001,7 +1001,7 @@ class LocationPickerSheetState extends State<LocationPickerSheet> {
                     TileLayer(
                       urlTemplate:
                           'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'app.allcommerce',
+                      userAgentPackageName: 'com.allgorithm.allcommerce',
                     ),
                     if (_picked != null)
                       MarkerLayer(
