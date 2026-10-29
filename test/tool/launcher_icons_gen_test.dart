@@ -37,7 +37,7 @@ void _g(ui.Canvas c, double s) {
     ..lineTo(86, 61)..cubicTo(86, 65, 86, 71, 81, 71), n);
 }
 
-Future<Uint8List> _r(int size, {required bool round}) async {
+Future<Uint8List> _r(int size, {required bool round, double pad = 0}) async {
   final ui.PictureRecorder rec = ui.PictureRecorder();
   final ui.Canvas c = ui.Canvas(rec);
   final ui.Paint w = ui.Paint()..color = const ui.Color(0xFFFFFFFF);
@@ -46,14 +46,41 @@ Future<Uint8List> _r(int size, {required bool round}) async {
   } else {
     c.drawRect(ui.Rect.fromLTWH(0, 0, size.toDouble(), size.toDouble()), w);
   }
-  _g(c, size.toDouble());
+  final double glyph = size * (1 - pad * 2);
+  c.translate(size * pad, size * pad);
+  _g(c, glyph);
   final ui.Image i = await rec.endRecording().toImage(size, size);
   return (await i.toByteData(format: ui.ImageByteFormat.png))!
       .buffer.asUint8List();
 }
 
+Future<void> _writeIco(
+    String path, List<Uint8List> pngs, List<int> sizes) async {
+  final BytesBuilder out = BytesBuilder();
+  out.add(<int>[0, 0, 1, 0]); // reserved + type(1=ICO)
+  out.add(<int>[pngs.length & 0xFF, 0]); // count
+  int offset = 6 + 16 * pngs.length;
+  for (int i = 0; i < pngs.length; i++) {
+    final int s = sizes[i] >= 256 ? 0 : sizes[i];
+    out.add(<int>[s, s, 0, 0]); // w, h, colors, reserved
+    out.add(<int>[1, 0]); // planes
+    out.add(<int>[32, 0]); // bpp
+    final int len = pngs[i].length;
+    out.add(<int>[len & 0xFF, (len >> 8) & 0xFF, (len >> 16) & 0xFF,
+        (len >> 24) & 0xFF]);
+    out.add(<int>[offset & 0xFF, (offset >> 8) & 0xFF,
+        (offset >> 16) & 0xFF, (offset >> 24) & 0xFF]);
+    offset += len;
+  }
+  for (final Uint8List p in pngs) {
+    out.add(p);
+  }
+  await File(path).writeAsBytes(out.toBytes());
+}
+
 void main() {
-  test('write legacy launcher PNGs', () async {
+  test('write all platform launcher icons', () async {
+    // Android legacy mipmaps
     for (final MapEntry<String, int> e in _d.entries) {
       final String dir = 'android/app/src/main/res/mipmap-${e.key}';
       await File('$dir/ic_launcher.png')
@@ -61,5 +88,21 @@ void main() {
       await File('$dir/ic_launcher_round.png')
           .writeAsBytes(await _r(e.value, round: true));
     }
+    // Web favicon + PWA icons (maskable con padding ~20%)
+    await File('web/favicon.png').writeAsBytes(await _r(64, round: false));
+    await File('web/icons/Icon-192.png')
+        .writeAsBytes(await _r(192, round: false));
+    await File('web/icons/Icon-512.png')
+        .writeAsBytes(await _r(512, round: false));
+    await File('web/icons/Icon-maskable-192.png')
+        .writeAsBytes(await _r(192, round: false, pad: 0.2));
+    await File('web/icons/Icon-maskable-512.png')
+        .writeAsBytes(await _r(512, round: false, pad: 0.2));
+    // Windows .ico multi-size
+    const List<int> sizes = <int>[16, 32, 48, 64, 128, 256];
+    final List<Uint8List> pngs = <Uint8List>[
+      for (final int s in sizes) await _r(s, round: false),
+    ];
+    await _writeIco('windows/runner/resources/app_icon.ico', pngs, sizes);
   });
 }
