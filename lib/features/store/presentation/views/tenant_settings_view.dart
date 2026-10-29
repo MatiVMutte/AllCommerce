@@ -15,8 +15,10 @@ import 'package:all_commerce/features/store/presentation/view_models/tenant_sett
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 
 const List<String> _palette = <String>[
   '#0052FF',
@@ -48,6 +50,8 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
   bool _acceptsCash = true;
   bool _isOpen = true;
   String _color = '#0052FF';
+  double? _lat;
+  double? _lng;
   bool _initialized = false;
   String? _refreshedTenantId;
 
@@ -76,6 +80,8 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     _acceptsCash = tenant.acceptsCash;
     _isOpen = tenant.isOpen;
     _color = tenant.primaryColor;
+    _lat = tenant.lat;
+    _lng = tenant.lng;
     _initialized = true;
     _name.addListener(_onChange);
     _description.addListener(_onChange);
@@ -101,7 +107,28 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
         _openingHours.text.trim() != (tenant.openingHours ?? '') ||
         _acceptsCash != tenant.acceptsCash ||
         _isOpen != tenant.isOpen ||
+        _lat != tenant.lat ||
+        _lng != tenant.lng ||
         _color != tenant.primaryColor;
+  }
+
+  Future<void> _pickLocation() async {
+    final _LocationPickResult? result =
+        await showModalBottomSheet<_LocationPickResult>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (BuildContext context) => _LocationPickerSheet(
+        initial: (_lat != null && _lng != null)
+            ? LatLng(_lat!, _lng!)
+            : null,
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _lat = result.point?.latitude;
+      _lng = result.point?.longitude;
+    });
   }
 
   Future<void> _save(TenantModel tenant) async {
@@ -115,6 +142,8 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
               ? null
               : _description.text.trim(),
           address: _address.text.trim().isEmpty ? null : _address.text.trim(),
+          lat: _lat,
+          lng: _lng,
           whatsapp: Validators.normalizePhone(_whatsapp.text),
           primaryColor: _color,
           transferAlias: _transferAlias.text.trim().isEmpty
@@ -298,6 +327,57 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                         controller: _address,
                         decoration: const InputDecoration(
                           labelText: 'Dirección (opcional)',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: state.saving ? null : _pickLocation,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: tokens.border),
+                          ),
+                          child: Row(
+                            children: <Widget>[
+                              Icon(
+                                Icons.pin_drop_outlined,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    const Text(
+                                      'Ubicación en el mapa',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      _lat != null && _lng != null
+                                          ? 'Marcada · tocá para cambiarla'
+                                          : 'Sin marcar · tu local no aparece en el mapa del directorio',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: tokens.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: tokens.textTertiary,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -644,6 +724,132 @@ class _ColorDot extends StatelessWidget {
               ? const Icon(Icons.check, color: Colors.white, size: 18)
               : null,
         ),
+      ),
+    );
+  }
+}
+
+/// Result of the map location picker: null point = remove location.
+class _LocationPickResult {
+  const _LocationPickResult(this.point);
+
+  final LatLng? point;
+}
+
+/// Bottom sheet with a map where the owner taps to pin their store.
+class _LocationPickerSheet extends StatefulWidget {
+  const _LocationPickerSheet({this.initial});
+
+  final LatLng? initial;
+
+  @override
+  State<_LocationPickerSheet> createState() => _LocationPickerSheetState();
+}
+
+class _LocationPickerSheetState extends State<_LocationPickerSheet> {
+  LatLng? _picked;
+
+  @override
+  void initState() {
+    super.initState();
+    _picked = widget.initial;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final AppTokens tokens = context.tokens;
+    final double height = MediaQuery.sizeOf(context).height * 0.78;
+    return SizedBox(
+      height: height,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Ubicación del local',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Tocá el mapa donde está tu local para que aparezca en el mapa del directorio.',
+                  style: TextStyle(fontSize: 13, color: tokens.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: FlutterMap(
+                  options: MapOptions(
+                    initialCenter:
+                        _picked ?? const LatLng(-34.6, -58.4),
+                    initialZoom: _picked != null ? 15 : 11,
+                    onTap: (_, LatLng latLng) =>
+                        setState(() => _picked = latLng),
+                  ),
+                  children: <Widget>[
+                    TileLayer(
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'app.allcommerce',
+                    ),
+                    if (_picked != null)
+                      MarkerLayer(
+                        markers: <Marker>[
+                          Marker(
+                            point: _picked!,
+                            width: 40,
+                            height: 48,
+                            child: Icon(
+                              Icons.location_on_rounded,
+                              color: scheme.primary,
+                              size: 44,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              12,
+              20,
+              16 + MediaQuery.viewPaddingOf(context).bottom,
+            ),
+            child: Row(
+              children: <Widget>[
+                if (_picked != null || widget.initial != null)
+                  TextButton(
+                    onPressed: () => Navigator.of(context)
+                        .pop(const _LocationPickResult(null)),
+                    child: const Text('Quitar ubicación'),
+                  ),
+                const Spacer(),
+                FilledButton(
+                  onPressed: _picked == null
+                      ? null
+                      : () => Navigator.of(context)
+                          .pop(_LocationPickResult(_picked)),
+                  child: const Text('Usar esta ubicación'),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
