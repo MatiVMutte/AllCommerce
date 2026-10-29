@@ -113,12 +113,12 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
   }
 
   Future<void> _pickLocation() async {
-    final _LocationPickResult? result =
-        await showModalBottomSheet<_LocationPickResult>(
+    final LocationPickResult? result =
+        await showModalBottomSheet<LocationPickResult>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (BuildContext context) => _LocationPickerSheet(
+      builder: (BuildContext context) => LocationPickerSheet(
         initial: (_lat != null && _lng != null)
             ? LatLng(_lat!, _lng!)
             : null,
@@ -730,23 +730,24 @@ class _ColorDot extends StatelessWidget {
 }
 
 /// Result of the map location picker: null point = remove location.
-class _LocationPickResult {
-  const _LocationPickResult(this.point);
+/// Result of the map location picker: null point = remove location.
+class LocationPickResult {
+  const LocationPickResult(this.point);
 
   final LatLng? point;
 }
 
 /// Bottom sheet with a map where the owner taps to pin their store.
-class _LocationPickerSheet extends StatefulWidget {
-  const _LocationPickerSheet({this.initial});
+class LocationPickerSheet extends StatefulWidget {
+  const LocationPickerSheet({this.initial, super.key});
 
   final LatLng? initial;
 
   @override
-  State<_LocationPickerSheet> createState() => _LocationPickerSheetState();
+  State<LocationPickerSheet> createState() => LocationPickerSheetState();
 }
 
-class _LocationPickerSheetState extends State<_LocationPickerSheet> {
+class LocationPickerSheetState extends State<LocationPickerSheet> {
   LatLng? _picked;
 
   @override
@@ -832,19 +833,24 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
             ),
             child: Row(
               children: <Widget>[
-                if (_picked != null || widget.initial != null)
+                if (_picked != null || widget.initial != null) ...<Widget>[
                   TextButton(
                     onPressed: () => Navigator.of(context)
-                        .pop(const _LocationPickResult(null)),
+                        .pop(const LocationPickResult(null)),
                     child: const Text('Quitar ubicación'),
                   ),
-                const Spacer(),
-                FilledButton(
-                  onPressed: _picked == null
-                      ? null
-                      : () => Navigator.of(context)
-                          .pop(_LocationPickResult(_picked)),
-                  child: const Text('Usar esta ubicación'),
+                  const SizedBox(width: 12),
+                ],
+                // Expanded: FilledButton has infinite min width via theme
+                // and crashes inside an unbounded Row.
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _picked == null
+                        ? null
+                        : () => Navigator.of(context)
+                            .pop(LocationPickResult(_picked)),
+                    child: const Text('Usar esta ubicación'),
+                  ),
                 ),
               ],
             ),
