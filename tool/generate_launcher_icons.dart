@@ -93,7 +93,7 @@ Future<Uint8List> renderIcon(
   int size, {
   bool round = false,
   double pad = 0,
-  double glyphScale = 1.15,
+  double glyphScale = 0.95,
 }) async {
   final ui.PictureRecorder rec = ui.PictureRecorder();
   final ui.Canvas canvas = ui.Canvas(rec);

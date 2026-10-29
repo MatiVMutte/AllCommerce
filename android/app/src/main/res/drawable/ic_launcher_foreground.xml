@@ -6,10 +6,10 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <group
-        android:scaleX="1.15"
-        android:scaleY="1.15"
-        android:translateX="-8.1"
-        android:translateY="-8.1">
+        android:scaleX="0.95"
+        android:scaleY="0.95"
+        android:translateX="2.7"
+        android:translateY="2.7">
         <!-- Llave izquierda { -->
         <path
             android:pathData="M29,36 C24,36 24,41 24,46 L24,50 C24,52.5 22,54 19.5,54 C22,54 24,55.5 24,58 L24,62 C24,67 24,72 29,72"
