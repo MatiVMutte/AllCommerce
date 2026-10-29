@@ -19,6 +19,8 @@ import 'package:all_commerce/features/catalog/presentation/view_models/catalog_p
 import 'package:all_commerce/features/catalog/presentation/view_models/favorites_providers.dart';
 import 'package:all_commerce/features/orders/data/services/whatsapp_message_builder.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
+import 'package:all_commerce/core/utils/app_motion.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -78,7 +80,7 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
     final AsyncValue<List<String>> zonesAsync = ref.watch(publicZonesProvider);
     final String search = ref.watch(storeSearchProvider);
     final UserModel? profile = ref.watch(currentProfileProvider).value;
-    final bool animate = !_animated;
+    final bool animate = !_animated && AppMotion.enabled(context);
     _animated = true;
     return Scaffold(
       body: SafeArea(
@@ -184,9 +186,8 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                   child: tenants.when(
                     loading: () =>
                         const AppSkeletonList(itemCount: 4, itemHeight: 132),
-                    error: (Object error, StackTrace stack) => AppErrorState(
-                      onRetry: () => _refresh(ref),
-                    ),
+                    error: (Object error, StackTrace stack) =>
+                        AppErrorState(onRetry: () => _refresh(ref)),
                     data: (List<TenantModel> list) {
                       final List<TenantModel> filtered = filterTenants(
                         list,
@@ -203,20 +204,19 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                       final bool searchingProducts = search.trim().length >= 2;
                       final List<GlobalProductHit> productHits =
                           searchingProducts
-                              ? (ref
-                                      .watch(
-                                        globalProductSearchProvider(
-                                          search.trim(),
-                                        ),
-                                      )
-                                      .value ??
-                                  const <GlobalProductHit>[])
-                              : const <GlobalProductHit>[];
-                      final bool productsLoading = searchingProducts &&
+                          ? (ref
+                                    .watch(
+                                      globalProductSearchProvider(
+                                        search.trim(),
+                                      ),
+                                    )
+                                    .value ??
+                                const <GlobalProductHit>[])
+                          : const <GlobalProductHit>[];
+                      final bool productsLoading =
+                          searchingProducts &&
                           ref
-                              .watch(
-                                globalProductSearchProvider(search.trim()),
-                              )
+                              .watch(globalProductSearchProvider(search.trim()))
                               .isLoading;
                       if (filtered.isEmpty &&
                           productHits.isEmpty &&
@@ -235,8 +235,7 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                       return RefreshIndicator(
                         onRefresh: () async => _refresh(ref),
                         child: LayoutBuilder(
-                          builder:
-                              (BuildContext context, BoxConstraints box) {
+                          builder: (BuildContext context, BoxConstraints box) {
                             final bool multiColumn = box.maxWidth >= 680;
                             if (!multiColumn || productHits.isNotEmpty) {
                               return ListView(
@@ -265,9 +264,22 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                         ),
                                       ),
                                     ),
-                                    for (final GlobalProductHit hit
-                                        in productHits)
-                                      _GlobalProductHitCard(hit: hit),
+                                    for (final (int i, GlobalProductHit hit)
+                                        in productHits.indexed)
+                                      animate
+                                          ? FadeInUp(
+                                              duration: const Duration(
+                                                milliseconds: 240,
+                                              ),
+                                              delay: Duration(
+                                                milliseconds: (i % 6) * 35,
+                                              ),
+                                              from: 14,
+                                              child: _GlobalProductHitCard(
+                                                hit: hit,
+                                              ),
+                                            )
+                                          : _GlobalProductHitCard(hit: hit),
                                     if (filtered.isNotEmpty)
                                       Padding(
                                         padding: const EdgeInsets.fromLTRB(
@@ -287,30 +299,33 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                         ),
                                       ),
                                   ],
-                                  for (int index = 0;
-                                      index < filtered.length;
-                                      index++)
+                                  for (
+                                    int index = 0;
+                                    index < filtered.length;
+                                    index++
+                                  )
                                     Builder(
                                       builder: (BuildContext context) {
                                         final Widget card = _StoreCard(
                                           tenant: filtered[index],
-                                          isMine: profile?.tenantId ==
+                                          isMine:
+                                              profile?.tenantId ==
                                               filtered[index].id,
                                         );
                                         return animate
                                             ? card
-                                                .animate()
-                                                .fadeIn(
-                                                  duration: 300.ms,
-                                                  delay: (index * 40).ms,
-                                                )
-                                                .slideY(
-                                                  begin: 0.08,
-                                                  end: 0,
-                                                  duration: 300.ms,
-                                                  delay: (index * 40).ms,
-                                                  curve: Curves.easeOutCubic,
-                                                )
+                                                  .animate()
+                                                  .fadeIn(
+                                                    duration: 300.ms,
+                                                    delay: (index * 40).ms,
+                                                  )
+                                                  .slideY(
+                                                    begin: 0.08,
+                                                    end: 0,
+                                                    duration: 300.ms,
+                                                    delay: (index * 40).ms,
+                                                    curve: Curves.easeOutCubic,
+                                                  )
                                             : card;
                                       },
                                     ),
@@ -337,8 +352,8 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                 final Widget card = _StoreCard(
                                   tenant: filtered[index],
                                   bottomMargin: 0,
-                                  isMine: profile?.tenantId ==
-                                      filtered[index].id,
+                                  isMine:
+                                      profile?.tenantId == filtered[index].id,
                                 );
                                 return animate
                                     ? card
@@ -448,8 +463,12 @@ class _DirectoryMap extends StatelessWidget {
   LatLng get _center {
     final List<TenantModel> list = _withCoords;
     if (list.isEmpty) return const LatLng(-34.6, -58.4);
-    final double lat = list.map((TenantModel t) => t.lat!).reduce((a, b) => a + b) / list.length;
-    final double lng = list.map((TenantModel t) => t.lng!).reduce((a, b) => a + b) / list.length;
+    final double lat =
+        list.map((TenantModel t) => t.lat!).reduce((a, b) => a + b) /
+        list.length;
+    final double lng =
+        list.map((TenantModel t) => t.lng!).reduce((a, b) => a + b) /
+        list.length;
     return LatLng(lat, lng);
   }
 
@@ -464,10 +483,7 @@ class _DirectoryMap extends StatelessWidget {
       );
     }
     return FlutterMap(
-      options: MapOptions(
-        initialCenter: _center,
-        initialZoom: 14,
-      ),
+      options: MapOptions(initialCenter: _center, initialZoom: 14),
       children: <Widget>[
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -497,10 +513,8 @@ class _DirectoryMap extends StatelessWidget {
       context: context,
       useRootNavigator: true,
       useSafeArea: true,
-      builder: (BuildContext context) => _MapStoreSheet(
-        tenant: tenant,
-        isMine: tenant.id == myTenantId,
-      ),
+      builder: (BuildContext context) =>
+          _MapStoreSheet(tenant: tenant, isMine: tenant.id == myTenantId),
     );
   }
 }
@@ -526,10 +540,7 @@ class _MapMarker extends StatelessWidget {
           if (isMine)
             Container(
               margin: const EdgeInsets.only(bottom: 2),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 3,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: scheme.primary,
                 borderRadius: BorderRadius.circular(999),
@@ -569,11 +580,7 @@ class _MapMarker extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Icon(
-            Icons.location_on,
-            color: tenant.primaryColorValue,
-            size: 12,
-          ),
+          Icon(Icons.location_on, color: tenant.primaryColorValue, size: 12),
         ],
       ),
     );
@@ -614,9 +621,7 @@ class _MapStoreSheet extends StatelessWidget {
                           Flexible(
                             child: Text(
                               tenant.name,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.w700),
                             ),
                           ),
@@ -628,17 +633,14 @@ class _MapStoreSheet extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary
+                                color: Theme.of(context).colorScheme.primary
                                     .withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: Text(
                                 'Tu local',
                                 style: TextStyle(
-                                  color:
-                                      Theme.of(context).colorScheme.primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 11,
                                 ),
@@ -674,7 +676,9 @@ class _MapStoreSheet extends StatelessWidget {
                         Navigator.of(context).pop();
                         context.push('/s/${tenant.slug}');
                       },
-                child: Text(tenant.isUnclaimedLead ? 'Próximamente' : 'Ver catálogo'),
+                child: Text(
+                  tenant.isUnclaimedLead ? 'Próximamente' : 'Ver catálogo',
+                ),
               ),
             ),
           ],
@@ -725,8 +729,9 @@ class _StoreCard extends StatelessWidget {
                         ? Container(color: tenant.primaryColorValue)
                         : AppNetworkImage(
                             imageUrl: tenant.logoUrl!,
-                            placeholder:
-                                Container(color: tenant.primaryColorValue),
+                            placeholder: Container(
+                              color: tenant.primaryColorValue,
+                            ),
                             errorBuilder: (_) =>
                                 Container(color: tenant.primaryColorValue),
                           ),
@@ -765,9 +770,7 @@ class _StoreCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
+                          color: Theme.of(context).colorScheme.primary
                               .withValues(alpha: 0.92),
                           borderRadius: BorderRadius.circular(999),
                         ),
@@ -791,10 +794,9 @@ class _StoreCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: (tenant.isOpen
-                                  ? tokens.success
-                                  : Colors.black87)
-                              .withValues(alpha: 0.9),
+                          color:
+                              (tenant.isOpen ? tokens.success : Colors.black87)
+                                  .withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
@@ -862,7 +864,8 @@ class _StoreCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                  if (tenant.zone != null || tenant.address != null) ...<Widget>[
+                  if (tenant.zone != null ||
+                      tenant.address != null) ...<Widget>[
                     const SizedBox(height: 6),
                     Row(
                       children: <Widget>[
@@ -987,14 +990,22 @@ class _FavHeart extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bool fav = ref.watch(favoriteStoresProvider).contains(tenantId);
+    final bool animate = AppMotion.enabled(context);
+    final Widget icon = Icon(
+      fav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+      color: fav ? const Color(0xFFEF4444) : context.tokens.textTertiary,
+    );
     return IconButton(
       iconSize: 22,
       visualDensity: VisualDensity.compact,
       tooltip: fav ? 'Quitar de favoritos' : 'Agregar a favoritos',
-      icon: Icon(
-        fav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-        color: fav ? const Color(0xFFEF4444) : context.tokens.textTertiary,
-      ),
+      icon: (animate && fav)
+          ? ElasticIn(
+              key: const ValueKey<bool>(true),
+              duration: const Duration(milliseconds: 420),
+              child: icon,
+            )
+          : icon,
       onPressed: () =>
           ref.read(favoriteStoresProvider.notifier).toggle(tenantId),
     );
@@ -1014,8 +1025,7 @@ class _GlobalProductHitCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: AppCard(
         padding: const EdgeInsets.all(12),
-        onTap: () =>
-            context.push('/s/${hit.tenantSlug}/p/${hit.productId}'),
+        onTap: () => context.push('/s/${hit.tenantSlug}/p/${hit.productId}'),
         child: Row(
           children: <Widget>[
             ClipRRect(
@@ -1091,10 +1101,7 @@ class _GlobalProductHitCard extends StatelessWidget {
               children: <Widget>[
                 Text(
                   Formatters.price(hit.price),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: primary,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w800, color: primary),
                 ),
                 if (hit.isOnSale && hit.compareAtPrice != null)
                   Text(

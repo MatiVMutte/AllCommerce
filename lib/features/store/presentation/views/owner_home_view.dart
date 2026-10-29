@@ -4,6 +4,7 @@ import 'package:all_commerce/core/router/customer_mode.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
+import 'package:all_commerce/core/utils/app_motion.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/widgets/app_avatar.dart';
@@ -24,6 +25,7 @@ import 'package:all_commerce/features/orders/data/models/sales_metrics.dart';
 import 'package:all_commerce/features/orders/presentation/view_models/owner_orders_providers.dart';
 import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
 import 'package:all_commerce/features/store/presentation/view_models/tenant_settings_controller.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -149,8 +151,8 @@ class _OwnerPanel extends ConsumerWidget {
     final String planLine = tenant.plan == PlanType.free
         ? 'Plan Gratis · ${tenant.plan.maxProducts} productos'
         : (tenant.canPublish
-            ? 'Plan ${tenant.plan.label} · ${tenant.daysLeft} días restantes'
-            : 'Plan vencido');
+              ? 'Plan ${tenant.plan.label} · ${tenant.daysLeft} días restantes'
+              : 'Plan vencido');
 
     return Center(
       child: ConstrainedBox(
@@ -160,303 +162,329 @@ class _OwnerPanel extends ConsumerWidget {
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(
-            24,
-            16,
-            24,
-            24 + FloatingNavBar.height,
-          ),
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                AppAvatar(tenant: tenant, size: 40),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        tenant.name,
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      InkWell(
-                        onTap: () => context.push('/owner/plans'),
-                        child: Text(
-                          planLine,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: tenant.canPublish
-                                ? (expiring
-                                      ? tokens.warning
-                                      : tokens.textSecondary)
-                                : tokens.danger,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                AppRefreshButton(onRefresh: () => _refresh(ref)),
-                const SizedBox(width: 6),
-                _CircleIcon(
-                  icon: Icons.travel_explore_rounded,
-                  tooltip: 'Explorar locales (modo cliente)',
-                  onTap: () {
-                    ref.read(customerModeProvider.notifier).enterCustomerMode();
-                    context.go('/');
-                  },
-                ),
-                if (ref.watch(currentProfileProvider).value?.isAdmin ??
-                    false) ...<Widget>[
-                  const SizedBox(width: 6),
-                  _CircleIcon(
-                    icon: Icons.admin_panel_settings_outlined,
-                    tooltip: 'Administración',
-                    onTap: () => context.push('/admin'),
-                  ),
-                ],
-                const SizedBox(width: 6),
-                _CircleIcon(
-                  icon: Icons.logout_rounded,
-                  tooltip: 'Cerrar sesión',
-                  onTap: () => _signOut(context, ref),
-                ),
-              ],
+              24,
+              16,
+              24,
+              24 + FloatingNavBar.height,
             ),
-            if (!tenant.canPublish) ...<Widget>[
-              const SizedBox(height: 16),
-              _PlanBanner(tenant: tenant),
-            ],
-            const SizedBox(height: 16),
-            AppCard(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
+            children: <Widget>[
+              Row(
                 children: <Widget>[
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: tenant.isOpen ? tokens.success : tokens.textTertiary,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
+                  AppAvatar(tenant: tenant, size: 40),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          tenant.isOpen ? 'Local abierto' : 'Local cerrado',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: tokens.textPrimary,
-                          ),
+                          tenant.name,
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        if (tenant.openingHours != null &&
-                            tenant.openingHours!.trim().isNotEmpty)
-                          Text(
-                            tenant.openingHours!,
+                        InkWell(
+                          onTap: () => context.push('/owner/plans'),
+                          child: Text(
+                            planLine,
                             style: TextStyle(
-                              fontSize: 12,
-                              color: tokens.textSecondary,
+                              fontSize: 13,
+                              color: tenant.canPublish
+                                  ? (expiring
+                                        ? tokens.warning
+                                        : tokens.textSecondary)
+                                  : tokens.danger,
                             ),
                           ),
+                        ),
                       ],
                     ),
                   ),
-                  Switch.adaptive(
-                    value: tenant.isOpen,
-                    onChanged: (_) async {
-                      final bool ok = await ref
-                          .read(tenantSettingsControllerProvider.notifier)
-                          .toggleOpen(tenant);
-                      if (ok && context.mounted) {
-                        showAppSnackBar(
-                          context,
-                          !tenant.isOpen
-                              ? 'Tu local figura como Abierto'
-                              : 'Tu local figura como Cerrado',
-                        );
-                      }
+                  AppRefreshButton(onRefresh: () => _refresh(ref)),
+                  const SizedBox(width: 6),
+                  _CircleIcon(
+                    icon: Icons.travel_explore_rounded,
+                    tooltip: 'Explorar locales (modo cliente)',
+                    onTap: () {
+                      ref
+                          .read(customerModeProvider.notifier)
+                          .enterCustomerMode();
+                      context.go('/');
                     },
+                  ),
+                  if (ref.watch(currentProfileProvider).value?.isAdmin ??
+                      false) ...<Widget>[
+                    const SizedBox(width: 6),
+                    _CircleIcon(
+                      icon: Icons.admin_panel_settings_outlined,
+                      tooltip: 'Administración',
+                      onTap: () => context.push('/admin'),
+                    ),
+                  ],
+                  const SizedBox(width: 6),
+                  _CircleIcon(
+                    icon: Icons.logout_rounded,
+                    tooltip: 'Cerrar sesión',
+                    onTap: () => _signOut(context, ref),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints c) {
-                final List<Widget> cells = <Widget>[
-                  _MetricCell(
-                    value: products == null
-                        ? '—'
-                        : '${products.length}/'
-                              '${tenant.plan.maxProducts}',
-                    label: 'Productos',
+              if (!tenant.canPublish) ...<Widget>[
+                const SizedBox(height: 16),
+                _PlanBanner(tenant: tenant),
+              ],
+              const SizedBox(height: 16),
+              _FadeInStep(
+                step: 0,
+                child: AppCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
                   ),
-                  _MetricCell(
-                    value: '$pending',
-                    label: 'Pedidos nuevos',
-                    highlight: pending > 0,
-                  ),
-                  _MetricCell(
-                    value: tenant.canPublish
-                        ? '${tenant.daysLeft} días'
-                        : 'Vencido',
-                    label: 'Plan',
-                  ),
-                  _MetricCell(
-                    value: aiUsage == null
-                        ? '—'
-                        : '${aiUsage.used}/${aiUsage.limit ?? '∞'}',
-                    label: 'IA',
-                  ),
-                ];
-                return AppCard(
-                  padding: EdgeInsets.zero,
-                  child: c.maxWidth < 420
-                      ? Column(
+                  child: Row(
+                    children: <Widget>[
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: tenant.isOpen
+                              ? tokens.success
+                              : tokens.textTertiary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            IntrinsicHeight(
+                            Text(
+                              tenant.isOpen ? 'Local abierto' : 'Local cerrado',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: tokens.textPrimary,
+                              ),
+                            ),
+                            if (tenant.openingHours != null &&
+                                tenant.openingHours!.trim().isNotEmpty)
+                              Text(
+                                tenant.openingHours!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: tokens.textSecondary,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: tenant.isOpen,
+                        onChanged: (_) async {
+                          final bool ok = await ref
+                              .read(tenantSettingsControllerProvider.notifier)
+                              .toggleOpen(tenant);
+                          if (ok && context.mounted) {
+                            showAppSnackBar(
+                              context,
+                              !tenant.isOpen
+                                  ? 'Tu local figura como Abierto'
+                                  : 'Tu local figura como Cerrado',
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _FadeInStep(
+                step: 1,
+                child: LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints c) {
+                    final List<Widget> cells = <Widget>[
+                      _MetricCell(
+                        value: products == null
+                            ? '—'
+                            : '${products.length}/'
+                                  '${tenant.plan.maxProducts}',
+                        label: 'Productos',
+                      ),
+                      _MetricCell(
+                        value: '$pending',
+                        label: 'Pedidos nuevos',
+                        highlight: pending > 0,
+                      ),
+                      _MetricCell(
+                        value: tenant.canPublish
+                            ? '${tenant.daysLeft} días'
+                            : 'Vencido',
+                        label: 'Plan',
+                      ),
+                      _MetricCell(
+                        value: aiUsage == null
+                            ? '—'
+                            : '${aiUsage.used}/${aiUsage.limit ?? '∞'}',
+                        label: 'IA',
+                      ),
+                    ];
+                    return AppCard(
+                      padding: EdgeInsets.zero,
+                      child: c.maxWidth < 420
+                          ? Column(
+                              children: <Widget>[
+                                IntrinsicHeight(
+                                  child: Row(
+                                    children: <Widget>[
+                                      cells[0],
+                                      _Divider(tokens: tokens),
+                                      cells[1],
+                                    ],
+                                  ),
+                                ),
+                                Container(height: 1, color: tokens.border),
+                                IntrinsicHeight(
+                                  child: Row(
+                                    children: <Widget>[
+                                      cells[2],
+                                      _Divider(tokens: tokens),
+                                      cells[3],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : IntrinsicHeight(
                               child: Row(
                                 children: <Widget>[
                                   cells[0],
                                   _Divider(tokens: tokens),
                                   cells[1],
-                                ],
-                              ),
-                            ),
-                            Container(
-                              height: 1,
-                              color: tokens.border,
-                            ),
-                            IntrinsicHeight(
-                              child: Row(
-                                children: <Widget>[
+                                  _Divider(tokens: tokens),
                                   cells[2],
                                   _Divider(tokens: tokens),
                                   cells[3],
                                 ],
                               ),
                             ),
-                          ],
-                        )
-                      : IntrinsicHeight(
-                          child: Row(
-                            children: <Widget>[
-                              cells[0],
-                              _Divider(tokens: tokens),
-                              cells[1],
-                              _Divider(tokens: tokens),
-                              cells[2],
-                              _Divider(tokens: tokens),
-                              cells[3],
-                            ],
-                          ),
-                        ),
-                );
-              },
-            ),
-            if (products != null)
-              _ActivationChecklistCard(
-                tenant: tenant,
-                products: products,
-              ),
-            const SizedBox(height: 28),
-            const _SectionTitle('Ventas del mes'),
-            const SizedBox(height: 8),
-            _SalesCard(
-              metricsAsync: ref.watch(ownerSalesMetricsProvider(tenant.id)),
-            ),
-            const SizedBox(height: 28),
-            const _SectionTitle('Últimos pedidos'),
-            const SizedBox(height: 8),
-            if (orders == null)
-              const AppSkeleton(height: 120)
-            else if (orders.isEmpty)
-              const AppEmptyState(
-                icon: Icons.receipt_long_outlined,
-                title: 'Todavía no llegaron pedidos',
-              )
-            else ...<Widget>[
-              for (final OrderModel order in orders.take(5))
-                _OrderRow(order: order),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => context.go('/owner/orders'),
-                  child: const Text('Ver todos'),
+                    );
+                  },
                 ),
               ),
-            ],
-            const SizedBox(height: 16),
-            const _SectionTitle('Tu catálogo'),
-            const SizedBox(height: 8),
-            AppCard(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      '${ShareService.linkBase}/s/${tenant.slug}',
-                      style: TextStyle(color: tokens.textSecondary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+              if (products != null)
+                _FadeInStep(
+                  step: 2,
+                  child: _ActivationChecklistCard(
+                    tenant: tenant,
+                    products: products,
                   ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.copy_outlined,
-                      size: 18,
-                      color: tokens.textSecondary,
-                    ),
-                    tooltip: 'Copiar link',
-                    onPressed: () async {
-                      await Clipboard.setData(
-                        ClipboardData(
-                          text:
-                              'https://${ShareService.linkBase}/s/${tenant.slug}',
+                ),
+              const SizedBox(height: 28),
+              const _SectionTitle('Ventas del mes'),
+              const SizedBox(height: 8),
+              _FadeInStep(
+                step: 3,
+                child: _SalesCard(
+                  metricsAsync: ref.watch(ownerSalesMetricsProvider(tenant.id)),
+                ),
+              ),
+              const SizedBox(height: 28),
+              const _SectionTitle('Últimos pedidos'),
+              const SizedBox(height: 8),
+              if (orders == null)
+                const AppSkeleton(height: 120)
+              else if (orders.isEmpty)
+                const AppEmptyState(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'Todavía no llegaron pedidos',
+                )
+              else ...<Widget>[
+                for (final (int i, OrderModel order) in orders.take(5).indexed)
+                  _FadeInStep(
+                    step: 4 + i,
+                    child: _OrderRow(order: order),
+                  ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => context.go('/owner/orders'),
+                    child: const Text('Ver todos'),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              const _SectionTitle('Tu catálogo'),
+              const SizedBox(height: 8),
+              _FadeInStep(
+                step: 9,
+                child: AppCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          '${ShareService.linkBase}/s/${tenant.slug}',
+                          style: TextStyle(color: tokens.textSecondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      );
-                      if (context.mounted) {
-                        showAppSnackBar(context, 'Link copiado');
-                      }
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.ios_share_outlined,
-                      size: 18,
-                      color: tokens.textSecondary,
-                    ),
-                    tooltip: 'Compartir',
-                    onPressed: () async {
-                      final ShareResult result = await const ShareService()
-                          .shareLink(
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.copy_outlined,
+                          size: 18,
+                          color: tokens.textSecondary,
+                        ),
+                        tooltip: 'Copiar link',
+                        onPressed: () async {
+                          await Clipboard.setData(
+                            ClipboardData(
+                              text:
+                                  'https://${ShareService.linkBase}/s/${tenant.slug}',
+                            ),
+                          );
+                          if (context.mounted) {
+                            showAppSnackBar(context, 'Link copiado');
+                          }
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.ios_share_outlined,
+                          size: 18,
+                          color: tokens.textSecondary,
+                        ),
+                        tooltip: 'Compartir',
+                        onPressed: () async {
+                          final ShareResult
+                          result = await const ShareService().shareLink(
                             url: ShareService.catalogUrl(tenant.slug),
                             text:
                                 'Mirá el catálogo de ${tenant.name}: precios actualizados y pedidos directo por WhatsApp',
                           );
-                      if (context.mounted && result == ShareResult.copied) {
-                        showAppSnackBar(context, 'Link copiado');
-                      }
-                    },
+                          if (context.mounted && result == ShareResult.copied) {
+                            showAppSnackBar(context, 'Link copiado');
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.storefront_outlined, size: 18),
-                label: const Text('Ver catálogo'),
-                onPressed: () => context.push('/s/${tenant.slug}'),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.storefront_outlined, size: 18),
+                  label: const Text('Ver catálogo'),
+                  onPressed: () => context.push('/s/${tenant.slug}'),
+                ),
               ),
-            ),
-          ],
+            ],
           ),
         ),
       ),
@@ -516,29 +544,55 @@ class _MetricCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          children: <Widget>[
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: highlight
-                    ? Theme.of(context).colorScheme.primary
-                    : tokens.textPrimary,
-              ),
+    final Widget cell = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        children: <Widget>[
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: highlight
+                  ? Theme.of(context).colorScheme.primary
+                  : tokens.textPrimary,
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(fontSize: 12, color: tokens.textTertiary),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: tokens.textTertiary),
+          ),
+        ],
       ),
+    );
+    return Expanded(
+      child: highlight && AppMotion.loopsEnabled(context)
+          ? Pulse(
+              infinite: true,
+              duration: const Duration(milliseconds: 1400),
+              child: cell,
+            )
+          : cell,
+    );
+  }
+}
+
+/// Staggered [FadeInUp] entrance used across the owner dashboard sections.
+class _FadeInStep extends StatelessWidget {
+  const _FadeInStep({required this.step, required this.child});
+
+  final int step;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!AppMotion.enabled(context)) return child;
+    return FadeInUp(
+      duration: const Duration(milliseconds: 300),
+      delay: Duration(milliseconds: step * 60),
+      from: 16,
+      child: child,
     );
   }
 }
@@ -755,8 +809,7 @@ class _SalesCard extends StatelessWidget {
                     color: tokens.textTertiary,
                   ),
                 ),
-                for (final (int i, SalesTopProduct p)
-                    in m.topProducts.indexed)
+                for (final (int i, SalesTopProduct p) in m.topProducts.indexed)
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: Row(
@@ -887,15 +940,16 @@ class _ActivationChecklistCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     final Color primary = Theme.of(context).colorScheme.primary;
-    final int activeProducts =
-        products.where((ProductModel p) => p.isActive).length;
+    final int activeProducts = products
+        .where((ProductModel p) => p.isActive)
+        .length;
     final bool hasLogo =
         tenant.logoUrl != null && tenant.logoUrl!.trim().isNotEmpty;
     final bool hasLocation = tenant.lat != null && tenant.lng != null;
     final bool hasHoursOrPayments =
         (tenant.openingHours?.trim().isNotEmpty ?? false) ||
-            (tenant.transferAlias?.trim().isNotEmpty ?? false) ||
-            (tenant.mercadoPagoLink?.trim().isNotEmpty ?? false);
+        (tenant.transferAlias?.trim().isNotEmpty ?? false) ||
+        (tenant.mercadoPagoLink?.trim().isNotEmpty ?? false);
     final bool hasThreeProducts = activeProducts >= 3;
 
     final List<_ActivationStep> steps = <_ActivationStep>[
@@ -925,8 +979,7 @@ class _ActivationChecklistCard extends StatelessWidget {
       ),
     ];
 
-    final int completed =
-        steps.where((_ActivationStep s) => s.done).length;
+    final int completed = steps.where((_ActivationStep s) => s.done).length;
     if (completed == steps.length) {
       return const SizedBox.shrink();
     }

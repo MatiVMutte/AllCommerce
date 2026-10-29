@@ -1,5 +1,6 @@
 import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
+import 'package:all_commerce/core/utils/app_motion.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
@@ -12,6 +13,7 @@ import 'package:all_commerce/features/orders/data/models/order_item_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:all_commerce/features/orders/presentation/view_models/order_grouping.dart';
 import 'package:all_commerce/features/orders/presentation/view_models/owner_orders_providers.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -204,7 +206,20 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                                 i < group.orders.length;
                                 i++
                               ) ...<Widget>[
-                                _OrderRow(order: group.orders[i]),
+                                AppMotion.enabled(context)
+                                    ? FadeInUp(
+                                        duration: const Duration(
+                                          milliseconds: 240,
+                                        ),
+                                        delay: Duration(
+                                          milliseconds: (i % 8) * 40,
+                                        ),
+                                        from: 12,
+                                        child: _OrderRow(
+                                          order: group.orders[i],
+                                        ),
+                                      )
+                                    : _OrderRow(order: group.orders[i]),
                                 if (i < group.orders.length - 1)
                                   Divider(height: 1, color: tokens.border),
                               ],

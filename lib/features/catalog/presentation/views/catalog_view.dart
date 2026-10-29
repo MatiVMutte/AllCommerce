@@ -19,6 +19,8 @@ import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
+import 'package:all_commerce/core/utils/app_motion.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -107,9 +109,8 @@ class _CatalogScaffold extends ConsumerWidget {
                     _OverlayIconButton(
                       icon: Icons.refresh_rounded,
                       tooltip: 'Actualizar',
-                      onPressed: () => ref.invalidate(
-                        catalogProductsProvider(tenant.id),
-                      ),
+                      onPressed: () =>
+                          ref.invalidate(catalogProductsProvider(tenant.id)),
                     ),
                     _OverlayIconButton(
                       icon: Icons.share_outlined,
@@ -187,14 +188,25 @@ class _CatalogScaffold extends ConsumerWidget {
                       SliverPadding(
                         padding: const EdgeInsets.all(16),
                         sliver: SliverGrid(
-                          delegate: SliverChildBuilderDelegate(
-                            (BuildContext context, int index) => _ProductCard(
+                          delegate: SliverChildBuilderDelegate((
+                            BuildContext context,
+                            int index,
+                          ) {
+                            final Widget card = _ProductCard(
                               slug: slug,
                               product: filtered[index],
                               tenant: tenant,
-                            ),
-                            childCount: filtered.length,
-                          ),
+                            );
+                            if (!AppMotion.enabled(context)) {
+                              return card;
+                            }
+                            return FadeInUp(
+                              duration: const Duration(milliseconds: 260),
+                              delay: Duration(milliseconds: (index % 8) * 35),
+                              from: 16,
+                              child: card,
+                            );
+                          }, childCount: filtered.length),
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount:
@@ -324,8 +336,11 @@ class _StoreBanner extends StatelessWidget {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: (tenant.isOpen ? Colors.green.shade700 : Colors.black54)
-                          .withValues(alpha: 0.85),
+                      color:
+                          (tenant.isOpen
+                                  ? Colors.green.shade700
+                                  : Colors.black54)
+                              .withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
@@ -620,21 +635,24 @@ class _ProductCard extends ConsumerWidget {
                       Positioned(
                         top: 8,
                         left: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: tokens.success,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            '-${product.discountPercent}% OFF',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
+                        child: ZoomIn(
+                          duration: const Duration(milliseconds: 280),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: tokens.success,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '-${product.discountPercent}% OFF',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
                             ),
                           ),
                         ),
@@ -697,34 +715,43 @@ class _ProductCard extends ConsumerWidget {
                       Positioned(
                         right: 8,
                         bottom: 8,
-                        child: inCart > 0
-                            ? Container(
-                                decoration: BoxDecoration(
-                                  color: tokens.surface,
-                                  borderRadius: BorderRadius.circular(999),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          transitionBuilder: (
+                            Widget child,
+                            Animation<double> anim,
+                          ) => ScaleTransition(scale: anim, child: child),
+                          child: inCart > 0
+                              ? Container(
+                                  key: const ValueKey<String>('stepper'),
+                                  decoration: BoxDecoration(
+                                    color: tokens.surface,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: QuantityStepper(
+                                    dense: true,
+                                    quantity: inCart,
+                                    maxQuantity: product.trackStock
+                                        ? product.stock
+                                        : null,
+                                    onChanged: (int qty) => ref
+                                        .read(cartProvider.notifier)
+                                        .setQuantity(product.id, qty),
+                                  ),
+                                )
+                              : _AddButton(
+                                  key: const ValueKey<String>('add'),
+                                  onTap: () {
+                                    AppHaptics.light();
+                                    addToCartWithConfirm(
+                                      context,
+                                      ref,
+                                      product,
+                                      tenant,
+                                    );
+                                  },
                                 ),
-                                child: QuantityStepper(
-                                  dense: true,
-                                  quantity: inCart,
-                                  maxQuantity: product.trackStock
-                                      ? product.stock
-                                      : null,
-                                  onChanged: (int qty) => ref
-                                      .read(cartProvider.notifier)
-                                      .setQuantity(product.id, qty),
-                                ),
-                              )
-                            : _AddButton(
-                                onTap: () {
-                                  AppHaptics.light();
-                                  addToCartWithConfirm(
-                                    context,
-                                    ref,
-                                    product,
-                                    tenant,
-                                  );
-                                },
-                              ),
+                        ),
                       ),
                   ],
                 ),
@@ -751,7 +778,7 @@ class _ProductCard extends ConsumerWidget {
 }
 
 class _AddButton extends StatefulWidget {
-  const _AddButton({required this.onTap});
+  const _AddButton({required this.onTap, super.key});
 
   final VoidCallback onTap;
 

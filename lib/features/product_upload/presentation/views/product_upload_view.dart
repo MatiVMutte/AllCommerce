@@ -7,6 +7,7 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_haptics.dart';
+import 'package:all_commerce/core/utils/app_motion.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
@@ -18,6 +19,7 @@ import 'package:all_commerce/features/product_upload/data/models/product_input.d
 import 'package:all_commerce/features/product_upload/presentation/view_models/product_upload_controller.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:all_commerce/features/product_upload/presentation/widgets/plan_blocked_card.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -130,7 +132,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       return null;
     }
     final Color primary = Theme.of(context).colorScheme.primary;
-    return Container(
+    final Widget badge = Container(
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -153,6 +155,8 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
         ],
       ),
     );
+    if (!AppMotion.enabled(context)) return badge;
+    return ZoomIn(duration: const Duration(milliseconds: 300), child: badge);
   }
 
   Future<void> _save(TenantModel tenant) async {
@@ -221,13 +225,12 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
           context,
           next.infoMessage!,
           clearNavBar: false,
-          action:
-              err is AiAnalyzeException && err.code == 'AI_LIMIT_REACHED'
-                  ? SnackBarAction(
-                      label: 'Ver planes',
-                      onPressed: () => context.push('/owner/plans'),
-                    )
-                  : null,
+          action: err is AiAnalyzeException && err.code == 'AI_LIMIT_REACHED'
+              ? SnackBarAction(
+                  label: 'Ver planes',
+                  onPressed: () => context.push('/owner/plans'),
+                )
+              : null,
         );
       }
     });
@@ -318,8 +321,9 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                         state: state,
                         existingImageUrl: widget.existing?.imageUrl,
                         onPick: (ImageSource source) {
-                          final AiUsage? usage =
-                              ref.read(aiUsageProvider).value;
+                          final AiUsage? usage = ref
+                              .read(aiUsageProvider)
+                              .value;
                           if (usage != null && usage.reached) {
                             _showAiLimit(context);
                             return;
@@ -393,12 +397,13 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                           ),
                           decoration: const InputDecoration(
                             labelText: AppStrings.productCompareAtPrice,
-                            helperText:
-                                'Si es mayor al precio actual, se muestra tachado con el % de descuento',
+                            helperText: 'Si es mayor al precio actual, se muestra tachado con el % de descuento',
                           ),
                           validator: (String? value) {
-                            final String raw =
-                                (value ?? '').trim().replaceAll(',', '.');
+                            final String raw = (value ?? '').trim().replaceAll(
+                              ',',
+                              '.',
+                            );
                             if (raw.isEmpty) return null;
                             final double? parsed = double.tryParse(raw);
                             if (parsed == null || parsed <= 0) {
@@ -407,7 +412,8 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                             final double? currentPrice = double.tryParse(
                               _price.text.trim().replaceAll(',', '.'),
                             );
-                            if (currentPrice != null && parsed <= currentPrice) {
+                            if (currentPrice != null &&
+                                parsed <= currentPrice) {
                               return 'El precio anterior debe ser mayor al precio actual';
                             }
                             return null;
@@ -421,7 +427,8 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                             setState(() {
                               _trackStock = value;
                               if (value &&
-                                  (int.tryParse(_stock.text.trim()) ?? 0) <= 0) {
+                                  (int.tryParse(_stock.text.trim()) ?? 0) <=
+                                      0) {
                                 _stock.text = '1';
                               }
                             });
@@ -702,19 +709,38 @@ class _ImageSection extends StatelessWidget {
                 ),
               ),
             if (state.analyzing)
-              Container(
-                color: tokens.overlay.withValues(alpha: 0.45),
-                child: const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      CircularProgressIndicator(color: Colors.white),
-                      SizedBox(height: 8),
-                      Text(
-                        AppStrings.analyzingWithAi,
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ],
+              FadeIn(
+                duration: const Duration(milliseconds: 180),
+                child: Container(
+                  color: tokens.overlay.withValues(alpha: 0.45),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        AppMotion.loopsEnabled(context)
+                            ? Pulse(
+                                infinite: true,
+                                duration: const Duration(milliseconds: 1200),
+                                child: const Icon(
+                                  Icons.auto_awesome,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.auto_awesome,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                        const SizedBox(height: 10),
+                        const CircularProgressIndicator(color: Colors.white),
+                        const SizedBox(height: 8),
+                        const Text(
+                          AppStrings.analyzingWithAi,
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

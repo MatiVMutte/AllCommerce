@@ -1,5 +1,7 @@
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_haptics.dart';
+import 'package:all_commerce/core/utils/app_motion.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 
 /// One destination of the floating bottom bar.
@@ -73,8 +75,7 @@ class FloatingNavBar extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: tokens.navBackground,
                       borderRadius: BorderRadius.circular(999),
-                      border:
-                          dark ? Border.all(color: tokens.border) : null,
+                      border: dark ? Border.all(color: tokens.border) : null,
                       boxShadow: dark
                           ? null
                           : const <BoxShadow>[
@@ -88,8 +89,7 @@ class FloatingNavBar extends StatelessWidget {
                     child: Row(
                       children: <Widget>[
                         for (int i = 0; i < items.length; i++) ...<Widget>[
-                          if (i == items.length ~/ 2)
-                            const SizedBox(width: 72),
+                          if (i == items.length ~/ 2) const SizedBox(width: 72),
                           Expanded(child: _NavItem(item: items[i])),
                         ],
                       ],
@@ -122,8 +122,9 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    final Color color =
-        item.selected ? Theme.of(context).colorScheme.primary : tokens.textTertiary;
+    final Color color = item.selected
+        ? Theme.of(context).colorScheme.primary
+        : tokens.textTertiary;
     return InkWell(
       borderRadius: BorderRadius.circular(999),
       onTap: () {
@@ -152,8 +153,7 @@ class _NavItem extends StatelessWidget {
             item.label,
             style: TextStyle(
               fontSize: 11,
-              fontWeight:
-                  item.selected ? FontWeight.w600 : FontWeight.w400,
+              fontWeight: item.selected ? FontWeight.w600 : FontWeight.w400,
               color: color,
             ),
           ),
@@ -179,7 +179,8 @@ class _CenterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
-    return Badge(
+    final bool animate = AppMotion.enabled(context);
+    final Widget button = Badge(
       isLabelVisible: badgeCount > 0,
       label: Text('$badgeCount'),
       child: Material(
@@ -202,13 +203,17 @@ class _CenterButton extends StatelessWidget {
               icon,
               color: enabled
                   ? scheme.onPrimary
-                  : Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant,
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
       ),
+    );
+    if (!animate || badgeCount <= 0) return button;
+    return ElasticIn(
+      key: ValueKey<int>(badgeCount),
+      duration: const Duration(milliseconds: 420),
+      child: button,
     );
   }
 }
