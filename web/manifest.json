@@ -1,11 +1,11 @@
 {
-    "name": "all_commerce",
-    "short_name": "all_commerce",
+    "name": "AllCommerce",
+    "short_name": "AllCommerce",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#0A68CC",
+    "description": "Tu catálogo de comercio con IA — catálogo digital, pedidos por WhatsApp y gestión de productos para comercios de barrio.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
