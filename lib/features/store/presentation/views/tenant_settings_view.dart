@@ -9,13 +9,13 @@ import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
+import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/store/presentation/view_models/tenant_settings_controller.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -679,10 +679,9 @@ class _SettingsAvatar extends StatelessWidget {
               ),
             ),
           )
-        : CachedNetworkImage(
+        : AppNetworkImage(
             imageUrl: tenant.logoUrl!,
-            fit: BoxFit.cover,
-            errorWidget: (_, _, _) => Center(
+            errorBuilder: (_) => Center(
               child: Text(
                 tenant.name.characters.first.toUpperCase(),
                 style: const TextStyle(

@@ -12,6 +12,7 @@ import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/core/widgets/app_card.dart';
+import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/quantity_stepper.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
@@ -23,7 +24,6 @@ import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:all_commerce/features/orders/data/services/whatsapp_message_builder.dart';
 import 'package:all_commerce/features/orders/presentation/view_models/checkout_controller.dart';
 import 'package:all_commerce/features/orders/presentation/views/order_success_view.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -581,18 +581,16 @@ class _CartTile extends ConsumerWidget {
                           color: tokens.textTertiary,
                         ),
                       )
-                    : CachedNetworkImage(
+                    : AppNetworkImage(
                         imageUrl: item.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorWidget:
-                            (BuildContext context, String url, _) =>
-                                Container(
-                              color: tokens.surfaceMuted,
-                              child: Icon(
-                                Icons.image_not_supported_outlined,
-                                color: tokens.textTertiary,
-                              ),
-                            ),
+                        placeholder: Container(color: tokens.surfaceMuted),
+                        errorBuilder: (_) => Container(
+                          color: tokens.surfaceMuted,
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            color: tokens.textTertiary,
+                          ),
+                        ),
                       ),
               ),
             ),

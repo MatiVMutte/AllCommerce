@@ -14,7 +14,7 @@ import 'package:all_commerce/features/auth/presentation/view_models/auth_provide
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/favorites_providers.dart';
 import 'package:all_commerce/features/orders/data/services/whatsapp_message_builder.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -654,10 +654,11 @@ class _StoreCard extends StatelessWidget {
                   Positioned.fill(
                     child: tenant.logoUrl == null
                         ? Container(color: tenant.primaryColorValue)
-                        : CachedNetworkImage(
+                        : AppNetworkImage(
                             imageUrl: tenant.logoUrl!,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, _, _) =>
+                            placeholder:
+                                Container(color: tenant.primaryColorValue),
+                            errorBuilder: (_) =>
                                 Container(color: tenant.primaryColorValue),
                           ),
                   ),

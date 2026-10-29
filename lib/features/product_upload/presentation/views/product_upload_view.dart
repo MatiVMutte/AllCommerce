@@ -16,7 +16,7 @@ import 'package:all_commerce/features/product_upload/data/models/ai_product_sugg
 import 'package:all_commerce/features/product_upload/data/services/ai_analyze_service.dart';
 import 'package:all_commerce/features/product_upload/data/models/product_input.dart';
 import 'package:all_commerce/features/product_upload/presentation/view_models/product_upload_controller.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:all_commerce/features/product_upload/presentation/widgets/plan_blocked_card.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -689,10 +689,10 @@ class _ImageSection extends StatelessWidget {
             if (bytes != null)
               Image.memory(bytes, fit: BoxFit.cover)
             else
-              CachedNetworkImage(
+              AppNetworkImage(
                 imageUrl: existingImageUrl!,
-                fit: BoxFit.cover,
-                errorWidget: (BuildContext context, String url, _) => Container(
+                placeholder: Container(color: tokens.surfaceMuted),
+                errorBuilder: (_) => Container(
                   color: tokens.surfaceMuted,
                   child: Icon(
                     Icons.image_not_supported_outlined,

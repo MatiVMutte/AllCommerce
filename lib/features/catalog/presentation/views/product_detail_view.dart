@@ -12,7 +12,7 @@ import 'package:all_commerce/features/cart/presentation/view_models/cart_control
 import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -265,11 +265,10 @@ class _ProductImage extends StatelessWidget {
               color: tokens.textTertiary,
             ),
           )
-        : CachedNetworkImage(
+        : AppNetworkImage(
             imageUrl: product.imageUrl!,
-            fit: BoxFit.cover,
-            placeholder: (_, _) => Container(color: tokens.surfaceMuted),
-            errorWidget: (_, _, _) => Container(
+            placeholder: Container(color: tokens.surfaceMuted),
+            errorBuilder: (_) => Container(
               color: tokens.surfaceMuted,
               child: Icon(
                 Icons.image_not_supported_outlined,

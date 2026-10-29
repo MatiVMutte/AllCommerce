@@ -1,5 +1,5 @@
 import 'package:all_commerce/core/tenant/tenant_model.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
 
 /// Store avatar: logo image or initial over the store's brand color.
@@ -29,10 +29,9 @@ class AppAvatar extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: tenant.logoUrl == null
           ? Center(child: fallback)
-          : CachedNetworkImage(
+          : AppNetworkImage(
               imageUrl: tenant.logoUrl!,
-              fit: BoxFit.cover,
-              errorWidget: (_, _, _) => Center(child: fallback),
+              errorBuilder: (_) => Center(child: fallback),
             ),
     );
   }
