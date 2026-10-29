@@ -4,13 +4,17 @@ import 'package:all_commerce/core/router/customer_mode.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
+import 'package:all_commerce/core/utils/formatters.dart';
+import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/widgets/app_avatar.dart';
+import 'package:all_commerce/core/widgets/app_card.dart';
 import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
+import 'package:all_commerce/features/catalog/data/repositories/catalog_repository.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/favorites_providers.dart';
 import 'package:all_commerce/features/orders/data/services/whatsapp_message_builder.dart';
@@ -196,7 +200,27 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                             (favs.contains(a.id) ? 0 : 1) -
                             (favs.contains(b.id) ? 0 : 1),
                       );
-                      if (filtered.isEmpty) {
+                      final bool searchingProducts = search.trim().length >= 2;
+                      final List<GlobalProductHit> productHits =
+                          searchingProducts
+                              ? (ref
+                                      .watch(
+                                        globalProductSearchProvider(
+                                          search.trim(),
+                                        ),
+                                      )
+                                      .value ??
+                                  const <GlobalProductHit>[])
+                              : const <GlobalProductHit>[];
+                      final bool productsLoading = searchingProducts &&
+                          ref
+                              .watch(
+                                globalProductSearchProvider(search.trim()),
+                              )
+                              .isLoading;
+                      if (filtered.isEmpty &&
+                          productHits.isEmpty &&
+                          !productsLoading) {
                         return const AppEmptyState(
                           icon: Icons.storefront_outlined,
                           title: AppStrings.noStoresFound,
@@ -214,38 +238,83 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                           builder:
                               (BuildContext context, BoxConstraints box) {
                             final bool multiColumn = box.maxWidth >= 680;
-                            if (!multiColumn) {
-                              return ListView.builder(
+                            if (!multiColumn || productHits.isNotEmpty) {
+                              return ListView(
                                 padding: const EdgeInsets.fromLTRB(
                                   16,
                                   4,
                                   16,
                                   FloatingNavBar.height,
                                 ),
-                                itemCount: filtered.length,
-                                itemBuilder:
-                                    (BuildContext context, int index) {
-                                  final Widget card = _StoreCard(
-                                    tenant: filtered[index],
-                                    isMine: profile?.tenantId ==
-                                        filtered[index].id,
-                                  );
-                                  return animate
-                                      ? card
-                                            .animate()
-                                            .fadeIn(
-                                              duration: 300.ms,
-                                              delay: (index * 40).ms,
-                                            )
-                                            .slideY(
-                                              begin: 0.08,
-                                              end: 0,
-                                              duration: 300.ms,
-                                              delay: (index * 40).ms,
-                                              curve: Curves.easeOutCubic,
-                                            )
-                                      : card;
-                                },
+                                children: <Widget>[
+                                  if (productHits.isNotEmpty) ...<Widget>[
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        4,
+                                        4,
+                                        4,
+                                        8,
+                                      ),
+                                      child: Text(
+                                        'PRODUCTOS ENCONTRADOS (${productHits.length})',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5,
+                                          color: context.tokens.textTertiary,
+                                        ),
+                                      ),
+                                    ),
+                                    for (final GlobalProductHit hit
+                                        in productHits)
+                                      _GlobalProductHitCard(hit: hit),
+                                    if (filtered.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          4,
+                                          12,
+                                          4,
+                                          8,
+                                        ),
+                                        child: Text(
+                                          'LOCALES (${filtered.length})',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.5,
+                                            color: context.tokens.textTertiary,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                  for (int index = 0;
+                                      index < filtered.length;
+                                      index++)
+                                    Builder(
+                                      builder: (BuildContext context) {
+                                        final Widget card = _StoreCard(
+                                          tenant: filtered[index],
+                                          isMine: profile?.tenantId ==
+                                              filtered[index].id,
+                                        );
+                                        return animate
+                                            ? card
+                                                .animate()
+                                                .fadeIn(
+                                                  duration: 300.ms,
+                                                  delay: (index * 40).ms,
+                                                )
+                                                .slideY(
+                                                  begin: 0.08,
+                                                  end: 0,
+                                                  duration: 300.ms,
+                                                  delay: (index * 40).ms,
+                                                  curve: Curves.easeOutCubic,
+                                                )
+                                            : card;
+                                      },
+                                    ),
+                                ],
                               );
                             }
                             final int columns = box.maxWidth >= 980 ? 3 : 2;
@@ -875,7 +944,7 @@ class _ClaimCallout extends StatelessWidget {
           buildWhatsAppUri(
             support,
             'Hola! Soy el dueño de ${tenant.name} '
-            '(allcommerce.app/s/${tenant.slug}) y quiero reclamar mi local.',
+            '(${ShareService.linkBase}/s/${tenant.slug}) y quiero reclamar mi local.',
           ),
           mode: LaunchMode.externalApplication,
         );
@@ -928,6 +997,119 @@ class _FavHeart extends ConsumerWidget {
       ),
       onPressed: () =>
           ref.read(favoriteStoresProvider.notifier).toggle(tenantId),
+    );
+  }
+}
+
+class _GlobalProductHitCard extends StatelessWidget {
+  const _GlobalProductHitCard({required this.hit});
+
+  final GlobalProductHit hit;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final Color primary = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AppCard(
+        padding: const EdgeInsets.all(12),
+        onTap: () =>
+            context.push('/s/${hit.tenantSlug}/p/${hit.productId}'),
+        child: Row(
+          children: <Widget>[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                width: 56,
+                height: 56,
+                child: hit.imageUrl == null
+                    ? Container(
+                        color: tokens.surfaceMuted,
+                        child: Icon(
+                          Icons.image_not_supported_outlined,
+                          size: 22,
+                          color: tokens.textTertiary,
+                        ),
+                      )
+                    : AppNetworkImage(
+                        imageUrl: hit.imageUrl!,
+                        placeholder: Container(color: tokens.surfaceMuted),
+                        errorBuilder: (_) => Container(
+                          color: tokens.surfaceMuted,
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            size: 22,
+                            color: tokens.textTertiary,
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    hit.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.storefront_outlined,
+                        size: 13,
+                        color: tokens.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          hit.tenantName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: tokens.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                Text(
+                  Formatters.price(hit.price),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: primary,
+                  ),
+                ),
+                if (hit.isOnSale && hit.compareAtPrice != null)
+                  Text(
+                    Formatters.price(hit.compareAtPrice!),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: tokens.textTertiary,
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

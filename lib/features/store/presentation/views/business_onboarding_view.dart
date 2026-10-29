@@ -1,5 +1,7 @@
+import 'package:all_commerce/core/services/nominatim_geocoder.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
+import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
@@ -64,6 +66,16 @@ class _BusinessOnboardingViewState
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final String address = _address.text.trim();
+    double? lat;
+    double? lng;
+    if (address.length >= 4) {
+      final List<AddressSuggestion> found =
+          await const NominatimGeocoder().search(address);
+      if (found.isNotEmpty) {
+        lat = found.first.point.latitude;
+        lng = found.first.point.longitude;
+      }
+    }
     final TenantModel? tenant = await ref
         .read(authControllerProvider.notifier)
         .createTenant(
@@ -72,6 +84,8 @@ class _BusinessOnboardingViewState
           whatsapp: Validators.normalizePhone(_whatsapp.text),
           address: address.isEmpty ? null : address,
           fullName: _fullName.text.trim(),
+          lat: lat,
+          lng: lng,
         );
     if (tenant == null && mounted) {
       final Object? error = ref.read(authControllerProvider).error;
@@ -148,10 +162,10 @@ class _BusinessOnboardingViewState
                         child: Row(
                           children: <Widget>[
                             Text(
-                              'allcommerce.app/s/',
+                              '${ShareService.linkBase}/s/',
                               style: TextStyle(
                                 color: tokens.textTertiary,
-                                fontSize: 14,
+                                fontSize: 13,
                               ),
                             ),
                             Expanded(

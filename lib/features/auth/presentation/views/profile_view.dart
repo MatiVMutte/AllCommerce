@@ -2,6 +2,7 @@ import 'package:all_commerce/core/router/customer_mode.dart';
 import 'package:all_commerce/core/router/return_to.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
+import 'package:all_commerce/core/utils/validators.dart';
 import 'package:all_commerce/core/widgets/app_card.dart';
 import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
@@ -40,6 +41,23 @@ class ProfileView extends ConsumerWidget {
     }
     showAppSnackBar(context, 'Tu cuenta fue eliminada');
     context.go('/');
+  }
+
+  Future<void> _editProfile(
+    BuildContext context,
+    WidgetRef ref,
+    UserModel profile,
+  ) async {
+    final bool? saved = await showModalBottomSheet<bool>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _EditProfileSheet(profile: profile),
+    );
+    if (saved == true && context.mounted) {
+      showAppSnackBar(context, 'Datos actualizados');
+    }
   }
 
   @override
@@ -264,6 +282,14 @@ class ProfileView extends ConsumerWidget {
                 Card(
                   child: Column(
                     children: <Widget>[
+                      if (profile != null)
+                        ListTile(
+                          leading: const Icon(Icons.edit_outlined),
+                          title: const Text('Editar mis datos'),
+                          subtitle: const Text('Nombre y WhatsApp'),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () => _editProfile(context, ref, profile),
+                        ),
                       ListTile(
                         leading: const Icon(Icons.receipt_long_outlined),
                         title: const Text('Mis pedidos'),
@@ -330,6 +356,116 @@ class ProfileView extends ConsumerWidget {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _EditProfileSheet extends ConsumerStatefulWidget {
+  const _EditProfileSheet({required this.profile});
+
+  final UserModel profile;
+
+  @override
+  ConsumerState<_EditProfileSheet> createState() => _EditProfileSheetState();
+}
+
+class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _name;
+  late final TextEditingController _phone;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.profile.fullName);
+    _phone = TextEditingController(text: widget.profile.phone ?? '');
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _phone.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final String rawPhone = _phone.text.trim();
+    final String? cleanPhone =
+        rawPhone.isEmpty ? null : Validators.normalizePhone(rawPhone);
+    final bool ok = await ref
+        .read(authControllerProvider.notifier)
+        .updateProfile(
+          fullName: _name.text.trim(),
+          phone: cleanPhone,
+        );
+    if (!mounted) return;
+    if (!ok) {
+      final Object? error = ref.read(authControllerProvider).error;
+      if (error != null) showErrorSnackBar(context, error);
+      return;
+    }
+    Navigator.of(context).pop(true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool loading = ref.watch(authControllerProvider).isLoading;
+    final EdgeInsets insets = MediaQuery.viewInsetsOf(context);
+    final double bottomPad = MediaQuery.viewPaddingOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        20,
+        24,
+        20 + (insets.bottom > 0 ? insets.bottom : bottomPad),
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              'Editar mis datos',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _name,
+              decoration: const InputDecoration(
+                labelText: 'Nombre',
+                hintText: 'Tu nombre',
+              ),
+              validator: Validators.fullName,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _phone,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'WhatsApp',
+                hintText: '5491122334455',
+              ),
+              validator: (String? v) =>
+                  (v == null || v.trim().isEmpty) ? null : Validators.phone(v),
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: loading ? null : _save,
+              child: loading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Guardar'),
+            ),
+          ],
         ),
       ),
     );

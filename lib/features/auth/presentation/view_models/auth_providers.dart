@@ -91,12 +91,35 @@ class AuthController extends Notifier<AsyncValue<void>> {
     return true;
   }
 
+  Future<bool> updateProfile({
+    required String fullName,
+    String? phone,
+  }) async {
+    final String? uid = _repository.currentUserId;
+    if (uid == null) return false;
+    state = const AsyncLoading<void>();
+    final AsyncValue<void> result = await AsyncValue.guard(
+      () => _repository.updateProfile(
+        userId: uid,
+        fullName: fullName,
+        phone: phone,
+      ),
+    );
+    state = result;
+    if (result.hasError) return false;
+    ref.invalidate(currentProfileProvider);
+    await ref.read(currentProfileProvider.future);
+    return true;
+  }
+
   Future<TenantModel?> createTenant({
     required String slug,
     required String name,
     required String whatsapp,
     String? address,
     required String fullName,
+    double? lat,
+    double? lng,
   }) async {
     state = const AsyncLoading<void>();
     TenantModel? tenant;
@@ -107,11 +130,14 @@ class AuthController extends Notifier<AsyncValue<void>> {
         whatsapp: whatsapp,
         address: address,
         fullName: fullName,
+        lat: lat,
+        lng: lng,
       );
     });
     state = result;
     if (result.hasError) return null;
     ref.invalidate(currentProfileProvider);
+    await ref.read(currentProfileProvider.future);
     return tenant;
   }
 

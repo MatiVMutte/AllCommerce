@@ -118,6 +118,15 @@ class StoreSearchNotifier extends Notifier<String> {
 final NotifierProvider<StoreSearchNotifier, String> storeSearchProvider =
     NotifierProvider<StoreSearchNotifier, String>(StoreSearchNotifier.new);
 
+final globalProductSearchProvider =
+    FutureProvider.family<List<GlobalProductHit>, String>(
+  (Ref ref, String rawQuery) async {
+    final String q = rawQuery.trim();
+    if (q.length < 2) return const <GlobalProductHit>[];
+    return ref.watch(catalogRepositoryProvider).searchPublicProducts(q);
+  },
+);
+
 /// Pure directory filtering (name, description, address; accent-insensitive).
 List<TenantModel> filterTenants(List<TenantModel> tenants, String query) {
   final String q = removeDiacritics(query.trim().toLowerCase());

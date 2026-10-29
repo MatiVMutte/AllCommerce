@@ -1,3 +1,4 @@
+import 'package:all_commerce/core/constants/app_config.dart';
 import 'package:all_commerce/core/tenant/tenant_strategy.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +19,7 @@ class MadeWithAllCommerce extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         onTap: () {
           if (const TenantResolver().isWhiteLabel) {
-            launchUrl(Uri.parse('https://allcommerce.app'));
+            launchUrl(Uri.parse(AppConfig.publicBaseUrl));
           } else {
             context.go('/');
           }

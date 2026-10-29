@@ -359,6 +359,11 @@ class _OwnerPanel extends ConsumerWidget {
                 );
               },
             ),
+            if (products != null)
+              _ActivationChecklistCard(
+                tenant: tenant,
+                products: products,
+              ),
             const SizedBox(height: 28),
             const _SectionTitle('Ventas del mes'),
             const SizedBox(height: 8),
@@ -431,7 +436,8 @@ class _OwnerPanel extends ConsumerWidget {
                       final ShareResult result = await const ShareService()
                           .shareLink(
                             url: ShareService.catalogUrl(tenant.slug),
-                            text: 'Mirá el catálogo de ${tenant.name}',
+                            text:
+                                'Mirá el catálogo de ${tenant.name}: precios actualizados y pedidos directo por WhatsApp',
                           );
                       if (context.mounted && result == ShareResult.copied) {
                         showAppSnackBar(context, 'Link copiado');
@@ -849,6 +855,178 @@ class _DeltaPill extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActivationStep {
+  const _ActivationStep({
+    required this.title,
+    required this.subtitle,
+    required this.done,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool done;
+  final VoidCallback onTap;
+}
+
+class _ActivationChecklistCard extends StatelessWidget {
+  const _ActivationChecklistCard({
+    required this.tenant,
+    required this.products,
+  });
+
+  final TenantModel tenant;
+  final List<ProductModel> products;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final Color primary = Theme.of(context).colorScheme.primary;
+    final int activeProducts =
+        products.where((ProductModel p) => p.isActive).length;
+    final bool hasLogo =
+        tenant.logoUrl != null && tenant.logoUrl!.trim().isNotEmpty;
+    final bool hasLocation = tenant.lat != null && tenant.lng != null;
+    final bool hasHoursOrPayments =
+        (tenant.openingHours?.trim().isNotEmpty ?? false) ||
+            (tenant.transferAlias?.trim().isNotEmpty ?? false) ||
+            (tenant.mercadoPagoLink?.trim().isNotEmpty ?? false);
+    final bool hasThreeProducts = activeProducts >= 3;
+
+    final List<_ActivationStep> steps = <_ActivationStep>[
+      _ActivationStep(
+        title: 'Subí el logo de tu local',
+        subtitle: 'Le da identidad a tu catálogo y tarjeta del directorio',
+        done: hasLogo,
+        onTap: () => context.go('/owner/settings'),
+      ),
+      _ActivationStep(
+        title: 'Marcá tu ubicación en el mapa',
+        subtitle: 'Para que los vecinos te encuentren en el mapa',
+        done: hasLocation,
+        onTap: () => context.go('/owner/settings'),
+      ),
+      _ActivationStep(
+        title: 'Cargá horarios o alias de cobro',
+        subtitle: 'Ahorrá preguntas repetidas por WhatsApp',
+        done: hasHoursOrPayments,
+        onTap: () => context.go('/owner/settings'),
+      ),
+      _ActivationStep(
+        title: 'Publicá al menos 3 productos ($activeProducts/3)',
+        subtitle: 'Usá la cámara con IA para cargarlos en segundos',
+        done: hasThreeProducts,
+        onTap: () => context.push('/owner/products/new'),
+      ),
+    ];
+
+    final int completed =
+        steps.where((_ActivationStep s) => s.done).length;
+    if (completed == steps.length) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: AppCard(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Icon(Icons.rocket_launch_outlined, size: 18, color: primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Dejá tu catálogo listo para vender',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                ),
+                Text(
+                  '$completed/${steps.length}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: completed / steps.length,
+                minHeight: 6,
+                backgroundColor: tokens.surfaceMuted,
+              ),
+            ),
+            const SizedBox(height: 8),
+            for (final _ActivationStep step in steps)
+              InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: step.done ? null : step.onTap,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: <Widget>[
+                      Icon(
+                        step.done
+                            ? Icons.check_circle_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        size: 20,
+                        color: step.done ? tokens.success : tokens.textTertiary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              step.title,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: step.done
+                                    ? tokens.textSecondary
+                                    : tokens.textPrimary,
+                                decoration: step.done
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                            ),
+                            if (!step.done)
+                              Text(
+                                step.subtitle,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: tokens.textSecondary,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (!step.done)
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 18,
+                          color: tokens.textTertiary,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

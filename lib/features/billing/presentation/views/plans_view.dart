@@ -4,6 +4,7 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
+import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/core/widgets/app_card.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
@@ -124,7 +125,7 @@ class _PlansViewState extends ConsumerState<PlansView> {
       buildWhatsAppUri(
         support,
         'Hola! Soy ${profile?.fullName ?? ''} de ${tenant?.name ?? 'mi local'} '
-        '(allcommerce.app/s/${tenant?.slug ?? ''}) y quiero activar el plan '
+        '(${ShareService.linkBase}/s/${tenant?.slug ?? ''}) y quiero activar el plan '
         '${plan.name}$price.',
       ),
       mode: LaunchMode.externalApplication,

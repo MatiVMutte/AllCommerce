@@ -74,12 +74,25 @@ class AuthRepository {
         .eq('id', userId);
   }
 
+  Future<void> updateProfile({
+    required String userId,
+    required String fullName,
+    String? phone,
+  }) async {
+    await _client.from('users').update(<String, dynamic>{
+      'full_name': fullName,
+      'phone': phone,
+    }).eq('id', userId);
+  }
+
   Future<TenantModel> createTenant({
     required String slug,
     required String name,
     required String whatsapp,
     String? address,
     required String fullName,
+    double? lat,
+    double? lng,
   }) async {
     final Map<String, dynamic> row = await _client.rpc(
       'create_tenant',
@@ -89,6 +102,8 @@ class AuthRepository {
         'p_whatsapp': whatsapp,
         'p_address': address,
         'p_full_name': fullName,
+        'p_lat': lat,
+        'p_lng': lng,
       },
     );
     return TenantModel.fromJson(row);
