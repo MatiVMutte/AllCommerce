@@ -1,29 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Ícono AllGorithm Labs: cubo/hexágono azul con X interno y llaves { } -->
+<!-- Logo AllCommerce (by AllGorithm Labs): llaves { } navy + bolsa de compras azul + chispa IA -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Llave izquierda { -->
     <path
-        android:pathData="M54,32 L73,43 L73,65 L54,76 L35,65 L35,43 Z"
-        android:strokeColor="#1E88E5"
-        android:strokeWidth="4"
+        android:pathData="M29,36 C24,36 24,41 24,46 L24,50 C24,52.5 22,54 19.5,54 C22,54 24,55.5 24,58 L24,62 C24,67 24,72 29,72"
+        android:strokeColor="#142882"
+        android:strokeWidth="4.2"
         android:strokeLineJoin="round"
         android:strokeLineCap="round" />
+    <!-- Llave derecha } -->
     <path
-        android:pathData="M35,43 L54,54 M73,43 L54,54 M54,54 L73,65 M54,54 L35,65"
-        android:strokeColor="#1E88E5"
-        android:strokeWidth="4"
+        android:pathData="M79,36 C84,36 84,41 84,46 L84,50 C84,52.5 86,54 88.5,54 C86,54 84,55.5 84,58 L84,62 C84,67 84,72 79,72"
+        android:strokeColor="#142882"
+        android:strokeWidth="4.2"
+        android:strokeLineJoin="round"
         android:strokeLineCap="round" />
+    <!-- Manija de la bolsa -->
     <path
-        android:pathData="M27,37 C22,37 22,43 22,47 L22,50 C22,52 20,54 18,54 C20,54 22,56 22,58 L22,61 C22,65 22,71 27,71"
-        android:strokeColor="#1A237E"
-        android:strokeWidth="4"
+        android:pathData="M45.5,45 L45.5,40.5 A8.5,8.5 0 0,1 62.5,40.5 L62.5,45"
+        android:strokeColor="#0A68CC"
+        android:strokeWidth="4.2"
         android:strokeLineCap="round" />
+    <!-- Cuerpo de la bolsa -->
     <path
-        android:pathData="M81,37 C86,37 86,43 86,47 L86,50 C86,52 88,54 90,54 C88,54 86,56 86,58 L86,61 C86,65 86,71 81,71"
-        android:strokeColor="#1A237E"
-        android:strokeWidth="4"
+        android:pathData="M38,45 L70,45 L68,72 L40,72 Z"
+        android:strokeColor="#0A68CC"
+        android:strokeWidth="4.2"
+        android:strokeLineJoin="round"
         android:strokeLineCap="round" />
+    <!-- Chispa / estrella de IA dentro de la bolsa -->
+    <path
+        android:fillColor="#0A68CC"
+        android:pathData="M54,50.5 L56,56.5 L62,58.5 L56,60.5 L54,66.5 L52,60.5 L46,58.5 L52,56.5 Z" />
 </vector>

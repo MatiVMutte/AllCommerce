@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:all_commerce/core/constants/app_config.dart';
 import 'package:all_commerce/core/firebase/firebase_messaging_service.dart';
@@ -318,11 +319,84 @@ class _BrandLogoTile extends StatelessWidget {
           ),
         ],
       ),
-      child: Icon(
-        Icons.shopping_bag_rounded,
-        size: iconSize,
-        color: const Color(0xFF0052FF),
+      child: CustomPaint(
+        size: Size.square(size),
+        painter: const _AllCommerceGlyphPainter(),
       ),
     );
   }
+}
+
+class _AllCommerceGlyphPainter extends CustomPainter {
+  const _AllCommerceGlyphPainter();
+
+  @override
+  void paint(Canvas c, Size size) {
+    c.scale(size.width / 108, size.height / 108);
+    final Paint blueStroke = Paint()
+      ..color = const Color(0xFF0A68CC)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.4
+      ..strokeJoin = StrokeJoin.round
+      ..strokeCap = StrokeCap.round;
+    final Paint blueFill = Paint()
+      ..color = const Color(0xFF0A68CC)
+      ..style = PaintingStyle.fill;
+    final Paint navyStroke = Paint()
+      ..color = const Color(0xFF142882)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.4
+      ..strokeJoin = StrokeJoin.round
+      ..strokeCap = StrokeCap.round;
+
+    final Path leftBrace = Path()
+      ..moveTo(29, 36)
+      ..cubicTo(24, 36, 24, 41, 24, 46)
+      ..lineTo(24, 50)
+      ..cubicTo(24, 52.5, 22, 54, 19.5, 54)
+      ..cubicTo(22, 54, 24, 55.5, 24, 58)
+      ..lineTo(24, 62)
+      ..cubicTo(24, 67, 24, 72, 29, 72);
+    c.drawPath(leftBrace, navyStroke);
+
+    final Path rightBrace = Path()
+      ..moveTo(79, 36)
+      ..cubicTo(84, 36, 84, 41, 84, 46)
+      ..lineTo(84, 50)
+      ..cubicTo(84, 52.5, 86, 54, 88.5, 54)
+      ..cubicTo(86, 54, 84, 55.5, 84, 58)
+      ..lineTo(84, 62)
+      ..cubicTo(84, 67, 84, 72, 79, 72);
+    c.drawPath(rightBrace, navyStroke);
+
+    final Path handle = Path()
+      ..moveTo(45.5, 45)
+      ..lineTo(45.5, 40.5)
+      ..arcTo(const Rect.fromLTWH(45.5, 32, 17, 17), math.pi, math.pi, false)
+      ..lineTo(62.5, 45);
+    c.drawPath(handle, blueStroke);
+
+    final Path bag = Path()
+      ..moveTo(38, 45)
+      ..lineTo(70, 45)
+      ..lineTo(68, 72)
+      ..lineTo(40, 72)
+      ..close();
+    c.drawPath(bag, blueStroke);
+
+    final Path spark = Path()
+      ..moveTo(54, 50.5)
+      ..lineTo(56, 56.5)
+      ..lineTo(62, 58.5)
+      ..lineTo(56, 60.5)
+      ..lineTo(54, 66.5)
+      ..lineTo(52, 60.5)
+      ..lineTo(46, 58.5)
+      ..lineTo(52, 56.5)
+      ..close();
+    c.drawPath(spark, blueFill);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
