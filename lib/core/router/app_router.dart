@@ -47,7 +47,13 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
     final RouterRefreshNotifier refreshNotifier =
         RouterRefreshNotifier(ref.read(authRepositoryProvider));
     ref.onDispose(refreshNotifier.dispose);
+    ref.listen(sessionProvider, (_, _) {
+      refreshNotifier.refresh();
+    });
     ref.listen(currentProfileProvider, (_, _) {
+      refreshNotifier.refresh();
+    });
+    ref.listen(customerModeProvider, (_, _) {
       refreshNotifier.refresh();
     });
     return GoRouter(
@@ -284,7 +290,12 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>(
               (loc == '/' && !inCustomerMode)) {
             final String? returnTo =
                 ref.read(returnToProvider.notifier).consume();
-            return returnTo ?? '/owner';
+            if (returnTo != null &&
+                returnTo != '/' &&
+                returnTo != '/profile') {
+              return returnTo;
+            }
+            return '/owner';
           }
           return null;
         }

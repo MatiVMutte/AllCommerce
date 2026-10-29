@@ -33,9 +33,19 @@ class _LoginViewState extends ConsumerState<LoginView> {
     final bool ok = await ref
         .read(authControllerProvider.notifier)
         .signIn(email: _email.text.trim(), password: _password.text);
-    if (!ok && mounted) {
+    if (!mounted) return;
+    if (!ok) {
       final Object? error = ref.read(authControllerProvider).error;
       if (error != null) showErrorSnackBar(context, error);
+      return;
+    }
+    final profile = ref.read(currentProfileProvider).value;
+    if (profile == null) {
+      context.go('/select-role');
+    } else if (profile.isOwner) {
+      context.go('/owner');
+    } else {
+      context.go('/');
     }
   }
 

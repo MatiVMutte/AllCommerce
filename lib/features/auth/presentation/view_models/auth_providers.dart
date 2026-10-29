@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:all_commerce/core/router/customer_mode.dart';
 import 'package:all_commerce/core/supabase/supabase_client_provider.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
@@ -41,9 +42,12 @@ class AuthController extends Notifier<AsyncValue<void>> {
 
   Future<bool> signIn({required String email, required String password}) async {
     state = const AsyncLoading<void>();
-    final AsyncValue<void> result = await AsyncValue.guard(
-      () => _repository.signIn(email: email, password: password),
-    );
+    final AsyncValue<void> result = await AsyncValue.guard(() async {
+      await _repository.signIn(email: email, password: password);
+      ref.read(customerModeProvider.notifier).exitCustomerMode();
+      ref.invalidate(currentProfileProvider);
+      await ref.read(currentProfileProvider.future);
+    });
     state = result;
     return !result.hasError;
   }
@@ -114,6 +118,8 @@ class AuthController extends Notifier<AsyncValue<void>> {
   Future<void> signOut() async {
     state = const AsyncLoading<void>();
     state = await AsyncValue.guard(() => _repository.signOut());
+    ref.read(customerModeProvider.notifier).exitCustomerMode();
+    ref.invalidate(currentProfileProvider);
     // Drop tenant-scoped caches so the next session never sees stale data
     // (tenantByIdProvider/tenantBySlugProvider are kept alive for the whole
     // session and do not depend on auth state).
@@ -129,6 +135,7 @@ class AuthController extends Notifier<AsyncValue<void>> {
     );
     state = result;
     if (result.hasError) return false;
+    ref.read(customerModeProvider.notifier).exitCustomerMode();
     ref.invalidate(currentProfileProvider);
     ref.invalidate(tenantByIdProvider);
     ref.invalidate(tenantBySlugProvider);
