@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ícono AllGorithm Labs: cubo/hexágono azul con X interno y llaves { } -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M54,32 L73,43 L73,65 L54,76 L35,65 L35,43 Z"
+        android:strokeColor="#1E88E5"
+        android:strokeWidth="4"
+        android:strokeLineJoin="round"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M35,43 L54,54 M73,43 L54,54 M54,54 L73,65 M54,54 L35,65"
+        android:strokeColor="#1E88E5"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M27,37 C22,37 22,43 22,47 L22,50 C22,52 20,54 18,54 C20,54 22,56 22,58 L22,61 C22,65 22,71 27,71"
+        android:strokeColor="#1A237E"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M81,37 C86,37 86,43 86,47 L86,50 C86,52 88,54 90,54 C88,54 86,56 86,58 L86,61 C86,65 86,71 81,71"
+        android:strokeColor="#1A237E"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+</vector>
