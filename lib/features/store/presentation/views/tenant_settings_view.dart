@@ -116,6 +116,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     final LocationPickResult? result =
         await showModalBottomSheet<LocationPickResult>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (BuildContext context) => LocationPickerSheet(
