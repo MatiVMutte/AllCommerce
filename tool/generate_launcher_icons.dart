@@ -91,23 +91,27 @@ void paintAllCommerceGlyph(ui.Canvas c, double s) {
 
 Future<Uint8List> renderIcon(
   int size, {
-  required bool round,
+  bool round = false,
   double pad = 0,
+  double glyphScale = 1.15,
 }) async {
   final ui.PictureRecorder rec = ui.PictureRecorder();
   final ui.Canvas canvas = ui.Canvas(rec);
   final ui.Paint white = ui.Paint()..color = const ui.Color(0xFFFFFFFF);
-  if (round) {
-    canvas.drawCircle(ui.Offset(size / 2, size / 2), size / 2, white);
-  } else {
-    canvas.drawRect(
-      ui.Rect.fromLTWH(0, 0, size.toDouble(), size.toDouble()),
-      white,
-    );
-  }
-  final double glyph = size * (1 - pad * 2);
-  canvas.translate(size * pad, size * pad);
-  paintAllCommerceGlyph(canvas, glyph);
+  // Logo circular: esquinas transparentes y glifo dentro del círculo.
+  canvas.drawCircle(ui.Offset(size / 2, size / 2), size / 2, white);
+  canvas.save();
+  canvas.clipPath(
+    ui.Path()
+      ..addOval(ui.Rect.fromCircle(
+          center: ui.Offset(size / 2, size / 2), radius: size / 2)),
+  );
+  final double base = size * (1 - pad * 2);
+  canvas.translate(size / 2, size / 2);
+  canvas.scale(glyphScale);
+  canvas.translate(-base / 2, -base / 2);
+  paintAllCommerceGlyph(canvas, base);
+  canvas.restore();
   final ui.Image img = await rec.endRecording().toImage(size, size);
   final ByteData? data =
       await img.toByteData(format: ui.ImageByteFormat.png);
