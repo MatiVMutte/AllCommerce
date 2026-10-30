@@ -10,26 +10,27 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
-/// Dialog with the store's catalog QR: meant to be printed and
+/// Bottom sheet with the store's catalog QR: meant to be printed and
 /// stuck on the counter/window so walk-ins land on the catalog.
 ///
-/// Shown as a centered dialog (not a bottom sheet): on web/mobile-web the
-/// system nav bar and the browser toolbar can cover bottom-anchored UI —
-/// Flutter web does not read env(safe-area-inset-*), so no inset padding
-/// is reliable there. A centered dialog cannot be covered.
+/// `isScrollControlled: true` is required — without it the sheet is
+/// capped at ~half the screen and the tall QR content gets clipped.
 Future<void> showStoreQrSheet(BuildContext context, TenantModel tenant) {
-  return showDialog<void>(
+  return showModalBottomSheet<void>(
     context: context,
     useRootNavigator: true,
-    builder: (BuildContext dialogContext) =>
-        _StoreQrDialog(parentContext: context, tenant: tenant),
+    useSafeArea: true,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (BuildContext sheetContext) =>
+        _StoreQrSheet(parentContext: context, tenant: tenant),
   );
 }
 
-class _StoreQrDialog extends StatelessWidget {
-  const _StoreQrDialog({required this.parentContext, required this.tenant});
+class _StoreQrSheet extends StatelessWidget {
+  const _StoreQrSheet({required this.parentContext, required this.tenant});
 
-  /// The view's context — snackbars pop after the dialog is dismissed.
+  /// The view's context — snackbars pop after the sheet is dismissed.
   final BuildContext parentContext;
   final TenantModel tenant;
 
@@ -83,83 +84,83 @@ class _StoreQrDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    return Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  tenant.name,
-                  style: Theme.of(context).textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w700),
+    // viewPadding reports the system inset even if an ancestor consumed
+    // `padding` — keeps the buttons clear of the Android gesture/nav bar.
+    final double bottom = MediaQuery.viewPaddingOf(context).bottom;
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(24, 0, 24, 24 + bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                tenant.name,
+                style: Theme.of(context).textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Pegá este QR en el mostrador o la vidriera:\nquien lo escanea entra directo a tu catálogo.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: tokens.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: tokens.border),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Pegá este QR en el mostrador o la vidriera:\nquien lo escanea entra directo a tu catálogo.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: tokens.textSecondary),
+                child: QrImageView(
+                  data: _url,
+                  size: 220,
+                  backgroundColor: Colors.white,
                 ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: tokens.border),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _url,
+                style: TextStyle(fontSize: 12, color: tokens.textTertiary),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      icon: const Icon(Icons.download_outlined, size: 18),
+                      label: const Text('Descargar PNG'),
+                      onPressed: _downloadPng,
+                    ),
                   ),
-                  child: QrImageView(
-                    data: _url,
-                    size: 220,
-                    backgroundColor: Colors.white,
+                  const SizedBox(width: 10),
+                  IconButton(
+                    tooltip: 'Copiar link',
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: _url));
+                      if (parentContext.mounted) {
+                        showAppSnackBar(parentContext, 'Link copiado');
+                      }
+                    },
+                    icon: const Icon(Icons.copy_outlined),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _url,
-                  style: TextStyle(fontSize: 12, color: tokens.textTertiary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: FilledButton.tonalIcon(
-                        icon: const Icon(Icons.download_outlined, size: 18),
-                        label: const Text('Descargar PNG'),
-                        onPressed: _downloadPng,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    IconButton(
-                      tooltip: 'Copiar link',
-                      onPressed: () async {
-                        await Clipboard.setData(ClipboardData(text: _url));
-                        if (parentContext.mounted) {
-                          showAppSnackBar(parentContext, 'Link copiado');
-                        }
-                      },
-                      icon: const Icon(Icons.copy_outlined),
-                    ),
-                    IconButton(
-                      tooltip: 'Compartir',
-                      onPressed: () async {
-                        await const ShareService().shareLink(
-                          url: _url,
-                          text:
-                              'Mirá el catálogo de ${tenant.name}: precios actualizados y pedidos directo',
-                        );
-                      },
-                      icon: const Icon(Icons.ios_share_outlined),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  IconButton(
+                    tooltip: 'Compartir',
+                    onPressed: () async {
+                      await const ShareService().shareLink(
+                        url: _url,
+                        text:
+                            'Mirá el catálogo de ${tenant.name}: precios actualizados y pedidos directo',
+                      );
+                    },
+                    icon: const Icon(Icons.ios_share_outlined),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
