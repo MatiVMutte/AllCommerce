@@ -5,6 +5,10 @@ import 'package:latlong2/latlong.dart';
 /// One-shot user position used by "Locales cerca de vos". Returns null
 /// when the service is off or the user denies permission — callers treat
 /// that as "feature unavailable", never as an error.
+///
+/// Every platform call is wrapped in a timeout: on web/desktop a hung
+/// geolocation request (prompt ignored, no sensor) would otherwise keep
+/// the UI spinner alive forever.
 class UserLocationService {
   const UserLocationService();
 
@@ -12,21 +16,38 @@ class UserLocationService {
 
   Future<LatLng?> currentPosition() async {
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) return null;
+      final bool enabled = await Geolocator.isLocationServiceEnabled().timeout(
+        const Duration(seconds: 4),
+        onTimeout: () => false,
+      );
+      if (!enabled) return null;
+
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
+        permission = await Geolocator.requestPermission().timeout(
+          const Duration(seconds: 30),
+          onTimeout: () => LocationPermission.denied,
+        );
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         return null;
       }
+
+      // Fast path: a recent cached fix avoids the slow sensor lookup.
+      final Position? last = await Geolocator.getLastKnownPosition();
+      if (last != null &&
+          DateTime.now().difference(last.timestamp) <
+              const Duration(minutes: 5)) {
+        return LatLng(last.latitude, last.longitude);
+      }
+
       final Position pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,
           timeLimit: Duration(seconds: 8),
         ),
-      );
+      ).timeout(const Duration(seconds: 12));
       return LatLng(pos.latitude, pos.longitude);
     } catch (_) {
       return null;
