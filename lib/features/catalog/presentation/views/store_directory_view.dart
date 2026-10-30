@@ -950,7 +950,7 @@ class _StoreCard extends StatelessWidget {
                   if (distanceMeters != null)
                     Positioned(
                       bottom: 10,
-                      left: 12,
+                      right: 12,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
