@@ -1241,7 +1241,7 @@ class _QuickActionsCard extends StatelessWidget {
             if (context.mounted) showAppSnackBar(context, 'Link copiado');
           }),
           action(
-            Icons.travel_explore_rounded,
+            Icons.storefront_outlined,
             'Ver como\ncliente',
             () => context.push('/s/${tenant.slug}'),
           ),
