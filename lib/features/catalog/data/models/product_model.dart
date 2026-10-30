@@ -14,6 +14,8 @@ class ProductModel {
     this.wholesaleMinQty,
     this.sku,
     this.imageUrl,
+    this.imageUrls = const <String>[],
+    this.variants = const <String>[],
     this.stock = 0,
     this.trackStock = false,
     required this.isActive,
@@ -36,7 +38,15 @@ class ProductModel {
   final double? wholesalePrice;
   final int? wholesaleMinQty;
   final String? sku;
+
+  /// Main photo (first of the gallery). Kept for backwards compatibility.
   final String? imageUrl;
+
+  /// All photos, main first. Empty when the product has no image_urls yet.
+  final List<String> imageUrls;
+
+  /// Store-defined options ("S", "M", "L", "Rojo"...) the buyer picks one of.
+  final List<String> variants;
   final int stock;
   final bool trackStock;
   final bool isActive;
@@ -51,6 +61,13 @@ class ProductModel {
 
   bool get isOnSale =>
       compareAtPrice != null && compareAtPrice! > price && price > 0;
+
+  /// Photos to show in the detail gallery, main first.
+  List<String> get gallery => imageUrls.isNotEmpty
+      ? imageUrls
+      : (imageUrl == null ? const <String>[] : <String>[imageUrl!]);
+
+  bool get hasVariants => variants.isNotEmpty;
 
   bool get hasWholesale =>
       wholesalePrice != null && wholesaleMinQty != null && wholesaleMinQty! > 0;
@@ -107,6 +124,12 @@ class ProductModel {
       wholesaleMinQty: (json['wholesale_min_qty'] as num?)?.toInt(),
       sku: json['sku'] as String?,
       imageUrl: json['image_url'] as String?,
+      imageUrls: (json['image_urls'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<String>()
+          .toList(),
+      variants: (json['variants'] as List<dynamic>? ?? <dynamic>[])
+          .whereType<String>()
+          .toList(),
       stock: (json['stock'] as num?)?.toInt() ?? 0,
       trackStock: json['track_stock'] as bool? ?? false,
       isActive: json['is_active'] as bool,
@@ -129,6 +152,8 @@ class ProductModel {
       'wholesale_min_qty': wholesaleMinQty,
       'sku': sku,
       'image_url': imageUrl,
+      'image_urls': imageUrls,
+      'variants': variants,
       'stock': stock,
       'track_stock': trackStock,
       'is_active': isActive,
@@ -152,6 +177,8 @@ class ProductModel {
     bool clearWholesale = false,
     String? sku,
     String? imageUrl,
+    List<String>? imageUrls,
+    List<String>? variants,
     int? stock,
     bool? trackStock,
     bool? isActive,
@@ -177,6 +204,8 @@ class ProductModel {
           : (wholesaleMinQty ?? this.wholesaleMinQty),
       sku: sku ?? this.sku,
       imageUrl: imageUrl ?? this.imageUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
+      variants: variants ?? this.variants,
       stock: stock ?? this.stock,
       trackStock: trackStock ?? this.trackStock,
       isActive: isActive ?? this.isActive,

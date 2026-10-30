@@ -14,6 +14,7 @@ Future<void> addToCartWithConfirm(
   ProductModel product,
   TenantModel tenant, {
   int quantity = 1,
+  String? variant,
 }) async {
   if (product.isOutOfStock) {
     showAppSnackBar(context, 'Este producto está agotado', isError: true);
@@ -35,7 +36,12 @@ Future<void> addToCartWithConfirm(
       return;
     }
   }
-  final AddResult result = cart.add(product, tenant, quantity: quantity);
+  final AddResult result = cart.add(
+    product,
+    tenant,
+    quantity: quantity,
+    variant: variant,
+  );
   if (result == AddResult.added) {
     return;
   }
@@ -47,6 +53,6 @@ Future<void> addToCartWithConfirm(
     confirmLabel: 'Vaciar y agregar',
   );
   if (replace == true && context.mounted) {
-    cart.replaceWith(product, tenant, quantity: quantity);
+    cart.replaceWith(product, tenant, quantity: quantity, variant: variant);
   }
 }

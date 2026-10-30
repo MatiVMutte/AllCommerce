@@ -248,36 +248,108 @@ class _CircleButton extends StatelessWidget {
   }
 }
 
-class _ProductImage extends StatelessWidget {
+class _ProductImage extends StatefulWidget {
   const _ProductImage({required this.product, required this.tokens});
 
   final ProductModel product;
   final AppTokens tokens;
 
   @override
+  State<_ProductImage> createState() => _ProductImageState();
+}
+
+class _ProductImageState extends State<_ProductImage> {
+  int _page = 0;
+
+  Widget _fallback() {
+    return Container(
+      color: widget.tokens.surfaceMuted,
+      child: Icon(
+        Icons.image_not_supported_outlined,
+        size: 64,
+        color: widget.tokens.textTertiary,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final Widget child = product.imageUrl == null
-        ? Container(
-            color: tokens.surfaceMuted,
-            child: Icon(
-              Icons.image_not_supported_outlined,
-              size: 64,
-              color: tokens.textTertiary,
+    final List<String> urls = widget.product.gallery;
+    if (urls.isEmpty) {
+      return Hero(tag: 'product-${widget.product.id}', child: _fallback());
+    }
+    if (urls.length == 1) {
+      return Hero(
+        tag: 'product-${widget.product.id}',
+        child: AppNetworkImage(
+          imageUrl: urls.first,
+          placeholder: Container(color: widget.tokens.surfaceMuted),
+          errorBuilder: (_) => _fallback(),
+        ),
+      );
+    }
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        PageView.builder(
+          itemCount: urls.length,
+          onPageChanged: (int i) => setState(() => _page = i),
+          itemBuilder: (BuildContext context, int i) => AppNetworkImage(
+            imageUrl: urls[i],
+            placeholder: Container(color: widget.tokens.surfaceMuted),
+            errorBuilder: (_) => _fallback(),
+          ),
+        ),
+        Positioned(
+          bottom: 12,
+          left: 0,
+          right: 0,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              for (int i = 0; i < urls.length; i++)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: _page == i ? 18 : 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: _page == i
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Positioned(
+          top: 64,
+          right: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(999),
             ),
-          )
-        : AppNetworkImage(
-            imageUrl: product.imageUrl!,
-            placeholder: Container(color: tokens.surfaceMuted),
-            errorBuilder: (_) => Container(
-              color: tokens.surfaceMuted,
-              child: Icon(
-                Icons.image_not_supported_outlined,
-                size: 64,
-                color: tokens.textTertiary,
+            child: Text(
+              '${_page + 1}/${urls.length}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          );
-    return Hero(tag: 'product-${product.id}', child: child);
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -298,7 +370,16 @@ class _ProductPanel extends ConsumerStatefulWidget {
 
 class _ProductPanelState extends ConsumerState<_ProductPanel> {
   int _quantity = 1;
+  String? _variant;
   bool _justAdded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _variant = widget.product.variants.isEmpty
+        ? null
+        : widget.product.variants.first;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -407,6 +488,30 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                     ],
                   ),
                 ),
+              if (product.hasVariants) ...<Widget>[
+                const SizedBox(height: 14),
+                Text(
+                  'Elegí una opción',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: tokens.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    for (final String v in product.variants)
+                      ChoiceChip(
+                        label: Text(v),
+                        selected: _variant == v,
+                        onSelected: (_) => setState(() => _variant = v),
+                      ),
+                  ],
+                ),
+              ],
               if (product.isOutOfStock)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
@@ -509,6 +614,7 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                               product,
                               widget.tenant,
                               quantity: _quantity,
+                              variant: _variant,
                             );
                             if (!mounted) return;
                             final int after = ref
@@ -533,7 +639,7 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                           : _justAdded
                           ? '¡Agregado!'
                           : 'Agregar · '
-                                '${Formatters.price(product.price * _quantity)}',
+                                '${Formatters.price(product.unitPriceFor(_quantity) * _quantity)}',
                     ),
                   ),
                 ),

@@ -52,6 +52,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
   final TextEditingController _mercadoPagoLink = TextEditingController();
   final TextEditingController _openingHours = TextEditingController();
   bool _acceptsCash = true;
+  bool _acceptsCard = false;
   bool _isOpen = true;
   String _color = '#0052FF';
   double? _lat;
@@ -82,6 +83,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     _mercadoPagoLink.text = tenant.mercadoPagoLink ?? '';
     _openingHours.text = tenant.openingHours ?? '';
     _acceptsCash = tenant.acceptsCash;
+    _acceptsCard = tenant.acceptsCard;
     _isOpen = tenant.isOpen;
     _color = tenant.primaryColor;
     _lat = tenant.lat;
@@ -110,6 +112,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
         _mercadoPagoLink.text.trim() != (tenant.mercadoPagoLink ?? '') ||
         _openingHours.text.trim() != (tenant.openingHours ?? '') ||
         _acceptsCash != tenant.acceptsCash ||
+        _acceptsCard != tenant.acceptsCard ||
         _isOpen != tenant.isOpen ||
         _lat != tenant.lat ||
         _lng != tenant.lng ||
@@ -177,6 +180,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
               ? null
               : _mercadoPagoLink.text.trim(),
           acceptsCash: _acceptsCash,
+          acceptsCard: _acceptsCard,
           isOpen: _isOpen,
           openingHours: _openingHours.text.trim().isEmpty
               ? null
@@ -497,6 +501,22 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                             value: _acceptsCash,
                             onChanged: (bool value) =>
                                 setState(() => _acceptsCash = value),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              'Aceptar tarjetas (crédito/débito)',
+                              style: TextStyle(color: tokens.textSecondary),
+                            ),
+                          ),
+                          Switch(
+                            value: _acceptsCard,
+                            onChanged: (bool value) =>
+                                setState(() => _acceptsCard = value),
                           ),
                         ],
                       ),

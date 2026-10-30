@@ -17,6 +17,7 @@ class TenantModel {
     required this.primaryColor,
     this.transferAlias,
     this.mercadoPagoLink,
+    this.acceptsCard = false,
     this.acceptsCash = true,
     this.isOpen = true,
     this.openingHours,
@@ -43,6 +44,9 @@ class TenantModel {
   final String primaryColor;
   final String? transferAlias;
   final String? mercadoPagoLink;
+
+  /// Whether the store takes credit/debit cards (directory filter).
+  final bool acceptsCard;
   final bool acceptsCash;
   final bool isOpen;
   final String? openingHours;
@@ -68,6 +72,7 @@ class TenantModel {
       primaryColor: json['primary_color'] as String,
       transferAlias: json['transfer_alias'] as String?,
       mercadoPagoLink: json['mercado_pago_link'] as String?,
+      acceptsCard: json['accepts_card'] as bool? ?? false,
       acceptsCash: json['accepts_cash'] as bool? ?? true,
       isOpen: json['is_open'] as bool? ?? true,
       openingHours: json['opening_hours'] as String?,
@@ -97,6 +102,7 @@ class TenantModel {
       'primary_color': primaryColor,
       'transfer_alias': transferAlias,
       'mercado_pago_link': mercadoPagoLink,
+      'accepts_card': acceptsCard,
       'accepts_cash': acceptsCash,
       'is_open': isOpen,
       'opening_hours': openingHours,
@@ -143,6 +149,7 @@ class TenantModel {
     String? primaryColor,
     String? transferAlias,
     String? mercadoPagoLink,
+    bool? acceptsCard,
     bool? acceptsCash,
     bool? isOpen,
     String? openingHours,
@@ -167,6 +174,7 @@ class TenantModel {
       primaryColor: primaryColor ?? this.primaryColor,
       transferAlias: transferAlias ?? this.transferAlias,
       mercadoPagoLink: mercadoPagoLink ?? this.mercadoPagoLink,
+      acceptsCard: acceptsCard ?? this.acceptsCard,
       acceptsCash: acceptsCash ?? this.acceptsCash,
       isOpen: isOpen ?? this.isOpen,
       openingHours: openingHours ?? this.openingHours,

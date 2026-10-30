@@ -109,7 +109,7 @@ void main() {
     verifyNever(() => ai.analyze(any()));
   });
 
-  test('save runs create -> uploadImage -> setImageUrl in order', () async {
+  test('save runs create -> uploadImage -> setGallery in order', () async {
     when(() => images.pick(any()))
         .thenAnswer((_) async => PickedImage(bytes: bytes, name: 'a.jpg'));
     when(() => images.compress(any())).thenAnswer((_) async => bytes);
@@ -122,7 +122,7 @@ void main() {
         jpegBytes: any(named: 'jpegBytes'),
       ),
     ).thenAnswer((_) async => 'https://img');
-    when(() => products.setImageUrl(any(), any())).thenAnswer((_) async {});
+    when(() => products.setGallery(any(), any())).thenAnswer((_) async {});
 
     await controller().pickAndAnalyze(ImageSource.gallery);
     final ProductModel? result = await controller().save(input, 't1');
@@ -135,7 +135,7 @@ void main() {
         productId: any(named: 'productId'),
         jpegBytes: any(named: 'jpegBytes'),
       ),
-      () => products.setImageUrl(any(), any()),
+      () => products.setGallery('p1', <String>['https://img']),
     ]);
   });
 
@@ -173,7 +173,7 @@ void main() {
     );
   });
 
-  test('update with image runs update -> uploadImage -> setImageUrl', () async {
+  test('update with image runs update -> uploadImage -> setGallery', () async {
     when(() => images.pick(any()))
         .thenAnswer((_) async => PickedImage(bytes: bytes, name: 'a.jpg'));
     when(() => images.compress(any())).thenAnswer((_) async => bytes);
@@ -187,7 +187,7 @@ void main() {
         jpegBytes: any(named: 'jpegBytes'),
       ),
     ).thenAnswer((_) async => 'https://img');
-    when(() => products.setImageUrl(any(), any())).thenAnswer((_) async {});
+    when(() => products.setGallery(any(), any())).thenAnswer((_) async {});
 
     await controller().pickAndAnalyze(ImageSource.gallery);
     final ProductModel? result = await controller().update(product, input);
@@ -200,7 +200,7 @@ void main() {
         productId: any(named: 'productId'),
         jpegBytes: any(named: 'jpegBytes'),
       ),
-      () => products.setImageUrl(any(), any()),
+      () => products.setGallery('p1', <String>['https://img']),
     ]);
   });
 

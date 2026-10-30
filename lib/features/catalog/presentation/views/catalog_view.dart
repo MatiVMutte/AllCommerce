@@ -669,9 +669,11 @@ class _ProductCard extends ConsumerWidget {
     final AppTokens tokens = context.tokens;
     final CartState cart = ref.watch(cartProvider);
     int inCart = 0;
+    String? inCartLineKey;
     for (final item in cart.items) {
       if (cart.tenantId == tenant.id && item.productId == product.id) {
         inCart = item.quantity;
+        inCartLineKey = item.lineKey;
       }
     }
     return Column(
@@ -833,13 +835,20 @@ class _ProductCard extends ConsumerWidget {
                                         : null,
                                     onChanged: (int qty) => ref
                                         .read(cartProvider.notifier)
-                                        .setQuantity(product.id, qty),
+                                        .setQuantity(
+                                          inCartLineKey ?? product.id,
+                                          qty,
+                                        ),
                                   ),
                                 )
                               : _AddButton(
                                   key: const ValueKey<String>('add'),
                                   onTap: () {
                                     AppHaptics.light();
+                                    if (product.hasVariants) {
+                                      context.push('/s/$slug/p/${product.id}');
+                                      return;
+                                    }
                                     addToCartWithConfirm(
                                       context,
                                       ref,
@@ -996,7 +1005,9 @@ class _CartSidePanel extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
                                   Text(
-                                    item.title,
+                                    item.variant == null
+                                        ? item.title
+                                        : '${item.title} (${item.variant})',
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -1020,7 +1031,7 @@ class _CartSidePanel extends ConsumerWidget {
                               quantity: item.quantity,
                               onChanged: (int q) => ref
                                   .read(cartProvider.notifier)
-                                  .setQuantity(item.productId, q),
+                                  .setQuantity(item.lineKey, q),
                             ),
                           ],
                         ),

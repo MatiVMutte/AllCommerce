@@ -23,6 +23,7 @@ class ProductRepository {
           'wholesale_price': input.wholesalePrice,
           'wholesale_min_qty': input.wholesaleMinQty,
           'sku': input.sku,
+          'variants': input.variants,
           'stock': input.stock,
           'track_stock': input.trackStock,
           'is_active': true,
@@ -37,7 +38,10 @@ class ProductRepository {
     required String productId,
     required Uint8List jpegBytes,
   }) async {
-    final String path = '$tenantId/$productId.jpg';
+    // Unique path per upload: kept gallery URLs never get overwritten.
+    final String path =
+        '$tenantId/$productId-'
+        '${DateTime.now().microsecondsSinceEpoch}.jpg';
     await _client.storage
         .from('product-images')
         .uploadBinary(
@@ -48,11 +52,7 @@ class ProductRepository {
             upsert: true,
           ),
         );
-    // Same path on re-upload: version the URL so caches pick up the new image.
-    final String url = _client.storage
-        .from('product-images')
-        .getPublicUrl(path);
-    return '$url?v=${DateTime.now().millisecondsSinceEpoch}';
+    return _client.storage.from('product-images').getPublicUrl(path);
   }
 
   /// All products of the tenant, active or not, newest first.
@@ -93,6 +93,7 @@ class ProductRepository {
           'wholesale_price': input.wholesalePrice,
           'wholesale_min_qty': input.wholesaleMinQty,
           'sku': input.sku,
+          'variants': input.variants,
           'stock': input.stock,
           'track_stock': input.trackStock,
         })
@@ -135,9 +136,16 @@ class ProductRepository {
         .eq('id', productId)
         .eq('tenant_id', tenantId);
     try {
-      await _client.storage.from('product-images').remove(<String>[
-        '$tenantId/$productId.jpg',
-      ]);
+      final List<FileObject> files = await _client.storage
+          .from('product-images')
+          .list(path: tenantId);
+      final List<String> paths = files
+          .where((FileObject f) => f.name.startsWith(productId))
+          .map((FileObject f) => '$tenantId/${f.name}')
+          .toList();
+      if (paths.isNotEmpty) {
+        await _client.storage.from('product-images').remove(paths);
+      }
     } catch (_) {
       // Missing image is fine; storage errors are non-blocking.
     }
@@ -147,6 +155,17 @@ class ProductRepository {
     await _client
         .from('products')
         .update(<String, dynamic>{'image_url': url})
+        .eq('id', productId);
+  }
+
+  /// Persists the ordered gallery; the first URL is also the cover image.
+  Future<void> setGallery(String productId, List<String> urls) async {
+    await _client
+        .from('products')
+        .update(<String, dynamic>{
+          'image_url': urls.isEmpty ? null : urls.first,
+          'image_urls': urls,
+        })
         .eq('id', productId);
   }
 }

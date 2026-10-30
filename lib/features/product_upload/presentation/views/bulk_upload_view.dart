@@ -195,6 +195,7 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
   late final TextEditingController _sku;
   late final TextEditingController _stock;
   late final TextEditingController _tags;
+  late final TextEditingController _variants;
   late final TextEditingController _category;
 
   @override
@@ -217,6 +218,7 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
     _sku = TextEditingController(text: widget.draft.sku ?? '');
     _stock = TextEditingController(text: widget.draft.stock.toString());
     _tags = TextEditingController(text: widget.draft.tags.join(', '));
+    _variants = TextEditingController(text: widget.draft.variants.join(', '));
     _category = TextEditingController(
       text: ProductCategory.labelOf(widget.draft.category),
     );
@@ -233,6 +235,7 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
     _sku.dispose();
     _stock.dispose();
     _tags.dispose();
+    _variants.dispose();
     super.dispose();
   }
 
@@ -249,6 +252,7 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
     _sku.text = draft.sku ?? '';
     _stock.text = draft.stock.toString();
     _tags.text = draft.tags.join(', ');
+    _variants.text = draft.variants.join(', ');
     _category.text = ProductCategory.labelOf(draft.category);
   }
 
@@ -280,6 +284,11 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
             : ProductCategory.storedValue(_category.text),
         stock: stock ?? 0,
         tags: _tags.text
+            .split(',')
+            .map((String s) => s.trim())
+            .where((String s) => s.isNotEmpty)
+            .toList(),
+        variants: _variants.text
             .split(',')
             .map((String s) => s.trim())
             .where((String s) => s.isNotEmpty)
@@ -467,6 +476,12 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
               _Field(
                 label: 'SKU (opcional)',
                 controller: _sku,
+                onChanged: (_) => _commit(),
+              ),
+              const SizedBox(height: 12),
+              _Field(
+                label: 'Variantes, separadas por coma (opc)',
+                controller: _variants,
                 onChanged: (_) => _commit(),
               ),
             ],

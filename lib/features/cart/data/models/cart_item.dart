@@ -5,12 +5,17 @@ class CartItem {
     required this.price,
     this.wholesalePrice,
     this.wholesaleMinQty,
+    this.variant,
     this.imageUrl,
     this.quantity = 1,
   });
 
   final String productId;
   final String title;
+
+  /// Chosen variant ("M", "Rojo") — two lines with the same product but
+  /// different variants are separate cart entries.
+  final String? variant;
 
   /// Retail unit price snapshot.
   final double price;
@@ -20,6 +25,9 @@ class CartItem {
   final int? wholesaleMinQty;
   final String? imageUrl;
   final int quantity;
+
+  /// Unique key per line: same product can appear once per variant.
+  String get lineKey => '$productId|${variant ?? ''}';
 
   bool get hasWholesale => wholesalePrice != null && wholesaleMinQty != null;
 
@@ -50,6 +58,7 @@ class CartItem {
           ? null
           : num.tryParse(rawWholesale.toString())?.toDouble(),
       wholesaleMinQty: (json['wholesale_min_qty'] as num?)?.toInt(),
+      variant: json['variant'] as String?,
       imageUrl: json['image_url'] as String?,
       quantity: (json['quantity'] as num).toInt(),
     );
@@ -62,6 +71,7 @@ class CartItem {
       'price': price,
       'wholesale_price': wholesalePrice,
       'wholesale_min_qty': wholesaleMinQty,
+      'variant': variant,
       'image_url': imageUrl,
       'quantity': quantity,
     };
@@ -73,6 +83,7 @@ class CartItem {
     double? price,
     double? wholesalePrice,
     int? wholesaleMinQty,
+    String? variant,
     String? imageUrl,
     int? quantity,
   }) {
@@ -82,6 +93,7 @@ class CartItem {
       price: price ?? this.price,
       wholesalePrice: wholesalePrice ?? this.wholesalePrice,
       wholesaleMinQty: wholesaleMinQty ?? this.wholesaleMinQty,
+      variant: variant ?? this.variant,
       imageUrl: imageUrl ?? this.imageUrl,
       quantity: quantity ?? this.quantity,
     );

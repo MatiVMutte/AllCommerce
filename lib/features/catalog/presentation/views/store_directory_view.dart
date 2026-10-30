@@ -51,6 +51,7 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
   bool _animated = false;
   _DirectoryView _view = _DirectoryView.list;
   String? _zone;
+  bool _cardOnly = false;
   bool _nearby = false;
   bool _locating = false;
   LatLng? _userPos;
@@ -252,6 +253,13 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                               selected: _nearby,
                               onSelected: (_) => _toggleNearby(),
                             ),
+                      const SizedBox(width: 8),
+                      FilterChip(
+                        label: const Text('Tarjeta'),
+                        avatar: const Icon(Icons.credit_card_rounded, size: 16),
+                        selected: _cardOnly,
+                        onSelected: (bool v) => setState(() => _cardOnly = v),
+                      ),
                     ],
                   ),
                 ),
@@ -265,10 +273,12 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                     error: (Object error, StackTrace stack) =>
                         AppErrorState(onRetry: () => _refresh(ref)),
                     data: (List<TenantModel> list) {
-                      final List<TenantModel> filtered = filterTenants(
-                        list,
-                        search,
-                      );
+                      List<TenantModel> filtered = filterTenants(list, search);
+                      if (_cardOnly) {
+                        filtered = filtered
+                            .where((TenantModel t) => t.acceptsCard)
+                            .toList();
+                      }
                       final Set<String> favs = ref.watch(
                         favoriteStoresProvider,
                       );

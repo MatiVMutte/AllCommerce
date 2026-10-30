@@ -19,7 +19,9 @@ String buildOrderMessage({
     );
   for (final CartItem item in items) {
     buffer.writeln(
-      '• ${item.quantity} x ${item.title} — ${Formatters.price(item.lineTotal)}',
+      '• ${item.quantity} x ${item.title}'
+      '${item.variant != null ? ' (${item.variant})' : ''}'
+      ' — ${Formatters.price(item.lineTotal)}',
     );
   }
   buffer.writeln('Subtotal: ${Formatters.price(order.subtotal)}');

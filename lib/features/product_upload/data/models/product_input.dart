@@ -9,6 +9,7 @@ class ProductInput {
     this.wholesalePrice,
     this.wholesaleMinQty,
     this.sku,
+    this.variants = const <String>[],
     this.stock = 0,
     this.trackStock = false,
   });
@@ -24,6 +25,9 @@ class ProductInput {
   final double? wholesalePrice;
   final int? wholesaleMinQty;
   final String? sku;
+
+  /// Store-defined options the buyer picks one of ("S", "M", "L", "Rojo").
+  final List<String> variants;
   final int stock;
   final bool trackStock;
 }

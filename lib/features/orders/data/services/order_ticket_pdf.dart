@@ -139,7 +139,11 @@ Future<Uint8List> buildOrderTicketPdf({
                     ),
                     children: <pw.Widget>[
                       _cell('${item.quantity}x'),
-                      _cell(item.titleSnapshot),
+                      _cell(
+                        item.variant == null
+                            ? item.titleSnapshot
+                            : '${item.titleSnapshot} (${item.variant})',
+                      ),
                       _cell(Formatters.price(item.unitPrice), alignEnd: true),
                       _cell(Formatters.price(item.lineTotal), alignEnd: true),
                     ],

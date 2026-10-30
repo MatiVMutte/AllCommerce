@@ -57,6 +57,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
   final TextEditingController _wholesalePrice = TextEditingController();
   final TextEditingController _wholesaleMinQty = TextEditingController();
   final TextEditingController _tags = TextEditingController();
+  final TextEditingController _variants = TextEditingController();
   final TextEditingController _sku = TextEditingController();
   final TextEditingController _stock = TextEditingController(text: '0');
   bool _trackStock = false;
@@ -89,6 +90,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
         _wholesaleMinQty.text = existing.wholesaleMinQty.toString();
       }
       _tags.text = existing.tags.join(', ');
+      _variants.text = existing.variants.join(', ');
       _sku.text = existing.sku ?? '';
       _stock.text = existing.stock.toString();
       _trackStock = existing.trackStock;
@@ -106,6 +108,15 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
     ]) {
       c.addListener(() => setState(() {}));
     }
+    if (existing != null && existing.gallery.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref
+              .read(productUploadControllerProvider.notifier)
+              .initGallery(existing.gallery);
+        }
+      });
+    }
   }
 
   @override
@@ -117,6 +128,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
     _wholesalePrice.dispose();
     _wholesaleMinQty.dispose();
     _tags.dispose();
+    _variants.dispose();
     _sku.dispose();
     _stock.dispose();
     _category.dispose();
@@ -230,6 +242,11 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       compareAtPrice: compareAt,
       wholesalePrice: wholesalePrice,
       wholesaleMinQty: wholesaleMinQty,
+      variants: _variants.text
+          .split(',')
+          .map((String v) => v.trim())
+          .where((String v) => v.isNotEmpty)
+          .toList(),
       sku: sku.isEmpty ? null : sku,
       stock: _trackStock ? (int.tryParse(_stock.text.trim()) ?? 0) : 0,
       trackStock: _trackStock,
@@ -400,7 +417,6 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                       const SizedBox(height: 8),
                       _ImageSection(
                         state: state,
-                        existingImageUrl: widget.existing?.imageUrl,
                         onPick: (ImageSource source) {
                           final AiUsage? usage = ref
                               .read(aiUsageProvider)
@@ -413,7 +429,30 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                               .read(productUploadControllerProvider.notifier)
                               .pickAndAnalyze(source);
                         },
+                        onPickExtra: (ImageSource source) => ref
+                            .read(productUploadControllerProvider.notifier)
+                            .pickExtra(source),
+                        onRemoveExtra: (int i) => ref
+                            .read(productUploadControllerProvider.notifier)
+                            .removeExtra(i),
+                        onRemoveKept: (String url) => ref
+                            .read(productUploadControllerProvider.notifier)
+                            .removeKept(url),
                       ),
+                      if (state.photoCount > 0 ||
+                          state.keptImageUrls.isNotEmpty)
+                        _GalleryStrip(
+                          state: state,
+                          onPickExtra: (ImageSource source) => ref
+                              .read(productUploadControllerProvider.notifier)
+                              .pickExtra(source),
+                          onRemoveExtra: (int i) => ref
+                              .read(productUploadControllerProvider.notifier)
+                              .removeExtra(i),
+                          onRemoveKept: (String url) => ref
+                              .read(productUploadControllerProvider.notifier)
+                              .removeKept(url),
+                        ),
                       const _AiUsageLine(),
                       const SizedBox(height: 20),
                       const _Section('DATOS'),
@@ -664,6 +703,15 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                             suffixIcon: _aiBadge(_sku),
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _variants,
+                          decoration: const InputDecoration(
+                            labelText: 'Variantes (opcional)',
+                            hintText: 'S, M, L, XL o Rojo, Negro',
+                            helperText: 'Separá con comas — el cliente elige una al comprar',
+                          ),
+                        ),
                       ],
                       const SizedBox(height: 24),
                     ],
@@ -784,18 +832,25 @@ class _ImageSection extends StatelessWidget {
   const _ImageSection({
     required this.state,
     required this.onPick,
-    this.existingImageUrl,
+    required this.onPickExtra,
+    required this.onRemoveExtra,
+    required this.onRemoveKept,
   });
 
   final ProductUploadState state;
   final void Function(ImageSource source) onPick;
-  final String? existingImageUrl;
+  final void Function(ImageSource source) onPickExtra;
+  final void Function(int index) onRemoveExtra;
+  final void Function(String url) onRemoveKept;
 
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     final Uint8List? bytes = state.imageBytes;
-    final bool hasImage = bytes != null || existingImageUrl != null;
+    final String? coverUrl = bytes == null && state.keptImageUrls.isNotEmpty
+        ? state.keptImageUrls.first
+        : null;
+    final bool hasImage = bytes != null || coverUrl != null;
 
     if (!hasImage) {
       return Column(
@@ -857,7 +912,7 @@ class _ImageSection extends StatelessWidget {
               Image.memory(bytes, fit: BoxFit.cover)
             else
               AppNetworkImage(
-                imageUrl: existingImageUrl!,
+                imageUrl: coverUrl!,
                 placeholder: Container(color: tokens.surfaceMuted),
                 errorBuilder: (_) => Container(
                   color: tokens.surfaceMuted,
@@ -924,6 +979,124 @@ class _ImageSection extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Thumbnails of every photo in the final gallery order (kept then new
+/// extras), each with a remove button, plus a "+" tile up to the cap.
+class _GalleryStrip extends StatelessWidget {
+  const _GalleryStrip({
+    required this.state,
+    required this.onPickExtra,
+    required this.onRemoveExtra,
+    required this.onRemoveKept,
+  });
+
+  final ProductUploadState state;
+  final void Function(ImageSource source) onPickExtra;
+  final void Function(int index) onRemoveExtra;
+  final void Function(String url) onRemoveKept;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    // Skip the first kept URL from the strip when it IS the cover shown
+    // above (no freshly picked main photo).
+    final int keptOffset = state.imageBytes == null ? 1 : 0;
+    final List<Widget> tiles = <Widget>[
+      for (int i = keptOffset; i < state.keptImageUrls.length; i++)
+        _Thumb(
+          child: AppNetworkImage(
+            imageUrl: state.keptImageUrls[i],
+            errorBuilder: (_) => Container(
+              color: context.tokens.surfaceMuted,
+              child: const Icon(Icons.broken_image_outlined, size: 20),
+            ),
+          ),
+          onRemove: () => onRemoveKept(state.keptImageUrls[i]),
+        ),
+      for (int i = 0; i < state.extraImageBytes.length; i++)
+        _Thumb(
+          child: Image.memory(state.extraImageBytes[i], fit: BoxFit.cover),
+          onRemove: () => onRemoveExtra(i),
+        ),
+      if (state.photoCount < ProductUploadState.maxPhotos)
+        InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => onPickExtra(ImageSource.gallery),
+          child: Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              color: tokens.surfaceMuted,
+              border: Border.all(color: tokens.border),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              Icons.add_photo_alternate_outlined,
+              color: tokens.textSecondary,
+            ),
+          ),
+        ),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 76,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: <Widget>[
+              for (final Widget t in tiles)
+                Padding(padding: const EdgeInsets.only(right: 8), child: t),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Podés agregar hasta ${ProductUploadState.maxPhotos} fotos',
+          style: TextStyle(fontSize: 12, color: tokens.textTertiary),
+        ),
+      ],
+    );
+  }
+}
+
+class _Thumb extends StatelessWidget {
+  const _Thumb({required this.child, required this.onRemove});
+
+  final Widget child;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 76,
+      height: 76,
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          ClipRRect(borderRadius: BorderRadius.circular(14), child: child),
+          Positioned(
+            right: 2,
+            top: 2,
+            child: InkWell(
+              onTap: onRemove,
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, size: 14, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

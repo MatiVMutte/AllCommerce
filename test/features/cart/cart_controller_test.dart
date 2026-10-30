@@ -105,8 +105,59 @@ void main() {
     final CartController cart = container.read(cartProvider.notifier);
 
     cart.add(_product('p1'), _tenant());
-    cart.setQuantity('p1', 0);
+    cart.setQuantity('p1|', 0);
     expect(container.read(cartProvider).isEmpty, isTrue);
+  });
+
+  test('same product with different variants lands as separate lines', () {
+    final ProviderContainer container = makeContainer();
+    addTearDown(container.dispose);
+    final CartController cart = container.read(cartProvider.notifier);
+    final TenantModel tenant = _tenant();
+
+    cart.add(_product('p1'), tenant, variant: 'S');
+    cart.add(_product('p1'), tenant, variant: 'M');
+    cart.add(_product('p1'), tenant, variant: 'S', quantity: 2);
+
+    final CartState state = container.read(cartProvider);
+    expect(state.items, hasLength(2));
+    expect(state.items.firstWhere((i) => i.variant == 'S').quantity, 3);
+    expect(state.items.firstWhere((i) => i.variant == 'M').quantity, 1);
+  });
+
+  test('setQuantity/remove only touch the matching variant line', () {
+    final ProviderContainer container = makeContainer();
+    addTearDown(container.dispose);
+    final CartController cart = container.read(cartProvider.notifier);
+    final TenantModel tenant = _tenant();
+
+    cart.add(_product('p1'), tenant, variant: 'S');
+    cart.add(_product('p1'), tenant, variant: 'M');
+
+    cart.setQuantity('p1|M', 5);
+    CartState state = container.read(cartProvider);
+    expect(state.items.firstWhere((i) => i.variant == 'S').quantity, 1);
+    expect(state.items.firstWhere((i) => i.variant == 'M').quantity, 5);
+
+    cart.remove('p1|S');
+    state = container.read(cartProvider);
+    expect(state.items, hasLength(1));
+    expect(state.items.single.variant, 'M');
+  });
+
+  test('variant persists across containers sharing prefs', () async {
+    final ProviderContainer container = makeContainer();
+    container
+        .read(cartProvider.notifier)
+        .add(_product('p1'), _tenant(), variant: 'Rojo');
+    container.dispose();
+
+    await Future<void>.delayed(Duration.zero);
+
+    final ProviderContainer container2 = makeContainer();
+    addTearDown(container2.dispose);
+    final CartState restored = container2.read(cartProvider);
+    expect(restored.items.single.variant, 'Rojo');
   });
 
   test('cart persists across containers sharing prefs', () async {

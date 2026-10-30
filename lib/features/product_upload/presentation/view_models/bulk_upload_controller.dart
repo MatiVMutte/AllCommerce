@@ -201,6 +201,7 @@ class BulkUploadController extends Notifier<BulkUploadState> {
           wholesalePrice: hasWholesale ? draft.wholesalePrice : null,
           wholesaleMinQty: hasWholesale ? draft.wholesaleMinQty : null,
           sku: draft.sku?.trim(),
+          variants: draft.variants,
           stock: draft.stock,
           trackStock: draft.stock > 0,
         );

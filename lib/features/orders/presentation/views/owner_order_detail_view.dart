@@ -284,7 +284,10 @@ class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
                                 Text(
-                                  item.titleSnapshot,
+                                  item.variant == null
+                                      ? item.titleSnapshot
+                                      : '${item.titleSnapshot} '
+                                            '(${item.variant})',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     color: tokens.textPrimary,

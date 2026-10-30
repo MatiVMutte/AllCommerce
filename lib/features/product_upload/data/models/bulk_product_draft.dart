@@ -14,6 +14,7 @@ class BulkProductDraft {
     this.compareAtPrice,
     this.wholesalePrice,
     this.wholesaleMinQty,
+    this.variants = const <String>[],
     this.stock = 0,
     required this.imageBytes,
     required this.fileName,
@@ -34,6 +35,7 @@ class BulkProductDraft {
   final double? compareAtPrice;
   final double? wholesalePrice;
   final int? wholesaleMinQty;
+  final List<String> variants;
   final int stock;
   final Uint8List imageBytes;
   final String fileName;
@@ -53,6 +55,7 @@ class BulkProductDraft {
     double? compareAtPrice,
     double? wholesalePrice,
     int? wholesaleMinQty,
+    List<String>? variants,
     int? stock,
     Uint8List? imageBytes,
     String? fileName,
@@ -73,6 +76,7 @@ class BulkProductDraft {
       compareAtPrice: compareAtPrice ?? this.compareAtPrice,
       wholesalePrice: wholesalePrice ?? this.wholesalePrice,
       wholesaleMinQty: wholesaleMinQty ?? this.wholesaleMinQty,
+      variants: variants ?? this.variants,
       stock: stock ?? this.stock,
       imageBytes: imageBytes ?? this.imageBytes,
       fileName: fileName ?? this.fileName,

@@ -688,10 +688,9 @@ class _CartTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens tokens = context.tokens;
     return Dismissible(
-      key: ValueKey<String>(item.productId),
+      key: ValueKey<String>(item.lineKey),
       direction: DismissDirection.endToStart,
-      onDismissed: (_) =>
-          ref.read(cartProvider.notifier).remove(item.productId),
+      onDismissed: (_) => ref.read(cartProvider.notifier).remove(item.lineKey),
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
@@ -738,7 +737,9 @@ class _CartTile extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    item.title,
+                    item.variant == null
+                        ? item.title
+                        : '${item.title} (${item.variant})',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -781,7 +782,7 @@ class _CartTile extends ConsumerWidget {
                   quantity: item.quantity,
                   onChanged: (int qty) => ref
                       .read(cartProvider.notifier)
-                      .setQuantity(item.productId, qty),
+                      .setQuantity(item.lineKey, qty),
                 ),
                 const SizedBox(height: 4),
                 Text(

@@ -26,14 +26,19 @@ class CartController extends Notifier<CartState> {
 
   /// Adds [quantity] of [product]. Returns [AddResult.differentStore]
   /// without modifying state when the cart belongs to another tenant.
-  AddResult add(ProductModel product, TenantModel tenant, {int quantity = 1}) {
+  /// Same product with a different [variant] lands as a separate line.
+  AddResult add(
+    ProductModel product,
+    TenantModel tenant, {
+    int quantity = 1,
+    String? variant,
+  }) {
     if (state.tenantId != null && state.tenantId != tenant.id) {
       return AddResult.differentStore;
     }
+    final String lineKey = '${product.id}|${variant ?? ''}';
     final List<CartItem> items = List<CartItem>.of(state.items);
-    final int index = items.indexWhere(
-      (CartItem i) => i.productId == product.id,
-    );
+    final int index = items.indexWhere((CartItem i) => i.lineKey == lineKey);
     if (index >= 0) {
       items[index] = items[index].copyWith(
         quantity: items[index].quantity + quantity,
@@ -46,6 +51,7 @@ class CartController extends Notifier<CartState> {
           price: product.price,
           wholesalePrice: product.wholesalePrice,
           wholesaleMinQty: product.wholesaleMinQty,
+          variant: variant,
           imageUrl: product.imageUrl,
           quantity: quantity,
         ),
@@ -65,6 +71,7 @@ class CartController extends Notifier<CartState> {
     ProductModel product,
     TenantModel tenant, {
     int quantity = 1,
+    String? variant,
   }) {
     state = CartState(
       tenantId: tenant.id,
@@ -76,6 +83,7 @@ class CartController extends Notifier<CartState> {
           price: product.price,
           wholesalePrice: product.wholesalePrice,
           wholesaleMinQty: product.wholesaleMinQty,
+          variant: variant,
           imageUrl: product.imageUrl,
           quantity: quantity,
         ),
@@ -84,25 +92,26 @@ class CartController extends Notifier<CartState> {
     _persist();
   }
 
-  void setQuantity(String productId, int quantity) {
+  /// Lines are addressed by [CartItem.lineKey] (product + variant).
+  void setQuantity(String lineKey, int quantity) {
     if (quantity <= 0) {
-      remove(productId);
+      remove(lineKey);
       return;
     }
     state = state.copyWith(
       items: state.items
           .map(
             (CartItem i) =>
-                i.productId == productId ? i.copyWith(quantity: quantity) : i,
+                i.lineKey == lineKey ? i.copyWith(quantity: quantity) : i,
           )
           .toList(),
     );
     _persist();
   }
 
-  void remove(String productId) {
+  void remove(String lineKey) {
     final List<CartItem> items = state.items
-        .where((CartItem i) => i.productId != productId)
+        .where((CartItem i) => i.lineKey != lineKey)
         .toList();
     state = items.isEmpty ? const CartState() : state.copyWith(items: items);
     _persist();

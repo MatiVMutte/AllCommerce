@@ -39,6 +39,7 @@ class OrderRepository {
               (CartItem i) => <String, dynamic>{
                 'product_id': i.productId,
                 'quantity': i.quantity,
+                'variant': i.variant,
               },
             )
             .toList(),

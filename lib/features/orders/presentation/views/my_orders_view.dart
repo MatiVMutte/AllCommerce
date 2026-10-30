@@ -148,7 +148,7 @@ class _MyOrderTile extends ConsumerWidget {
         }
         int qty = item.quantity;
         if (p.trackStock && qty > p.stock) qty = p.stock;
-        cart.add(p, tenant, quantity: qty);
+        cart.add(p, tenant, quantity: qty, variant: item.variant);
         added++;
       }
       if (!context.mounted) return;
@@ -249,7 +249,8 @@ class _MyOrderTile extends ConsumerWidget {
                           children: <Widget>[
                             Expanded(
                               child: Text(
-                                '${item.quantity} x ${item.titleSnapshot}',
+                                '${item.quantity} x ${item.titleSnapshot}'
+                                '${item.variant == null ? '' : ' (${item.variant})'}',
                               ),
                             ),
                             Text(Formatters.price(item.lineTotal)),

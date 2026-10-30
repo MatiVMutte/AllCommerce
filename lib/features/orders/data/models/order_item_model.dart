@@ -6,6 +6,7 @@ class OrderItemModel {
     required this.titleSnapshot,
     required this.unitPrice,
     required this.quantity,
+    this.variant,
   });
 
   final String id;
@@ -17,6 +18,9 @@ class OrderItemModel {
   final double unitPrice;
   final int quantity;
 
+  /// Variant the customer picked ("M", "Rojo"), if the product has them.
+  final String? variant;
+
   double get lineTotal => unitPrice * quantity;
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
@@ -27,6 +31,7 @@ class OrderItemModel {
       titleSnapshot: json['title_snapshot'] as String,
       unitPrice: num.parse(json['unit_price'].toString()).toDouble(),
       quantity: (json['quantity'] as num).toInt(),
+      variant: json['variant'] as String?,
     );
   }
 }
