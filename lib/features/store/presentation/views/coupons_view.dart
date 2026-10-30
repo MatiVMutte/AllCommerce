@@ -60,22 +60,21 @@ class CouponsView extends ConsumerWidget {
               children: <Widget>[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          'Creá códigos de descuento para tus clientes. '
-                          'Los aplican al confirmar el pedido.',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: tokens.textSecondary,
-                          ),
+                      Text(
+                        'Creá códigos de descuento para tus clientes. '
+                        'Los aplican al confirmar el pedido.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: tokens.textSecondary,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(height: 12),
                       FilledButton.icon(
                         icon: const Icon(Icons.add, size: 18),
-                        label: const Text('Nuevo'),
+                        label: const Text('Nuevo cupón'),
                         onPressed: () =>
                             _showCreateSheet(context, ref, tenantId),
                       ),
