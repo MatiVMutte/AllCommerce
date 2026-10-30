@@ -22,6 +22,7 @@ import 'package:all_commerce/features/catalog/presentation/view_models/favorites
 import 'package:all_commerce/features/orders/data/services/whatsapp_message_builder.dart';
 import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
+import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/utils/app_motion.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
@@ -61,17 +62,20 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
     LatLng? pos = _userPos;
     if (pos == null) {
       setState(() => _locating = true);
-      pos = await const UserLocationService().currentPosition();
+      final UserLocationResult result = await const UserLocationService()
+          .locate();
       if (!mounted) return;
       setState(() => _locating = false);
+      pos = result.position;
       if (pos == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'No pudimos obtener tu ubicación. Activá el GPS '
-              'o permití el acceso a la ubicación.',
-            ),
-          ),
+        showAppSnackBar(
+          context,
+          result.permissionBlockedForever
+              ? 'La ubicación está bloqueada para este sitio. Habilitála '
+                    'desde el ícono del candado en la barra del navegador.'
+              : 'No pudimos obtener tu ubicación. Aceptá el permiso que '
+                    'aparece arriba, junto a la barra de direcciones.',
+          isError: true,
         );
         return;
       }

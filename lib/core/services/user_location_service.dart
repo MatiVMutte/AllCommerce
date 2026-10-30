@@ -2,9 +2,21 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
-/// One-shot user position used by "Locales cerca de vos". Returns null
-/// when the service is off or the user denies permission — callers treat
-/// that as "feature unavailable", never as an error.
+/// Outcome of a locate attempt so the UI can explain what to do next.
+final class UserLocationResult {
+  const UserLocationResult({
+    this.position,
+    this.permissionBlockedForever = false,
+  });
+
+  final LatLng? position;
+
+  /// True when the browser/OS has the site permission hard-blocked —
+  /// the only fix is the user re-enabling it from the address-bar icon.
+  final bool permissionBlockedForever;
+}
+
+/// One-shot user position used by "Locales cerca de vos".
 ///
 /// Every platform call is wrapped in a timeout: on web/desktop a hung
 /// geolocation request (prompt ignored, no sensor) would otherwise keep
@@ -14,13 +26,13 @@ class UserLocationService {
 
   static const Distance _distance = Distance();
 
-  Future<LatLng?> currentPosition() async {
+  Future<UserLocationResult> locate() async {
     try {
       final bool enabled = await Geolocator.isLocationServiceEnabled().timeout(
         const Duration(seconds: 4),
         onTimeout: () => false,
       );
-      if (!enabled) return null;
+      if (!enabled) return const UserLocationResult();
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -29,9 +41,11 @@ class UserLocationService {
           onTimeout: () => LocationPermission.denied,
         );
       }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        return null;
+      if (permission == LocationPermission.deniedForever) {
+        return const UserLocationResult(permissionBlockedForever: true);
+      }
+      if (permission == LocationPermission.denied) {
+        return const UserLocationResult();
       }
 
       // Fast path: a recent cached fix avoids the slow sensor lookup.
@@ -42,7 +56,9 @@ class UserLocationService {
         if (last != null &&
             DateTime.now().difference(last.timestamp) <
                 const Duration(minutes: 5)) {
-          return LatLng(last.latitude, last.longitude);
+          return UserLocationResult(
+            position: LatLng(last.latitude, last.longitude),
+          );
         }
       } catch (_) {}
 
@@ -52,9 +68,9 @@ class UserLocationService {
           timeLimit: Duration(seconds: 8),
         ),
       ).timeout(const Duration(seconds: 12));
-      return LatLng(pos.latitude, pos.longitude);
+      return UserLocationResult(position: LatLng(pos.latitude, pos.longitude));
     } catch (_) {
-      return null;
+      return const UserLocationResult();
     }
   }
 
