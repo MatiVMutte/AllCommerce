@@ -35,12 +35,16 @@ class UserLocationService {
       }
 
       // Fast path: a recent cached fix avoids the slow sensor lookup.
-      final Position? last = await Geolocator.getLastKnownPosition();
-      if (last != null &&
-          DateTime.now().difference(last.timestamp) <
-              const Duration(minutes: 5)) {
-        return LatLng(last.latitude, last.longitude);
-      }
+      // Not all platforms implement it (web throws) — failure just
+      // falls through to the live lookup below.
+      try {
+        final Position? last = await Geolocator.getLastKnownPosition();
+        if (last != null &&
+            DateTime.now().difference(last.timestamp) <
+                const Duration(minutes: 5)) {
+          return LatLng(last.latitude, last.longitude);
+        }
+      } catch (_) {}
 
       final Position pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
