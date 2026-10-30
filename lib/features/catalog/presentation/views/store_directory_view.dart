@@ -103,6 +103,7 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
     await showModalBottomSheet<void>(
       context: context,
       useRootNavigator: true,
+      useSafeArea: true,
       showDragHandle: true,
       builder: (BuildContext sheetContext) {
         return StatefulBuilder(

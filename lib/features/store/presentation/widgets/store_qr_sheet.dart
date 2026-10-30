@@ -80,9 +80,12 @@ class _StoreQrSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
+    // viewPadding reports the system inset even if an ancestor consumed
+    // `padding` — keeps the buttons clear of the Android gesture/nav bar.
+    final double bottom = MediaQuery.viewPaddingOf(context).bottom;
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        padding: EdgeInsets.fromLTRB(24, 0, 24, 24 + bottom),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
