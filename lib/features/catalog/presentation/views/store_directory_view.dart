@@ -95,6 +95,92 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
     setState(() => _nearby = true);
   }
 
+  int get _activeFilterCount => (_nearby ? 1 : 0) + (_cardOnly ? 1 : 0);
+
+  /// Filters live in a sheet: keeps the toolbar to Lista/Mapa + one pill,
+  /// and leaves room for future filters (open now, delivery...).
+  Future<void> _openFilters() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      showDragHandle: true,
+      builder: (BuildContext sheetContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setSheetState) {
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 12, 4),
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            'Filtros',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        if (_activeFilterCount > 0)
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _nearby = false;
+                                _cardOnly = false;
+                              });
+                              setSheetState(() {});
+                            },
+                            child: const Text('Limpiar'),
+                          ),
+                      ],
+                    ),
+                  ),
+                  SwitchListTile.adaptive(
+                    secondary: const Icon(Icons.near_me_rounded),
+                    title: const Text('Cerca de vos'),
+                    subtitle: const Text('Ordena los locales por distancia'),
+                    value: _nearby,
+                    onChanged: _locating
+                        ? null
+                        : (_) async {
+                            setSheetState(() {});
+                            await _toggleNearby();
+                            if (!context.mounted) return;
+                            setSheetState(() {});
+                            if (!_nearby &&
+                                _userPos == null &&
+                                sheetContext.mounted) {
+                              // Location failed: close so the snackbar shows.
+                              Navigator.of(sheetContext).pop();
+                            }
+                          },
+                  ),
+                  if (_locating)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: LinearProgressIndicator(minHeight: 2),
+                    ),
+                  SwitchListTile.adaptive(
+                    secondary: const Icon(Icons.credit_card_rounded),
+                    title: const Text('Solo locales que aceptan tarjeta'),
+                    value: _cardOnly,
+                    onChanged: (bool v) {
+                      setState(() => _cardOnly = v);
+                      setSheetState(() {});
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -233,32 +319,9 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      _locating
-                          ? const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 10),
-                              child: SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                            )
-                          : FilterChip(
-                              label: const Text('Cerca de vos'),
-                              avatar: const Icon(
-                                Icons.near_me_rounded,
-                                size: 16,
-                              ),
-                              selected: _nearby,
-                              onSelected: (_) => _toggleNearby(),
-                            ),
-                      const SizedBox(width: 8),
-                      FilterChip(
-                        label: const Text('Tarjeta'),
-                        avatar: const Icon(Icons.credit_card_rounded, size: 16),
-                        selected: _cardOnly,
-                        onSelected: (bool v) => setState(() => _cardOnly = v),
+                      _FiltersPill(
+                        activeCount: _activeFilterCount,
+                        onTap: _openFilters,
                       ),
                     ],
                   ),
@@ -1280,6 +1343,52 @@ class _GlobalProductHitCard extends StatelessWidget {
                     ),
                   ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact pill that opens the filters sheet; shows how many are active.
+class _FiltersPill extends StatelessWidget {
+  const _FiltersPill({required this.activeCount, required this.onTap});
+
+  final int activeCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final Color primary = Theme.of(context).colorScheme.primary;
+    final bool active = activeCount > 0;
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: active ? primary.withValues(alpha: 0.12) : tokens.surface,
+          border: Border.all(color: active ? primary : tokens.border),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              Icons.tune_rounded,
+              size: 16,
+              color: active ? primary : tokens.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              active ? 'Filtros · $activeCount' : 'Filtros',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: active ? primary : tokens.textSecondary,
+              ),
             ),
           ],
         ),

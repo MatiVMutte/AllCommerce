@@ -54,6 +54,21 @@ class TenantSettingsRepository {
     return TenantModel.fromJson(row);
   }
 
+  /// Instant-save for the payment capability switches (cash / card).
+  Future<void> setPaymentFlags(
+    String tenantId, {
+    required bool acceptsCash,
+    required bool acceptsCard,
+  }) async {
+    await _client
+        .from('tenants')
+        .update(<String, dynamic>{
+          'accepts_cash': acceptsCash,
+          'accepts_card': acceptsCard,
+        })
+        .eq('id', tenantId);
+  }
+
   Future<void> setOpen(String tenantId, bool isOpen) async {
     await _client
         .from('tenants')

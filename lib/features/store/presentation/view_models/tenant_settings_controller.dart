@@ -101,6 +101,34 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
     }
   }
 
+  /// Persists the payment capability switches immediately — they behave
+  /// like quick toggles, not form fields.
+  Future<bool> setPaymentFlags(
+    TenantModel current, {
+    required bool acceptsCash,
+    required bool acceptsCard,
+  }) async {
+    final keepAlive = ref.keepAlive();
+    try {
+      final TenantSettingsRepository repo = ref.read(
+        tenantSettingsRepositoryProvider,
+      );
+      await repo.setPaymentFlags(
+        current.id,
+        acceptsCash: acceptsCash,
+        acceptsCard: acceptsCard,
+      );
+      ref.invalidate(tenantByIdProvider(current.id));
+      ref.invalidate(tenantBySlugProvider(current.slug));
+      return true;
+    } catch (e) {
+      state = TenantSettingsState(pendingLogo: state.pendingLogo, error: e);
+      return false;
+    } finally {
+      keepAlive.close();
+    }
+  }
+
   Future<bool> toggleOpen(TenantModel current) async {
     // The provider is autoDispose: keep it alive across the async gap and
     // the tenantByIdProvider invalidation, which can otherwise dispose this

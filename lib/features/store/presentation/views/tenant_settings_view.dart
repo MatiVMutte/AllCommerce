@@ -111,8 +111,6 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
         _transferAlias.text.trim() != (tenant.transferAlias ?? '') ||
         _mercadoPagoLink.text.trim() != (tenant.mercadoPagoLink ?? '') ||
         _openingHours.text.trim() != (tenant.openingHours ?? '') ||
-        _acceptsCash != tenant.acceptsCash ||
-        _acceptsCard != tenant.acceptsCard ||
         _isOpen != tenant.isOpen ||
         _lat != tenant.lat ||
         _lng != tenant.lng ||
@@ -145,19 +143,46 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     });
   }
 
+  /// Payment capability switches persist immediately — the owner expects
+  /// a toggle to just work, not to require the bottom "Guardar" button.
+  Future<void> _savePaymentFlags(TenantModel tenant) async {
+    final bool ok = await ref
+        .read(tenantSettingsControllerProvider.notifier)
+        .setPaymentFlags(
+          tenant,
+          acceptsCash: _acceptsCash,
+          acceptsCard: _acceptsCard,
+        );
+    if (!mounted) return;
+    if (!ok) {
+      setState(() {
+        _acceptsCash = tenant.acceptsCash;
+        _acceptsCard = tenant.acceptsCard;
+      });
+      final Object? error = ref.read(tenantSettingsControllerProvider).error;
+      if (error != null) showErrorSnackBar(context, error);
+      return;
+    }
+    showAppSnackBar(context, 'Medios de pago actualizados');
+  }
+
   Future<void> _save(TenantModel tenant) async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     double? lat = _lat;
     double? lng = _lng;
     final String addrText = _address.text.trim();
     if ((lat == null || lng == null) && addrText.length >= 4) {
-      final List<AddressSuggestion> found = await const NominatimGeocoder()
-          .search(addrText);
-      if (found.isNotEmpty) {
-        lat = found.first.point.latitude;
-        lng = found.first.point.longitude;
-        _lat = lat;
-        _lng = lng;
+      try {
+        final List<AddressSuggestion> found = await const NominatimGeocoder()
+            .search(addrText);
+        if (found.isNotEmpty) {
+          lat = found.first.point.latitude;
+          lng = found.first.point.longitude;
+          _lat = lat;
+          _lng = lng;
+        }
+      } catch (_) {
+        // Geocoding is best-effort: never block the save on it.
       }
     }
     final TenantModel? updated = await ref
@@ -499,8 +524,10 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                           ),
                           Switch(
                             value: _acceptsCash,
-                            onChanged: (bool value) =>
-                                setState(() => _acceptsCash = value),
+                            onChanged: (bool value) {
+                              setState(() => _acceptsCash = value);
+                              _savePaymentFlags(tenant);
+                            },
                           ),
                         ],
                       ),
@@ -515,8 +542,10 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                           ),
                           Switch(
                             value: _acceptsCard,
-                            onChanged: (bool value) =>
-                                setState(() => _acceptsCard = value),
+                            onChanged: (bool value) {
+                              setState(() => _acceptsCard = value);
+                              _savePaymentFlags(tenant);
+                            },
                           ),
                         ],
                       ),
