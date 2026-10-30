@@ -22,9 +22,11 @@ Leyenda: ✅ implementada · 🔜 backlog
 - ✅ **Carga con IA (foto → ficha)** — Gemini analiza la foto del producto
   y completa título/descripción/categoría/tags.
 - ✅ **Carga masiva** — varios productos en una pasada.
-- 🔜 **Venta por fracción (kg/litro)** — cantidades decimales ("1.25 kg de
-  arroz") en vez de unidades enteras. Queja #1 de usuarios de Kyte en
-  almacenes/carnicerías.
+- ✅ **Venta por fracción (kg/litro)** — el producto se vende por unidad,
+  kg, g, lt, ml, m o docena; los fraccionados admiten cantidades
+  decimales ("1,25 kg") en catálogo, carrito, pedido, WhatsApp, CSV,
+  PDF y stock. Validado en la base (un producto por unidad rechaza
+  decimales).
 - 🔜 **Foto de góndola multi-producto** — una foto de la repisa → la IA
   detecta 5-10 productos y crea fichas borrador para publicar en masa.
   Diferenciador demo-able.
@@ -54,8 +56,9 @@ Leyenda: ✅ implementada · 🔜 backlog
   pedido mínimo por zona. Pedido casi universal en reviews de la competencia.
 - 🔜 **Pedido mínimo** — monto mínimo para aceptar pedidos (general o por
   método de entrega).
-- 🔜 **Notificaciones al cliente** — push/WhatsApp cuando el pedido cambia
-  de estado ("confirmado", "en camino", "listo"). La queja #1 de Tiendanube.
+- ✅ **Notificaciones al cliente** — push FCM cuando el pedido cambia
+  de estado, con nombre del local y texto según entrega ("Va en camino"
+  / "Listo para retirar"). La queja #1 de Tiendanube.
 - 🔜 **Cobro con link de pago por pedido** — generar link de MercadoPago
   con el monto exacto del pedido.
 - 🔜 **Pedidos programados** — "para las 20hs" / "paso mañana".

@@ -26,13 +26,20 @@ interface ServiceAccount {
   private_key: string;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  requested: 'Solicitado',
-  preparing: 'En preparación',
-  ready: 'Listo para retirar/entregar',
-  delivered: 'Entregado',
-  rejected: 'Rechazado',
-};
+function statusLabel(status: string, deliveryMethod: string): string {
+  if (status === 'ready') {
+    return deliveryMethod === 'delivery'
+      ? 'Va en camino'
+      : 'Listo para retirar';
+  }
+  const labels: Record<string, string> = {
+    requested: 'Recibido',
+    preparing: 'En preparación',
+    delivered: 'Entregado',
+    rejected: 'Rechazado',
+  };
+  return labels[status] ?? 'actualizado';
+}
 
 function base64url(input: ArrayBuffer | string): string {
   const bytes = typeof input === 'string'
@@ -115,10 +122,19 @@ Deno.serve(async (req) => {
 
   const { data: order } = await admin
     .from('orders')
-    .select('id, tenant_id, customer_id, order_number, status')
+    .select(
+      'id, tenant_id, customer_id, order_number, status, delivery_method',
+    )
     .eq('id', orderId)
     .maybeSingle();
   if (!order) return json('Not found', 404);
+
+  const { data: tenant } = await admin
+    .from('tenants')
+    .select('name')
+    .eq('id', order.tenant_id)
+    .maybeSingle();
+  const tenantName = (tenant?.name as string | undefined) ?? 'el local';
 
   // Only an owner of the order's tenant may notify its customer.
   const { data: caller } = await admin
@@ -144,7 +160,10 @@ Deno.serve(async (req) => {
 
   const sa: ServiceAccount = JSON.parse(FIREBASE_SERVICE_ACCOUNT);
   const accessToken = await getAccessToken(sa);
-  const statusLabel = STATUS_LABELS[order.status as string] ?? 'actualizado';
+  const label = statusLabel(
+    order.status as string,
+    (order.delivery_method as string | undefined) ?? 'pickup',
+  );
 
   let sent = 0;
   const invalid: string[] = [];
@@ -161,8 +180,8 @@ Deno.serve(async (req) => {
           message: {
             token,
             notification: {
-              title: 'Tu pedido cambió de estado',
-              body: `Pedido #${order.order_number}: ${statusLabel}`,
+              title: `Tu pedido en ${tenantName}`,
+              body: `Pedido #${order.order_number}: ${label}`,
             },
             data: {
               order_id: order.id,
