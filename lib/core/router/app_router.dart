@@ -20,6 +20,7 @@ import 'package:all_commerce/features/auth/presentation/views/role_select_view.d
 import 'package:all_commerce/features/auth/presentation/views/welcome_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/catalog_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/offers_view.dart';
+import 'package:all_commerce/features/store/presentation/views/coupons_view.dart';
 import 'package:all_commerce/features/catalog/presentation/views/product_detail_view.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/legal/presentation/views/legal_view.dart';
@@ -184,6 +185,11 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
             path: '/owner/settings',
             builder: (BuildContext context, GoRouterState state) =>
                 const TenantSettingsView(),
+          ),
+          GoRoute(
+            path: '/owner/coupons',
+            builder: (BuildContext context, GoRouterState state) =>
+                const CouponsView(),
           ),
         ],
       ),

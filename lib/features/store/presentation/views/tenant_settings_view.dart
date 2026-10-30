@@ -501,6 +501,17 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                         ],
                       ),
                       const SizedBox(height: 4),
+                      const _Section('PROMOCIONES'),
+                      ListTile(
+                        leading: const Icon(Icons.local_offer_outlined),
+                        title: const Text('Cupones de descuento'),
+                        subtitle: const Text(
+                          'Creá códigos como PROMO10 para tus clientes',
+                        ),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => context.push('/owner/coupons'),
+                      ),
+                      const SizedBox(height: 12),
                       const _Section('APARIENCIA'),
                       const SizedBox(height: 12),
                       Wrap(
