@@ -14,6 +14,7 @@ import 'package:all_commerce/features/orders/data/models/order_item_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:all_commerce/features/orders/presentation/view_models/order_grouping.dart';
 import 'package:all_commerce/features/orders/presentation/view_models/owner_orders_providers.dart';
+import 'package:all_commerce/features/orders/presentation/views/owner_order_detail_view.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,190 +52,205 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
         ? 0
         : pendingCount(ordersAsync.value!);
 
+    final bool wide = AdaptiveNavShell.isWide(context);
+    final String? selectedId = ref.watch(selectedOwnerOrderProvider);
+    final Widget listPane = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  'Pedidos',
+                  style: Theme.of(context).textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              AppRefreshButton(
+                onRefresh: () async {
+                  ref.invalidate(ownerOrdersProvider(tenantId));
+                  await ref
+                      .read(ownerOrdersProvider(tenantId).future)
+                      .catchError((Object _) => const <OrderModel>[]);
+                },
+              ),
+              const SizedBox(width: 8),
+              if (pending > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '$pending nuevos',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Buscar por nombre, teléfono o #número',
+              prefixIcon: Icon(Icons.search),
+            ),
+            onChanged: (String value) => setState(() => _query = value),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 40,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: <Widget>[
+              _StatusChip(
+                label: 'Todos',
+                selected: statusFilter == null,
+                onTap: () => ref
+                    .read(ownerOrderStatusFilterProvider.notifier)
+                    .select(null),
+              ),
+              for (final OrderStatus status in OrderStatus.values)
+                _StatusChip(
+                  label: status.label,
+                  selected: statusFilter == status,
+                  onTap: () => ref
+                      .read(ownerOrderStatusFilterProvider.notifier)
+                      .select(status),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Expanded(
+          child: ordersAsync.when(
+            loading: () => const AppSkeletonList(itemCount: 6, itemHeight: 64),
+            error: (Object error, StackTrace stack) => AppErrorState(
+              onRetry: () => ref.invalidate(ownerOrdersProvider(tenantId)),
+            ),
+            data: (List<OrderModel> orders) {
+              final List<OrderModel> filtered = filterOrders(
+                orders,
+                status: statusFilter,
+                query: _query,
+              );
+              if (orders.isEmpty) {
+                return const AppEmptyState(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'Todavía no recibiste pedidos',
+                );
+              }
+              if (filtered.isEmpty) {
+                return AppEmptyState(
+                  icon: Icons.search_off_rounded,
+                  title: 'Sin resultados',
+                  actionLabel: 'Limpiar filtros',
+                  onAction: () {
+                    setState(() => _query = '');
+                    ref
+                        .read(ownerOrderStatusFilterProvider.notifier)
+                        .select(null);
+                  },
+                );
+              }
+              final List<OrderDayGroup> groups = groupOrdersByDay(filtered);
+              return RefreshIndicator(
+                onRefresh: () async =>
+                    ref.invalidate(ownerOrdersProvider(tenantId)),
+                child: ListView(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    AdaptiveNavShell.isWide(context)
+                        ? 24
+                        : FloatingNavBar.height,
+                  ),
+                  children: <Widget>[
+                    for (final OrderDayGroup group in groups) ...<Widget>[
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12, bottom: 4),
+                        child: Text(
+                          group.label.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.6,
+                            color: tokens.textTertiary,
+                          ),
+                        ),
+                      ),
+                      for (int i = 0; i < group.orders.length; i++) ...<Widget>[
+                        AppMotion.enabled(context)
+                            ? FadeInUp(
+                                duration: const Duration(milliseconds: 240),
+                                delay: Duration(milliseconds: (i % 8) * 40),
+                                from: 12,
+                                child: _OrderRow(order: group.orders[i]),
+                              )
+                            : _OrderRow(order: group.orders[i]),
+                        if (i < group.orders.length - 1)
+                          Divider(height: 1, color: tokens.border),
+                      ],
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+    if (wide) {
+      return Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: Row(
+            children: <Widget>[
+              SizedBox(width: 420, child: listPane),
+              const VerticalDivider(width: 1, thickness: 1),
+              Expanded(
+                child: selectedId == null
+                    ? const AppEmptyState(
+                        icon: Icons.receipt_long_outlined,
+                        title: 'Seleccioná un pedido',
+                        subtitle:
+                            'Elegí uno de la lista para ver el detalle acá.',
+                      )
+                    : OwnerOrderDetailView(
+                        key: ValueKey<String>(selectedId),
+                        orderId: selectedId,
+                        embedded: true,
+                        onClose: () => ref
+                            .read(selectedOwnerOrderProvider.notifier)
+                            .select(null),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
       body: SafeArea(
         bottom: false,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1080),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          'Pedidos',
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      AppRefreshButton(
-                        onRefresh: () async {
-                          ref.invalidate(ownerOrdersProvider(tenantId));
-                          await ref
-                              .read(ownerOrdersProvider(tenantId).future)
-                              .catchError((Object _) => const <OrderModel>[]);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      if (pending > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            '$pending nuevos',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.onPrimary,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      hintText: 'Buscar por nombre, teléfono o #número',
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onChanged: (String value) => setState(() => _query = value),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 40,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: <Widget>[
-                      _StatusChip(
-                        label: 'Todos',
-                        selected: statusFilter == null,
-                        onTap: () => ref
-                            .read(ownerOrderStatusFilterProvider.notifier)
-                            .select(null),
-                      ),
-                      for (final OrderStatus status in OrderStatus.values)
-                        _StatusChip(
-                          label: status.label,
-                          selected: statusFilter == status,
-                          onTap: () => ref
-                              .read(ownerOrderStatusFilterProvider.notifier)
-                              .select(status),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Expanded(
-                  child: ordersAsync.when(
-                    loading: () =>
-                        const AppSkeletonList(itemCount: 6, itemHeight: 64),
-                    error: (Object error, StackTrace stack) => AppErrorState(
-                      onRetry: () =>
-                          ref.invalidate(ownerOrdersProvider(tenantId)),
-                    ),
-                    data: (List<OrderModel> orders) {
-                      final List<OrderModel> filtered = filterOrders(
-                        orders,
-                        status: statusFilter,
-                        query: _query,
-                      );
-                      if (orders.isEmpty) {
-                        return const AppEmptyState(
-                          icon: Icons.receipt_long_outlined,
-                          title: 'Todavía no recibiste pedidos',
-                        );
-                      }
-                      if (filtered.isEmpty) {
-                        return AppEmptyState(
-                          icon: Icons.search_off_rounded,
-                          title: 'Sin resultados',
-                          actionLabel: 'Limpiar filtros',
-                          onAction: () {
-                            setState(() => _query = '');
-                            ref
-                                .read(ownerOrderStatusFilterProvider.notifier)
-                                .select(null);
-                          },
-                        );
-                      }
-                      final List<OrderDayGroup> groups = groupOrdersByDay(
-                        filtered,
-                      );
-                      return RefreshIndicator(
-                        onRefresh: () async =>
-                            ref.invalidate(ownerOrdersProvider(tenantId)),
-                        child: ListView(
-                          padding: EdgeInsets.fromLTRB(
-                            16,
-                            8,
-                            16,
-                            AdaptiveNavShell.isWide(context)
-                                ? 24
-                                : FloatingNavBar.height,
-                          ),
-                          children: <Widget>[
-                            for (final OrderDayGroup group
-                                in groups) ...<Widget>[
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 12,
-                                  bottom: 4,
-                                ),
-                                child: Text(
-                                  group.label.toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.6,
-                                    color: tokens.textTertiary,
-                                  ),
-                                ),
-                              ),
-                              for (
-                                int i = 0;
-                                i < group.orders.length;
-                                i++
-                              ) ...<Widget>[
-                                AppMotion.enabled(context)
-                                    ? FadeInUp(
-                                        duration: const Duration(
-                                          milliseconds: 240,
-                                        ),
-                                        delay: Duration(
-                                          milliseconds: (i % 8) * 40,
-                                        ),
-                                        from: 12,
-                                        child: _OrderRow(
-                                          order: group.orders[i],
-                                        ),
-                                      )
-                                    : _OrderRow(order: group.orders[i]),
-                                if (i < group.orders.length - 1)
-                                  Divider(height: 1, color: tokens.border),
-                              ],
-                            ],
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+            child: listPane,
           ),
         ),
       ),
@@ -296,62 +312,81 @@ class _OrderRow extends ConsumerWidget {
         .watch(orderItemsProvider(order.id))
         .value;
     final String time = DateFormat('HH:mm').format(order.createdAt.toLocal());
-    return InkWell(
-      onTap: () => context.push('/owner/orders/${order.id}', extra: order),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Text(
-                        '#${order.orderNumber}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: tokens.textTertiary,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          order.customerNameSnapshot,
+    final bool wide = AdaptiveNavShell.isWide(context);
+    final bool selected = ref.watch(selectedOwnerOrderProvider) == order.id;
+    return Material(
+      color: selected
+          ? Theme.of(context).colorScheme.primaryContainer
+                .withValues(alpha: 0.5)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          if (wide) {
+            ref.read(selectedOwnerOrderProvider.notifier).select(order.id);
+          } else {
+            context.push('/owner/orders/${order.id}', extra: order);
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Text(
+                          '#${order.orderNumber}',
                           style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: tokens.textPrimary,
+                            fontSize: 13,
+                            color: tokens.textTertiary,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            order.customerNameSnapshot,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: tokens.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      items == null ? time : '${items.length} ítems · $time',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: tokens.textTertiary,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: <Widget>[
                   Text(
-                    items == null ? time : '${items.length} ítems · $time',
-                    style: TextStyle(fontSize: 12, color: tokens.textTertiary),
+                    Formatters.price(order.total),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: tokens.textPrimary,
+                    ),
                   ),
+                  const SizedBox(height: 4),
+                  OrderStatusChip(status: order.status),
                 ],
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: <Widget>[
-                Text(
-                  Formatters.price(order.total),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: tokens.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                OrderStatusChip(status: order.status),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
