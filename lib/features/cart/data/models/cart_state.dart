@@ -11,7 +11,8 @@ class CartState {
   final String? tenantSlug;
   final List<CartItem> items;
 
-  int get itemCount => items.fold(0, (int sum, CartItem i) => sum + i.quantity);
+  double get itemCount =>
+      items.fold(0, (double sum, CartItem i) => sum + i.quantity);
 
   double get subtotal =>
       items.fold(0, (double sum, CartItem i) => sum + i.lineTotal);

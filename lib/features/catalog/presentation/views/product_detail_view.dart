@@ -369,7 +369,7 @@ class _ProductPanel extends ConsumerStatefulWidget {
 }
 
 class _ProductPanelState extends ConsumerState<_ProductPanel> {
-  int _quantity = 1;
+  double _quantity = 1;
   String? _variant;
   bool _justAdded = false;
 
@@ -527,7 +527,7 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
-                    'Últimas ${product.stock} unidades',
+                    'Últimas ${Formatters.qtyLabel(product.stock, product.unit)}',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: tokens.warning,
@@ -586,8 +586,11 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                 QuantityStepper(
                   quantity: _quantity,
                   maxQuantity: product.trackStock ? product.stock : null,
-                  onChanged: (int qty) {
-                    if (qty < 1) return;
+                  step: product.isFractional ? 0.25 : 1,
+                  unit: product.unit,
+                  onChanged: (double qty) {
+                    final double min = product.isFractional ? 0.25 : 1;
+                    if (qty < min) return;
                     if (product.trackStock && qty > product.stock) return;
                     setState(() => _quantity = qty);
                   },
@@ -604,10 +607,13 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                         ? null
                         : () async {
                             AppHaptics.medium();
-                            final int before = ref
+                            final double before = ref
                                 .read(cartProvider)
                                 .items
-                                .fold<int>(0, (int s, i) => s + i.quantity);
+                                .fold<double>(
+                                  0,
+                                  (double s, i) => s + i.quantity,
+                                );
                             await addToCartWithConfirm(
                               context,
                               ref,
@@ -617,10 +623,13 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                               variant: _variant,
                             );
                             if (!mounted) return;
-                            final int after = ref
+                            final double after = ref
                                 .read(cartProvider)
                                 .items
-                                .fold<int>(0, (int s, i) => s + i.quantity);
+                                .fold<double>(
+                                  0,
+                                  (double s, i) => s + i.quantity,
+                                );
                             if (after != before) {
                               setState(() => _justAdded = true);
                               Future<void>.delayed(

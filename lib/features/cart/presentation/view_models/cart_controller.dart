@@ -30,7 +30,7 @@ class CartController extends Notifier<CartState> {
   AddResult add(
     ProductModel product,
     TenantModel tenant, {
-    int quantity = 1,
+    double quantity = 1,
     String? variant,
   }) {
     if (state.tenantId != null && state.tenantId != tenant.id) {
@@ -53,6 +53,7 @@ class CartController extends Notifier<CartState> {
           wholesaleMinQty: product.wholesaleMinQty,
           variant: variant,
           imageUrl: product.imageUrl,
+          unit: product.unit,
           quantity: quantity,
         ),
       );
@@ -70,7 +71,7 @@ class CartController extends Notifier<CartState> {
   void replaceWith(
     ProductModel product,
     TenantModel tenant, {
-    int quantity = 1,
+    double quantity = 1,
     String? variant,
   }) {
     state = CartState(
@@ -85,6 +86,7 @@ class CartController extends Notifier<CartState> {
           wholesaleMinQty: product.wholesaleMinQty,
           variant: variant,
           imageUrl: product.imageUrl,
+          unit: product.unit,
           quantity: quantity,
         ),
       ],
@@ -93,7 +95,7 @@ class CartController extends Notifier<CartState> {
   }
 
   /// Lines are addressed by [CartItem.lineKey] (product + variant).
-  void setQuantity(String lineKey, int quantity) {
+  void setQuantity(String lineKey, double quantity) {
     if (quantity <= 0) {
       remove(lineKey);
       return;

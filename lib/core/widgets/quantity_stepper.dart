@@ -1,20 +1,28 @@
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_haptics.dart';
+import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:flutter/material.dart';
 
 /// Compact − n + stepper with haptics.
+/// [step] < 1 enables fractional quantities ("0,25" per tap).
 class QuantityStepper extends StatelessWidget {
   const QuantityStepper({
     required this.quantity,
     required this.onChanged,
     this.maxQuantity,
+    this.step = 1,
+    this.unit,
     this.dense = false,
     super.key,
   });
 
-  final int quantity;
-  final ValueChanged<int> onChanged;
-  final int? maxQuantity;
+  final double quantity;
+  final ValueChanged<double> onChanged;
+  final double? maxQuantity;
+  final double step;
+
+  /// Sellable unit ('unidad', 'kg'...) — shown next to the quantity.
+  final String? unit;
   final bool dense;
 
   @override
@@ -35,13 +43,15 @@ class QuantityStepper extends StatelessWidget {
             size: size,
             onPressed: () {
               AppHaptics.light();
-              onChanged(quantity - 1);
+              onChanged(quantity - step);
             },
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
-              '$quantity',
+              unit == null
+                  ? Formatters.qty(quantity)
+                  : Formatters.qtyLabel(quantity, unit!),
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: dense ? 13 : 15,
@@ -55,7 +65,7 @@ class QuantityStepper extends StatelessWidget {
             onPressed: canIncrement
                 ? () {
                     AppHaptics.light();
-                    onChanged(quantity + 1);
+                    onChanged(quantity + step);
                   }
                 : null,
           ),

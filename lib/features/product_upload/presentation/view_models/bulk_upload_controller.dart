@@ -199,10 +199,12 @@ class BulkUploadController extends Notifier<BulkUploadState> {
           price: actualPrice,
           compareAtPrice: compareAt,
           wholesalePrice: hasWholesale ? draft.wholesalePrice : null,
-          wholesaleMinQty: hasWholesale ? draft.wholesaleMinQty : null,
+          wholesaleMinQty: hasWholesale
+              ? draft.wholesaleMinQty?.toDouble()
+              : null,
           sku: draft.sku?.trim(),
           variants: draft.variants,
-          stock: draft.stock,
+          stock: draft.stock.toDouble(),
           trackStock: draft.stock > 0,
         );
         final product = await _productRepository.create(input, tenantId);

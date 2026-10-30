@@ -1,4 +1,6 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
+import 'package:all_commerce/core/constants/product_units.dart';
+import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
@@ -61,6 +63,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
   final TextEditingController _sku = TextEditingController();
   final TextEditingController _stock = TextEditingController(text: '0');
   bool _trackStock = false;
+  String _unit = ProductUnit.unidad;
   final TextEditingController _category = TextEditingController();
   bool _categoryTouched = false;
 
@@ -87,12 +90,13 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
             : wp.toString();
       }
       if (existing.wholesaleMinQty != null) {
-        _wholesaleMinQty.text = existing.wholesaleMinQty.toString();
+        _wholesaleMinQty.text = Formatters.qty(existing.wholesaleMinQty!);
       }
       _tags.text = existing.tags.join(', ');
       _variants.text = existing.variants.join(', ');
       _sku.text = existing.sku ?? '';
-      _stock.text = existing.stock.toString();
+      _unit = existing.unit;
+      _stock.text = Formatters.qty(existing.stock);
       _trackStock = existing.trackStock;
       _category.text = existing.categoryLabel;
       _categoryTouched = true;
@@ -224,7 +228,9 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
     final double? wholesalePrice = wholesaleRaw.isEmpty
         ? null
         : double.tryParse(wholesaleRaw);
-    final int? wholesaleMinQty = int.tryParse(_wholesaleMinQty.text.trim());
+    final double? wholesaleMinQty = double.tryParse(
+      _wholesaleMinQty.text.trim().replaceAll(',', '.'),
+    );
     final ProductInput input = ProductInput(
       title: _title.text.trim(),
       description: _description.text.trim().isEmpty
@@ -248,7 +254,10 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
           .where((String v) => v.isNotEmpty)
           .toList(),
       sku: sku.isEmpty ? null : sku,
-      stock: _trackStock ? (int.tryParse(_stock.text.trim()) ?? 0) : 0,
+      unit: _unit,
+      stock: _trackStock
+          ? (double.tryParse(_stock.text.trim().replaceAll(',', '.')) ?? 0)
+          : 0,
       trackStock: _trackStock,
     );
     final ProductModel? existing = widget.existing;
@@ -540,6 +549,26 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                           },
                         ),
                         const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          initialValue: _unit,
+                          decoration: const InputDecoration(
+                            labelText: 'Se vende por',
+                            helperText:
+                                'En kg, litros, metros, etc. el cliente '
+                                'puede pedir cantidades con decimales',
+                          ),
+                          items: <DropdownMenuItem<String>>[
+                            for (final String id in ProductUnit.ids)
+                              DropdownMenuItem<String>(
+                                value: id,
+                                child: Text(ProductUnit.nameOf(id)),
+                              ),
+                          ],
+                          onChanged: (String? value) => setState(
+                            () => _unit = value ?? ProductUnit.unidad,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         Text(
                           'Precio mayorista (opcional)',
                           style: Theme.of(context).textTheme.labelLarge,
@@ -591,22 +620,28 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                               flex: 2,
                               child: TextFormField(
                                 controller: _wholesaleMinQty,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: 'Desde (u.)',
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                decoration: InputDecoration(
+                                  labelText:
+                                      'Desde (${ProductUnit.labelOf(_unit)})',
                                   hintText: 'Ej: 3',
                                 ),
                                 validator: (String? value) {
-                                  final String raw = (value ?? '').trim();
+                                  final String raw = (value ?? '')
+                                      .trim()
+                                      .replaceAll(',', '.');
                                   final bool hasPrice = _wholesalePrice.text
                                       .trim()
                                       .isNotEmpty;
                                   if (raw.isEmpty) {
                                     return hasPrice ? 'Falta el mínimo' : null;
                                   }
-                                  final int? parsed = int.tryParse(raw);
-                                  if (parsed == null || parsed < 2) {
-                                    return 'Mínimo 2';
+                                  final double? parsed = double.tryParse(raw);
+                                  if (parsed == null || parsed <= 0) {
+                                    return 'Mínimo inválido';
                                   }
                                   return null;
                                 },
@@ -622,7 +657,13 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                             setState(() {
                               _trackStock = value;
                               if (value &&
-                                  (int.tryParse(_stock.text.trim()) ?? 0) <=
+                                  (double.tryParse(
+                                            _stock.text.trim().replaceAll(
+                                              ',',
+                                              '.',
+                                            ),
+                                          ) ??
+                                          0) <=
                                       0) {
                                 _stock.text = '1';
                               }
@@ -637,16 +678,19 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _stock,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: AppStrings.productStock,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: InputDecoration(
+                              labelText:
+                                  '${AppStrings.productStock} (${ProductUnit.labelOf(_unit)})',
                             ),
                             validator: (String? value) {
-                              final int? parsed = int.tryParse(
-                                (value ?? '').trim(),
+                              final double? parsed = double.tryParse(
+                                (value ?? '').trim().replaceAll(',', '.'),
                               );
                               if (parsed == null || parsed < 0) {
-                                return 'Ingresá un número entero mayor o igual a 0';
+                                return 'Ingresá un número mayor o igual a 0';
                               }
                               return null;
                             },

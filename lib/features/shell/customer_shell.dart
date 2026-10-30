@@ -59,7 +59,7 @@ class CustomerShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final String loc = state.matchedLocation;
-    final int cartCount = ref.watch(cartProvider).itemCount;
+    final int cartCount = ref.watch(cartProvider).itemCount.ceil();
     return AdaptiveNavShell(
       centerIcon: Icons.shopping_cart_rounded,
       centerBadgeCount: cartCount,

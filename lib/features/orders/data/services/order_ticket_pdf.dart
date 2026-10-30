@@ -138,7 +138,7 @@ Future<Uint8List> buildOrderTicketPdf({
                       border: pw.Border(bottom: pw.BorderSide(color: line)),
                     ),
                     children: <pw.Widget>[
-                      _cell('${item.quantity}x'),
+                      _cell(Formatters.qtyLabel(item.quantity, item.unit)),
                       _cell(
                         item.variant == null
                             ? item.titleSnapshot

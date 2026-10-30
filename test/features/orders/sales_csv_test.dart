@@ -43,7 +43,7 @@ void main() {
     expect(lines, hasLength(2));
     expect(lines.first, startsWith('Fecha;Pedido;Cliente'));
     expect(lines[1], contains('"#42"'));
-    expect(lines[1], contains('"2x Vaso térmico (Rojo)"'));
+    expect(lines[1], contains('"2 un. x Vaso térmico (Rojo)"'));
     expect(lines[1], contains('"05/03/2025 14:30"'));
     expect(lines[1], contains('"17000.00"'));
   });
@@ -57,5 +57,25 @@ void main() {
     expect(row, contains('"sin timbre golpear"'));
     // Each cell stays a single line — no embedded newlines leak out.
     expect(csv.trim().split('\n'), hasLength(2));
+  });
+
+  test('fractional items keep their unit label', () {
+    final String csv = SalesCsv.build(
+      <OrderModel>[_order()],
+      <String, List<OrderItemModel>>{
+        'o1': <OrderItemModel>[
+          const OrderItemModel(
+            id: 'i2',
+            orderId: 'o1',
+            productId: 'p2',
+            titleSnapshot: 'Asado',
+            unitPrice: 12000,
+            quantity: 1.25,
+            unit: 'kg',
+          ),
+        ],
+      },
+    );
+    expect(csv.trim().split('\n').last, contains('"1,25 kg x Asado"'));
   });
 }

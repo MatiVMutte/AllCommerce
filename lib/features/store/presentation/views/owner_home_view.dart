@@ -971,7 +971,7 @@ class _SalesCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          '${p.quantity} u.',
+                          Formatters.qtyLabel(p.quantity, p.unit),
                           style: TextStyle(
                             fontSize: 12,
                             color: tokens.textTertiary,

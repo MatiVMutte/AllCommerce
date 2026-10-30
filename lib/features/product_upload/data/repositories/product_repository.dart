@@ -24,6 +24,7 @@ class ProductRepository {
           'wholesale_min_qty': input.wholesaleMinQty,
           'sku': input.sku,
           'variants': input.variants,
+          'unit': input.unit,
           'stock': input.stock,
           'track_stock': input.trackStock,
           'is_active': true,
@@ -94,6 +95,7 @@ class ProductRepository {
           'wholesale_min_qty': input.wholesaleMinQty,
           'sku': input.sku,
           'variants': input.variants,
+          'unit': input.unit,
           'stock': input.stock,
           'track_stock': input.trackStock,
         })
@@ -119,7 +121,7 @@ class ProductRepository {
   Future<void> setStock(
     String productId,
     String tenantId, {
-    required int stock,
+    required double stock,
     required bool trackStock,
   }) async {
     await _client

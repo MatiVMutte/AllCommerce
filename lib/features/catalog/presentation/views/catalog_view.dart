@@ -1,5 +1,6 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
 import 'package:all_commerce/core/constants/categories.dart';
+import 'package:all_commerce/core/constants/product_units.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
@@ -671,7 +672,7 @@ class _ProductCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens tokens = context.tokens;
     final CartState cart = ref.watch(cartProvider);
-    int inCart = 0;
+    double inCart = 0;
     String? inCartLineKey;
     for (final item in cart.items) {
       if (cart.tenantId == tenant.id && item.productId == product.id) {
@@ -796,7 +797,7 @@ class _ProductCard extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
-                            'Últimas ${product.stock}',
+                            'Últimas ${Formatters.qtyLabel(product.stock, product.unit)}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
@@ -836,7 +837,8 @@ class _ProductCard extends ConsumerWidget {
                                     maxQuantity: product.trackStock
                                         ? product.stock
                                         : null,
-                                    onChanged: (int qty) => ref
+                                    step: product.isFractional ? 0.25 : 1,
+                                    onChanged: (double qty) => ref
                                         .read(cartProvider.notifier)
                                         .setQuantity(
                                           inCartLineKey ?? product.id,
@@ -848,7 +850,8 @@ class _ProductCard extends ConsumerWidget {
                                   key: const ValueKey<String>('add'),
                                   onTap: () {
                                     AppHaptics.light();
-                                    if (product.hasVariants) {
+                                    if (product.hasVariants ||
+                                        product.isFractional) {
                                       context.push('/s/$slug/p/${product.id}');
                                       return;
                                     }
@@ -1032,7 +1035,10 @@ class _CartSidePanel extends ConsumerWidget {
                             QuantityStepper(
                               dense: true,
                               quantity: item.quantity,
-                              onChanged: (int q) => ref
+                              step: ProductUnit.isFractional(item.unit)
+                                  ? 0.25
+                                  : 1,
+                              onChanged: (double q) => ref
                                   .read(cartProvider.notifier)
                                   .setQuantity(item.lineKey, q),
                             ),

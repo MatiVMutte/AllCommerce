@@ -1,4 +1,5 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
+import 'package:all_commerce/core/constants/product_units.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
@@ -320,13 +321,13 @@ class _OwnerProductRow extends ConsumerWidget {
   final ProductModel product;
 
   Future<void> _adjustStock(BuildContext context, WidgetRef ref) async {
-    final int currentStock = product.stock;
+    final double currentStock = product.stock;
     bool track = product.trackStock;
     final TextEditingController ctrl = TextEditingController(
-      text: currentStock.toString(),
+      text: Formatters.qty(currentStock),
     );
-    final ({int stock, bool track})?
-    result = await showModalBottomSheet<({int stock, bool track})>(
+    final ({double stock, bool track})?
+    result = await showModalBottomSheet<({double stock, bool track})>(
       context: context,
       useRootNavigator: true,
       useSafeArea: true,
@@ -359,7 +360,12 @@ class _OwnerProductRow extends ConsumerWidget {
                     onChanged: (bool v) {
                       setSheetState(() {
                         track = v;
-                        if (v && (int.tryParse(ctrl.text.trim()) ?? 0) <= 0) {
+                        if (v &&
+                            (double.tryParse(
+                                      ctrl.text.trim().replaceAll(',', '.'),
+                                    ) ??
+                                    0) <=
+                                0) {
                           ctrl.text = '1';
                         }
                       });
@@ -370,17 +376,24 @@ class _OwnerProductRow extends ConsumerWidget {
                     const SizedBox(height: 8),
                     TextField(
                       controller: ctrl,
-                      keyboardType: TextInputType.number,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       autofocus: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Unidades disponibles',
+                      decoration: InputDecoration(
+                        labelText:
+                            'Disponibles (${ProductUnit.labelOf(product.unit)})',
                       ),
                     ),
                   ],
                   const SizedBox(height: 16),
                   FilledButton(
                     onPressed: () {
-                      final int parsed = int.tryParse(ctrl.text.trim()) ?? 0;
+                      final double parsed =
+                          double.tryParse(
+                            ctrl.text.trim().replaceAll(',', '.'),
+                          ) ??
+                          0;
                       Navigator.of(sheetContext)
                           .pop((stock: track ? parsed : 0, track: track));
                     },
@@ -507,7 +520,7 @@ class _OwnerProductRow extends ConsumerWidget {
                           text: product.trackStock
                               ? (product.stock <= 0
                                     ? 'Agotado (0)'
-                                    : 'Stock ${product.stock}')
+                                    : 'Stock ${Formatters.qtyLabel(product.stock, product.unit)}')
                               : 'Stock ilimitado',
                           style: TextStyle(
                             fontWeight:

@@ -56,8 +56,8 @@ void main() {
     expect(
       message,
       'Hola Mi Local! Quiero hacer un pedido (#42):\n'
-      '• 2 x Vaso térmico — \$17.000\n'
-      '• 1 x Remera — \$8.500\n'
+      '• 2 un. x Vaso térmico — \$17.000\n'
+      '• 1 un. x Remera — \$8.500\n'
       'Subtotal: \$25.500\n'
       'Total: \$25.500\n'
       'Entrega: Retiro en el local\n'
@@ -78,6 +78,25 @@ void main() {
     expect(message, contains('Descuento (CODIGO): -\$2.550'));
     expect(message, contains('Total: \$22.950'));
     expect(message, contains('Notas: Sin cebolla'));
+  });
+
+  test('fractional units show quantity and unit label', () {
+    final String message = buildOrderMessage(
+      tenant: _tenant(),
+      order: _order(),
+      items: const <CartItem>[
+        CartItem(
+          productId: 'p3',
+          title: 'Asado',
+          price: 12000,
+          unit: 'kg',
+          quantity: 1.25,
+        ),
+      ],
+      customerName: 'Ana',
+      customerPhone: '5491199999999',
+    );
+    expect(message, contains('• 1,25 kg x Asado — \$15.000'));
   });
 
   test('buildWhatsAppUri encodes message and uses wa.me', () {

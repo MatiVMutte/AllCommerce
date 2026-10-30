@@ -146,7 +146,7 @@ class _MyOrderTile extends ConsumerWidget {
           skipped++;
           continue;
         }
-        int qty = item.quantity;
+        double qty = item.quantity;
         if (p.trackStock && qty > p.stock) qty = p.stock;
         cart.add(p, tenant, quantity: qty, variant: item.variant);
         added++;
@@ -249,7 +249,7 @@ class _MyOrderTile extends ConsumerWidget {
                           children: <Widget>[
                             Expanded(
                               child: Text(
-                                '${item.quantity} x ${item.titleSnapshot}'
+                                '${Formatters.qtyLabel(item.quantity, item.unit)} x ${item.titleSnapshot}'
                                 '${item.variant == null ? '' : ' (${item.variant})'}',
                               ),
                             ),

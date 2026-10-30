@@ -35,7 +35,7 @@ class CatalogRepository {
         .select(
           'id, tenant_id, title, description, category, price, '
           'compare_at_price, wholesale_price, wholesale_min_qty, '
-          'image_url, stock, track_stock, '
+          'image_url, stock, track_stock, unit, '
           'tenants!inner(slug,name,logo_url,primary_color,is_open,is_active)',
         )
         .eq('is_active', true)
@@ -123,6 +123,7 @@ class GlobalProductHit {
     this.imageUrl,
     required this.stock,
     required this.trackStock,
+    this.unit = 'unidad',
     required this.tenantSlug,
     required this.tenantName,
     this.tenantLogoUrl,
@@ -138,10 +139,13 @@ class GlobalProductHit {
   final double price;
   final double? compareAtPrice;
   final double? wholesalePrice;
-  final int? wholesaleMinQty;
+  final double? wholesaleMinQty;
   final String? imageUrl;
-  final int stock;
+  final double stock;
   final bool trackStock;
+
+  /// Sellable unit ('unidad', 'kg'...) of the product.
+  final String unit;
   final String tenantSlug;
   final String tenantName;
   final String? tenantLogoUrl;
@@ -170,10 +174,11 @@ class GlobalProductHit {
       wholesalePrice: json['wholesale_price'] == null
           ? null
           : num.tryParse(json['wholesale_price'].toString())?.toDouble(),
-      wholesaleMinQty: (json['wholesale_min_qty'] as num?)?.toInt(),
+      wholesaleMinQty: (json['wholesale_min_qty'] as num?)?.toDouble(),
       imageUrl: json['image_url'] as String?,
-      stock: (json['stock'] as num?)?.toInt() ?? 0,
+      stock: (json['stock'] as num?)?.toDouble() ?? 0,
       trackStock: (json['track_stock'] as bool?) ?? false,
+      unit: (json['unit'] as String?) ?? 'unidad',
       tenantSlug: (t['slug'] as String?) ?? '',
       tenantName: (t['name'] as String?) ?? '',
       tenantLogoUrl: t['logo_url'] as String?,
@@ -200,10 +205,11 @@ class GlobalProductHit {
       price: num.parse(json['price'].toString()).toDouble(),
       compareAtPrice: parsedCompare,
       wholesalePrice: parsedWholesale,
-      wholesaleMinQty: (json['wholesale_min_qty'] as num?)?.toInt(),
+      wholesaleMinQty: (json['wholesale_min_qty'] as num?)?.toDouble(),
       imageUrl: json['image_url'] as String?,
-      stock: (json['stock'] as num?)?.toInt() ?? 0,
+      stock: (json['stock'] as num?)?.toDouble() ?? 0,
       trackStock: json['track_stock'] as bool? ?? false,
+      unit: (json['unit'] as String?) ?? 'unidad',
       tenantSlug: json['tenant_slug'] as String,
       tenantName: json['tenant_name'] as String,
       tenantLogoUrl: json['tenant_logo_url'] as String?,

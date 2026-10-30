@@ -10,6 +10,7 @@ class ProductInput {
     this.wholesaleMinQty,
     this.sku,
     this.variants = const <String>[],
+    this.unit = 'unidad',
     this.stock = 0,
     this.trackStock = false,
   });
@@ -23,11 +24,15 @@ class ProductInput {
 
   /// Wholesale unit price when the buyer takes [wholesaleMinQty]+ units.
   final double? wholesalePrice;
-  final int? wholesaleMinQty;
+  final double? wholesaleMinQty;
   final String? sku;
 
   /// Store-defined options the buyer picks one of ("S", "M", "L", "Rojo").
   final List<String> variants;
-  final int stock;
+
+  /// Sellable unit ('unidad', 'kg'...). Non-'unidad' units accept
+  /// fractional quantities.
+  final String unit;
+  final double stock;
   final bool trackStock;
 }

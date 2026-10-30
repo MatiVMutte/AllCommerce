@@ -119,10 +119,10 @@ class OwnerInventoryController extends Notifier<OwnerInventoryState> {
 
   Future<bool> updateStock(
     ProductModel product, {
-    required int stock,
+    required double stock,
     required bool trackStock,
   }) async {
-    final int normalized = stock < 0 ? 0 : stock;
+    final double normalized = stock < 0 ? 0 : stock;
     return _run(product, (String id, String tenantId) {
       return ref
           .read(productRepositoryProvider)

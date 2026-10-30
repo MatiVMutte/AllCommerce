@@ -1,4 +1,5 @@
 import 'package:all_commerce/core/tenant/tenant_model.dart';
+import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/features/cart/presentation/view_models/cart_controller.dart';
@@ -13,7 +14,7 @@ Future<void> addToCartWithConfirm(
   WidgetRef ref,
   ProductModel product,
   TenantModel tenant, {
-  int quantity = 1,
+  double quantity = 1,
   String? variant,
 }) async {
   if (product.isOutOfStock) {
@@ -22,15 +23,16 @@ Future<void> addToCartWithConfirm(
   }
   final CartController cart = ref.read(cartProvider.notifier);
   if (product.trackStock) {
-    final int existingQty = ref
+    final double existingQty = ref
         .read(cartProvider)
         .items
         .where((i) => i.productId == product.id)
-        .fold<int>(0, (int sum, i) => sum + i.quantity);
+        .fold<double>(0, (double sum, i) => sum + i.quantity);
     if (existingQty + quantity > product.stock) {
       showAppSnackBar(
         context,
-        'Solo quedan ${product.stock} unidades disponibles',
+        'Solo quedan ${Formatters.qtyLabel(product.stock, product.unit)} '
+        'disponibles',
         isError: true,
       );
       return;

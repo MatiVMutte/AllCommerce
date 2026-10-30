@@ -270,7 +270,7 @@ class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
-                              '${item.quantity}×',
+                              Formatters.qtyLabel(item.quantity, item.unit),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,

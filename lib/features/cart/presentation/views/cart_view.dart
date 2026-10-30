@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:all_commerce/core/constants/app_strings.dart';
 import 'package:all_commerce/core/constants/delivery_method.dart';
 import 'package:all_commerce/core/constants/payment_method.dart';
+import 'package:all_commerce/core/constants/product_units.dart';
 import 'package:all_commerce/core/router/return_to.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
@@ -763,7 +764,7 @@ class _CartTile extends ConsumerWidget {
                     )
                   else if (item.wholesaleMissing > 0)
                     Text(
-                      'Sumá ${item.wholesaleMissing} más: '
+                      'Sumá ${Formatters.qtyLabel(item.wholesaleMissing, item.unit)} más: '
                       '${Formatters.price(item.wholesalePrice!)} c/u',
                       style: TextStyle(
                         fontSize: 11,
@@ -780,7 +781,9 @@ class _CartTile extends ConsumerWidget {
                 QuantityStepper(
                   dense: true,
                   quantity: item.quantity,
-                  onChanged: (int qty) => ref
+                  step: ProductUnit.isFractional(item.unit) ? 0.25 : 1,
+                  unit: item.unit,
+                  onChanged: (double qty) => ref
                       .read(cartProvider.notifier)
                       .setQuantity(item.lineKey, qty),
                 ),

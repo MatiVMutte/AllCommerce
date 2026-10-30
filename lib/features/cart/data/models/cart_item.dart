@@ -7,6 +7,7 @@ class CartItem {
     this.wholesaleMinQty,
     this.variant,
     this.imageUrl,
+    this.unit = 'unidad',
     this.quantity = 1,
   });
 
@@ -22,9 +23,12 @@ class CartItem {
 
   /// Wholesale unit price + minimum units (null when the product has none).
   final double? wholesalePrice;
-  final int? wholesaleMinQty;
+  final double? wholesaleMinQty;
   final String? imageUrl;
-  final int quantity;
+
+  /// Sellable unit of the product ('unidad', 'kg'...) — snapshot.
+  final String unit;
+  final double quantity;
 
   /// Unique key per line: same product can appear once per variant.
   String get lineKey => '$productId|${variant ?? ''}';
@@ -42,7 +46,7 @@ class CartItem {
       : price;
 
   /// Units missing to unlock the wholesale price (0 when not applicable).
-  int get wholesaleMissing => hasWholesale && quantity < wholesaleMinQty!
+  double get wholesaleMissing => hasWholesale && quantity < wholesaleMinQty!
       ? wholesaleMinQty! - quantity
       : 0;
 
@@ -57,10 +61,11 @@ class CartItem {
       wholesalePrice: rawWholesale == null
           ? null
           : num.tryParse(rawWholesale.toString())?.toDouble(),
-      wholesaleMinQty: (json['wholesale_min_qty'] as num?)?.toInt(),
+      wholesaleMinQty: (json['wholesale_min_qty'] as num?)?.toDouble(),
       variant: json['variant'] as String?,
       imageUrl: json['image_url'] as String?,
-      quantity: (json['quantity'] as num).toInt(),
+      unit: (json['unit'] as String?) ?? 'unidad',
+      quantity: (json['quantity'] as num).toDouble(),
     );
   }
 
@@ -73,6 +78,7 @@ class CartItem {
       'wholesale_min_qty': wholesaleMinQty,
       'variant': variant,
       'image_url': imageUrl,
+      'unit': unit,
       'quantity': quantity,
     };
   }
@@ -82,10 +88,11 @@ class CartItem {
     String? title,
     double? price,
     double? wholesalePrice,
-    int? wholesaleMinQty,
+    double? wholesaleMinQty,
     String? variant,
     String? imageUrl,
-    int? quantity,
+    String? unit,
+    double? quantity,
   }) {
     return CartItem(
       productId: productId ?? this.productId,
@@ -95,6 +102,7 @@ class CartItem {
       wholesaleMinQty: wholesaleMinQty ?? this.wholesaleMinQty,
       variant: variant ?? this.variant,
       imageUrl: imageUrl ?? this.imageUrl,
+      unit: unit ?? this.unit,
       quantity: quantity ?? this.quantity,
     );
   }

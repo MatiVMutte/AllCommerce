@@ -19,7 +19,7 @@ String buildOrderMessage({
     );
   for (final CartItem item in items) {
     buffer.writeln(
-      '• ${item.quantity} x ${item.title}'
+      '• ${Formatters.qtyLabel(item.quantity, item.unit)} x ${item.title}'
       '${item.variant != null ? ' (${item.variant})' : ''}'
       ' — ${Formatters.price(item.lineTotal)}',
     );

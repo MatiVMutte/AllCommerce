@@ -1,3 +1,4 @@
+import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/features/orders/data/models/order_item_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:intl/intl.dart';
@@ -19,7 +20,7 @@ class SalesCsv {
       final String items = (itemsByOrder[o.id] ?? const <OrderItemModel>[])
           .map(
             (OrderItemModel i) =>
-                '${i.quantity}x ${i.titleSnapshot}'
+                '${Formatters.qtyLabel(i.quantity, i.unit)} x ${i.titleSnapshot}'
                 '${i.variant == null ? '' : ' (${i.variant})'}',
           )
           .join(' | ');

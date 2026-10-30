@@ -1,4 +1,5 @@
 import 'package:all_commerce/core/constants/categories.dart';
+import 'package:all_commerce/core/constants/product_units.dart';
 
 class ProductModel {
   const ProductModel({
@@ -16,6 +17,7 @@ class ProductModel {
     this.imageUrl,
     this.imageUrls = const <String>[],
     this.variants = const <String>[],
+    this.unit = ProductUnit.unidad,
     this.stock = 0,
     this.trackStock = false,
     required this.isActive,
@@ -36,7 +38,7 @@ class ProductModel {
 
   /// Wholesale unit price when the buyer takes at least [wholesaleMinQty].
   final double? wholesalePrice;
-  final int? wholesaleMinQty;
+  final double? wholesaleMinQty;
   final String? sku;
 
   /// Main photo (first of the gallery). Kept for backwards compatibility.
@@ -47,7 +49,11 @@ class ProductModel {
 
   /// Store-defined options ("S", "M", "L", "Rojo"...) the buyer picks one of.
   final List<String> variants;
-  final int stock;
+
+  /// Sellable unit ('unidad', 'kg', 'lt'...). Non-'unidad' units accept
+  /// fractional quantities ("1,25 kg").
+  final String unit;
+  final double stock;
   final bool trackStock;
   final bool isActive;
   final DateTime createdAt;
@@ -72,10 +78,13 @@ class ProductModel {
   bool get hasWholesale =>
       wholesalePrice != null && wholesaleMinQty != null && wholesaleMinQty! > 0;
 
+  /// Products sold by kg/lt/etc. accept fractional quantities.
+  bool get isFractional => ProductUnit.isFractional(unit);
+
   /// Unit price the server charges for [quantity] units: switches to the
   /// wholesale price when the quantity reaches the minimum, never above
   /// retail. Mirrors `place_order`.
-  double unitPriceFor(int quantity) {
+  double unitPriceFor(num quantity) {
     if (hasWholesale && quantity >= wholesaleMinQty!) {
       return wholesalePrice! < price ? wholesalePrice! : price;
     }
@@ -83,7 +92,7 @@ class ProductModel {
   }
 
   /// Units missing to unlock the wholesale price (0 when not applicable).
-  int wholesaleMissing(int quantity) =>
+  double wholesaleMissing(num quantity) =>
       hasWholesale && quantity < wholesaleMinQty!
       ? wholesaleMinQty! - quantity
       : 0;
@@ -121,7 +130,7 @@ class ProductModel {
       price: num.parse(json['price'].toString()).toDouble(),
       compareAtPrice: parsedCompare,
       wholesalePrice: parsedWholesale,
-      wholesaleMinQty: (json['wholesale_min_qty'] as num?)?.toInt(),
+      wholesaleMinQty: (json['wholesale_min_qty'] as num?)?.toDouble(),
       sku: json['sku'] as String?,
       imageUrl: json['image_url'] as String?,
       imageUrls: (json['image_urls'] as List<dynamic>? ?? <dynamic>[])
@@ -130,7 +139,8 @@ class ProductModel {
       variants: (json['variants'] as List<dynamic>? ?? <dynamic>[])
           .whereType<String>()
           .toList(),
-      stock: (json['stock'] as num?)?.toInt() ?? 0,
+      unit: (json['unit'] as String?) ?? ProductUnit.unidad,
+      stock: (json['stock'] as num?)?.toDouble() ?? 0,
       trackStock: json['track_stock'] as bool? ?? false,
       isActive: json['is_active'] as bool,
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -154,6 +164,7 @@ class ProductModel {
       'image_url': imageUrl,
       'image_urls': imageUrls,
       'variants': variants,
+      'unit': unit,
       'stock': stock,
       'track_stock': trackStock,
       'is_active': isActive,
@@ -173,13 +184,14 @@ class ProductModel {
     double? compareAtPrice,
     bool clearCompareAtPrice = false,
     double? wholesalePrice,
-    int? wholesaleMinQty,
+    double? wholesaleMinQty,
     bool clearWholesale = false,
     String? sku,
     String? imageUrl,
     List<String>? imageUrls,
     List<String>? variants,
-    int? stock,
+    String? unit,
+    double? stock,
     bool? trackStock,
     bool? isActive,
     DateTime? createdAt,
@@ -206,6 +218,7 @@ class ProductModel {
       imageUrl: imageUrl ?? this.imageUrl,
       imageUrls: imageUrls ?? this.imageUrls,
       variants: variants ?? this.variants,
+      unit: unit ?? this.unit,
       stock: stock ?? this.stock,
       trackStock: trackStock ?? this.trackStock,
       isActive: isActive ?? this.isActive,

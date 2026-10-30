@@ -42,17 +42,22 @@ class SalesTopProduct {
     required this.title,
     required this.quantity,
     required this.revenue,
+    this.unit = 'unidad',
   });
 
   final String title;
-  final int quantity;
+  final double quantity;
   final double revenue;
+
+  /// Sellable unit of the product ('unidad', 'kg'...) — snapshot.
+  final String unit;
 
   factory SalesTopProduct.fromJson(Map<String, dynamic> json) {
     return SalesTopProduct(
       title: json['title'] as String,
-      quantity: num.parse(json['qty'].toString()).toInt(),
+      quantity: num.parse(json['qty'].toString()).toDouble(),
       revenue: num.parse(json['revenue'].toString()).toDouble(),
+      unit: (json['unit'] as String?) ?? 'unidad',
     );
   }
 }

@@ -7,6 +7,7 @@ class OrderItemModel {
     required this.unitPrice,
     required this.quantity,
     this.variant,
+    this.unit = 'unidad',
   });
 
   final String id;
@@ -16,10 +17,13 @@ class OrderItemModel {
   final String? productId;
   final String titleSnapshot;
   final double unitPrice;
-  final int quantity;
+  final double quantity;
 
   /// Variant the customer picked ("M", "Rojo"), if the product has them.
   final String? variant;
+
+  /// Sellable unit at order time ('unidad', 'kg'...) — snapshot.
+  final String unit;
 
   double get lineTotal => unitPrice * quantity;
 
@@ -30,8 +34,9 @@ class OrderItemModel {
       productId: json['product_id'] as String?,
       titleSnapshot: json['title_snapshot'] as String,
       unitPrice: num.parse(json['unit_price'].toString()).toDouble(),
-      quantity: (json['quantity'] as num).toInt(),
+      quantity: (json['quantity'] as num).toDouble(),
       variant: json['variant'] as String?,
+      unit: (json['unit'] as String?) ?? 'unidad',
     );
   }
 }
