@@ -22,8 +22,9 @@ Map<String, dynamic> _productJson({Object price = 8500}) {
 
 void main() {
   test('fromJson parses price given as String', () {
-    final ProductModel product =
-        ProductModel.fromJson(_productJson(price: '8500.00'));
+    final ProductModel product = ProductModel.fromJson(
+      _productJson(price: '8500.00'),
+    );
     expect(product.price, 8500.0);
     expect(product.tags, <String>['cocina', 'mate']);
     expect(product.categoryEnum, ProductCategory.home);
@@ -44,10 +45,7 @@ void main() {
   test('unknown category falls back to other', () {
     final Map<String, dynamic> json = _productJson();
     json['category'] = 'xxx';
-    expect(
-      ProductModel.fromJson(json).categoryEnum,
-      ProductCategory.other,
-    );
+    expect(ProductModel.fromJson(json).categoryEnum, ProductCategory.other);
   });
 
   test('compare_at_price enables sale flag and discount percentage', () {
@@ -58,8 +56,7 @@ void main() {
     expect(product.isOnSale, isTrue);
     expect(product.discountPercent, 25);
 
-    final ProductModel notOnSale =
-        product.copyWith(clearCompareAtPrice: true);
+    final ProductModel notOnSale = product.copyWith(clearCompareAtPrice: true);
     expect(notOnSale.isOnSale, isFalse);
     expect(notOnSale.discountPercent, 0);
   });

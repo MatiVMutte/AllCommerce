@@ -5,11 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PlanBlockedCard extends StatelessWidget {
-  const PlanBlockedCard({
-    required this.code,
-    required this.tenant,
-    super.key,
-  });
+  const PlanBlockedCard({required this.code, required this.tenant, super.key});
 
   /// 'PLAN_EXPIRED' or 'PRODUCT_LIMIT_REACHED'.
   final String code;

@@ -23,7 +23,7 @@ void main() {
     trialStartedAt: DateTime(2025),
     planExpiresAt: DateTime.now().add(const Duration(days: 10)),
     isActive: true,
-      isClaimed: true,
+    isClaimed: true,
     createdAt: DateTime(2025),
   );
 
@@ -34,9 +34,7 @@ void main() {
     when(() => repository.currentSession).thenReturn(null);
     when(() => repository.currentUserId).thenReturn(null);
     container = ProviderContainer(
-      overrides: [
-        authRepositoryProvider.overrideWithValue(repository),
-      ],
+      overrides: [authRepositoryProvider.overrideWithValue(repository)],
     );
     addTearDown(container.dispose);
   });

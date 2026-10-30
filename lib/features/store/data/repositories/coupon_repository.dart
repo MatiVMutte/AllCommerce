@@ -18,14 +18,18 @@ class CouponRepository {
   Future<CouponModel> create({
     required String tenantId,
     required String code,
-    required int discountPercent,
+    required String discountType,
+    int? discountPercent,
+    double? discountAmount,
   }) async {
     final Map<String, dynamic> row = await _client
         .from('coupons')
         .insert(<String, dynamic>{
           'tenant_id': tenantId,
           'code': code.trim().toUpperCase(),
+          'discount_type': discountType,
           'discount_percent': discountPercent,
+          'discount_amount': discountAmount,
         })
         .select()
         .single();

@@ -43,7 +43,7 @@ class _CartViewState extends ConsumerState<CartView> {
   final TextEditingController _notes = TextEditingController();
   final TextEditingController _coupon = TextEditingController();
   String? _appliedCode;
-  int? _appliedPercent;
+  CouponPreview? _appliedPreview;
   String? _couponError;
   bool _checkingCoupon = false;
 
@@ -62,17 +62,17 @@ class _CartViewState extends ConsumerState<CartView> {
       _couponError = null;
     });
     try {
-      final int? pct = await ref
+      final CouponPreview? preview = await ref
           .read(orderRepositoryProvider)
           .validateCoupon(tenant.id, code);
       if (!mounted) return;
       setState(() {
         _checkingCoupon = false;
-        if (pct == null) {
+        if (preview == null) {
           _couponError = 'Cupón no válido o inactivo';
         } else {
           _appliedCode = code.toUpperCase();
-          _appliedPercent = pct;
+          _appliedPreview = preview;
         }
       });
     } catch (_) {
@@ -324,7 +324,7 @@ class _CartViewState extends ConsumerState<CartView> {
                                           Expanded(
                                             child: Text(
                                               '$_appliedCode · '
-                                              '−$_appliedPercent%',
+                                              '${_appliedPreview!.label}',
                                               style: TextStyle(
                                                 color: tokens.success,
                                                 fontWeight: FontWeight.w700,
@@ -339,7 +339,7 @@ class _CartViewState extends ConsumerState<CartView> {
                                             ),
                                             onPressed: () => setState(() {
                                               _appliedCode = null;
-                                              _appliedPercent = null;
+                                              _appliedPreview = null;
                                               _coupon.clear();
                                             }),
                                           ),
@@ -422,7 +422,7 @@ class _CartViewState extends ConsumerState<CartView> {
                             Text(Formatters.price(cart.subtotal)),
                           ],
                         ),
-                        if (_appliedPercent != null) ...<Widget>[
+                        if (_appliedPreview != null) ...<Widget>[
                           const SizedBox(height: 6),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -432,7 +432,7 @@ class _CartViewState extends ConsumerState<CartView> {
                                 style: TextStyle(color: tokens.success),
                               ),
                               Text(
-                                '−${Formatters.price(cart.subtotal * _appliedPercent! / 100)}',
+                                '−${Formatters.price(_appliedPreview!.discountFor(cart.subtotal))}',
                                 style: TextStyle(
                                   color: tokens.success,
                                   fontWeight: FontWeight.w600,
@@ -454,8 +454,11 @@ class _CartViewState extends ConsumerState<CartView> {
                             ),
                             Text(
                               Formatters.price(
-                                cart.subtotal *
-                                    (1 - (_appliedPercent ?? 0) / 100),
+                                cart.subtotal -
+                                    (_appliedPreview?.discountFor(
+                                          cart.subtotal,
+                                        ) ??
+                                        0),
                               ),
                               style: const TextStyle(
                                 fontSize: 18,

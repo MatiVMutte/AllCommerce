@@ -1,5 +1,3 @@
-
-
 import 'package:all_commerce/core/constants/categories.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_haptics.dart';
@@ -50,16 +48,11 @@ class _BulkUploadViewState extends ConsumerState<BulkUploadView> {
       body: SafeArea(
         child: hasDrafts
             ? _DraftsList(state: state)
-            : _EmptyPicker(
-                onPick: () => _pickImages(),
-              ),
+            : _EmptyPicker(onPick: () => _pickImages()),
       ),
       bottomNavigationBar: !hasDrafts
           ? null
-          : _BottomBar(
-              state: state,
-              onPublish: _publish,
-            ),
+          : _BottomBar(state: state, onPublish: _publish),
     );
   }
 
@@ -67,12 +60,16 @@ class _BulkUploadViewState extends ConsumerState<BulkUploadView> {
     try {
       await ref.read(bulkUploadControllerProvider.notifier).pickAndAnalyze();
     } catch (e) {
-      if (mounted) showAppSnackBar(context, 'No se pudieron procesar las fotos');
+      if (mounted) {
+        showAppSnackBar(context, 'No se pudieron procesar las fotos');
+      }
     }
   }
 
   Future<void> _publish() async {
-    final int published = await ref.read(bulkUploadControllerProvider.notifier).publishAll();
+    final int published = await ref
+        .read(bulkUploadControllerProvider.notifier)
+        .publishAll();
     if (published > 0) {
       if (!mounted) return;
       showAppSnackBar(context, 'Se publicaron $published productos');
@@ -196,6 +193,7 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
   late final TextEditingController _sku;
   late final TextEditingController _stock;
   late final TextEditingController _tags;
+  late final TextEditingController _category;
 
   @override
   void initState() {
@@ -211,6 +209,9 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
     _sku = TextEditingController(text: widget.draft.sku ?? '');
     _stock = TextEditingController(text: widget.draft.stock.toString());
     _tags = TextEditingController(text: widget.draft.tags.join(', '));
+    _category = TextEditingController(
+      text: ProductCategory.labelOf(widget.draft.category),
+    );
   }
 
   @override
@@ -236,10 +237,13 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
     _sku.text = draft.sku ?? '';
     _stock.text = draft.stock.toString();
     _tags.text = draft.tags.join(', ');
+    _category.text = ProductCategory.labelOf(draft.category);
   }
 
   void _commit() {
-    final double? price = double.tryParse(_price.text.replaceAll('.', '').replaceAll(',', '.'));
+    final double? price = double.tryParse(
+      _price.text.replaceAll('.', '').replaceAll(',', '.'),
+    );
     final double? compareAtPrice = double.tryParse(
       _compareAtPrice.text.replaceAll('.', '').replaceAll(',', '.'),
     );
@@ -253,6 +257,9 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
         price: price,
         compareAtPrice: compareAtPrice,
         sku: _sku.text.isEmpty ? null : _sku.text,
+        category: _category.text.trim().isEmpty
+            ? ProductCategory.other.id
+            : ProductCategory.storedValue(_category.text),
         stock: stock ?? 0,
         tags: _tags.text
             .split(',')
@@ -297,7 +304,11 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       if (isAnalyzing) ...<Widget>[
-                        const AppSkeleton(width: double.infinity, height: 14, radius: 8),
+                        const AppSkeleton(
+                          width: double.infinity,
+                          height: 14,
+                          radius: 8,
+                        ),
                         const SizedBox(height: 8),
                         const AppSkeleton(width: 120, height: 14, radius: 8),
                         const SizedBox(height: 8),
@@ -305,12 +316,19 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
                       ] else if (hasError) ...<Widget>[
                         Row(
                           children: <Widget>[
-                            Icon(Icons.error_outline, color: tokens.danger, size: 18),
+                            Icon(
+                              Icons.error_outline,
+                              color: tokens.danger,
+                              size: 18,
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 draft.error!,
-                                style: TextStyle(color: tokens.danger, fontSize: 13),
+                                style: TextStyle(
+                                  color: tokens.danger,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
@@ -319,7 +337,9 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
                         OutlinedButton.icon(
                           onPressed: widget.analyzing
                               ? null
-                              : () => ref.read(bulkUploadControllerProvider.notifier).retryAnalysis(widget.index),
+                              : () => ref
+                                    .read(bulkUploadControllerProvider.notifier)
+                                    .retryAnalysis(widget.index),
                           icon: const Icon(Icons.refresh, size: 18),
                           label: const Text('Reintentar IA'),
                         ),
@@ -360,7 +380,9 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
                   icon: Icon(Icons.delete_outline, color: tokens.danger),
                   onPressed: widget.publishing
                       ? null
-                      : () => ref.read(bulkUploadControllerProvider.notifier).removeDraft(widget.index),
+                      : () => ref
+                            .read(bulkUploadControllerProvider.notifier)
+                            .removeDraft(widget.index),
                 ),
               ],
             ),
@@ -376,17 +398,10 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
               Row(
                 children: <Widget>[
                   Expanded(
-                    child: _CategoryDropdown(
-                      value: ProductCategory.fromId(draft.category),
-                      onChanged: (ProductCategory? value) {
-                        if (value != null) {
-                          _commit();
-                          ref.read(bulkUploadControllerProvider.notifier).updateDraft(
-                                widget.index,
-                                draft.copyWith(category: value.id),
-                              );
-                        }
-                      },
+                    child: _Field(
+                      label: 'Categoría',
+                      controller: _category,
+                      onChanged: (_) => _commit(),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -418,9 +433,16 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
                 padding: const EdgeInsets.only(top: 8),
                 child: Row(
                   children: <Widget>[
-                    Icon(Icons.check_circle_outline, color: tokens.success, size: 16),
+                    Icon(
+                      Icons.check_circle_outline,
+                      color: tokens.success,
+                      size: 16,
+                    ),
                     const SizedBox(width: 6),
-                    Text('Listo para publicar', style: TextStyle(color: tokens.success, fontSize: 12)),
+                    Text(
+                      'Listo para publicar',
+                      style: TextStyle(color: tokens.success, fontSize: 12),
+                    ),
                   ],
                 ),
               ),
@@ -460,36 +482,12 @@ class _Field extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      onChanged: onChanged,
-    );
-  }
-}
-
-class _CategoryDropdown extends StatelessWidget {
-  const _CategoryDropdown({required this.value, required this.onChanged});
-
-  final ProductCategory value;
-  final ValueChanged<ProductCategory?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<ProductCategory>(
-      initialValue: value,
-      isDense: true,
-      decoration: InputDecoration(
-        labelText: 'Categoría',
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      items: ProductCategory.values
-          .map((ProductCategory c) => DropdownMenuItem<ProductCategory>(
-                value: c,
-                child: Text(c.label),
-              ))
-          .toList(),
       onChanged: onChanged,
     );
   }
@@ -537,7 +535,10 @@ class _BottomBar extends StatelessWidget {
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : Text('Publicar $ready productos'),
               ),

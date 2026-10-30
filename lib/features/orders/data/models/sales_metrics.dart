@@ -30,8 +30,7 @@ class SalesMetrics {
       prevCount: num.parse(json['prev_count'].toString()).toInt(),
       topProducts: (json['top_products'] as List<dynamic>)
           .map(
-            (dynamic e) =>
-                SalesTopProduct.fromJson(e as Map<String, dynamic>),
+            (dynamic e) => SalesTopProduct.fromJson(e as Map<String, dynamic>),
           )
           .toList(),
     );

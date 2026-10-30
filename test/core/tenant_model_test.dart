@@ -5,7 +5,10 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Map<String, dynamic> _tenantJson({DateTime? planExpiresAt, bool isActive = true}) {
+Map<String, dynamic> _tenantJson({
+  DateTime? planExpiresAt,
+  bool isActive = true,
+}) {
   return <String, dynamic>{
     'id': 't1',
     'slug': 'demo',
@@ -44,10 +47,7 @@ void main() {
     test('invalid color falls back to AppColors.primary', () {
       final Map<String, dynamic> json = _tenantJson();
       json['primary_color'] = 'not-a-color';
-      expect(
-        TenantModel.fromJson(json).primaryColorValue,
-        AppColors.primary,
-      );
+      expect(TenantModel.fromJson(json).primaryColorValue, AppColors.primary);
     });
 
     test('canPublish false when plan expired or inactive', () {

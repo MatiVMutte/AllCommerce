@@ -3,10 +3,13 @@
 String? parentPathOf(String location) {
   // Strip query/fragment if present.
   final int q = location.indexOf('?');
-  final String loc =
-      (q >= 0 ? location.substring(0, q) : location).split('#').first;
-  final List<String> segs =
-      loc.split('/').where((String s) => s.isNotEmpty).toList();
+  final String loc = (q >= 0 ? location.substring(0, q) : location)
+      .split('#')
+      .first;
+  final List<String> segs = loc
+      .split('/')
+      .where((String s) => s.isNotEmpty)
+      .toList();
 
   if (segs.isEmpty) return null; // '/'
   if (segs[0] == 's') {

@@ -45,10 +45,7 @@ Future<Uint8List> buildOrderTicketPdf({
                       pw.SizedBox(height: 2),
                       pw.Text(
                         'Comprobante de pedido',
-                        style: const pw.TextStyle(
-                          fontSize: 11,
-                          color: muted,
-                        ),
+                        style: const pw.TextStyle(fontSize: 11, color: muted),
                       ),
                     ],
                   ),
@@ -143,14 +140,8 @@ Future<Uint8List> buildOrderTicketPdf({
                     children: <pw.Widget>[
                       _cell('${item.quantity}x'),
                       _cell(item.titleSnapshot),
-                      _cell(
-                        Formatters.price(item.unitPrice),
-                        alignEnd: true,
-                      ),
-                      _cell(
-                        Formatters.price(item.lineTotal),
-                        alignEnd: true,
-                      ),
+                      _cell(Formatters.price(item.unitPrice), alignEnd: true),
+                      _cell(Formatters.price(item.lineTotal), alignEnd: true),
                     ],
                   ),
               ],
@@ -248,8 +239,7 @@ Future<Uint8List> buildOrderTicketPdf({
                         style: const pw.TextStyle(fontSize: 10, color: muted),
                       ),
                     ),
-                  if (order.notes != null &&
-                      order.notes!.trim().isNotEmpty)
+                  if (order.notes != null && order.notes!.trim().isNotEmpty)
                     pw.Padding(
                       padding: const pw.EdgeInsets.only(top: 4),
                       child: pw.Text(

@@ -37,9 +37,7 @@ void main() {
   setUp(() {
     repo = MockOrderRepository();
     container = ProviderContainer(
-      overrides: [
-        orderRepositoryProvider.overrideWithValue(repo),
-      ],
+      overrides: [orderRepositoryProvider.overrideWithValue(repo)],
     );
     addTearDown(container.dispose);
   });

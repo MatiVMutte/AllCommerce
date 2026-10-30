@@ -6,13 +6,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final Provider<PlanRepository> planRepositoryProvider =
     Provider<PlanRepository>(
-  (Ref ref) => PlanRepository(ref.watch(supabaseClientProvider)),
-);
+      (Ref ref) => PlanRepository(ref.watch(supabaseClientProvider)),
+    );
 
 final FutureProvider<List<PlanModel>> plansProvider =
     FutureProvider<List<PlanModel>>(
-  (Ref ref) => ref.watch(planRepositoryProvider).listPlans(),
-);
+      (Ref ref) => ref.watch(planRepositoryProvider).listPlans(),
+    );
 
 class PlanRepository {
   const PlanRepository(this._client);

@@ -108,7 +108,8 @@ class AdminTenantRow {
       lng: (json['lng'] as num?)?.toDouble(),
       plan: PlanType.fromId(json['plan'] as String? ?? 'free'),
       planExpiresAt:
-          dateOrNull('plan_expires_at') ?? DateTime.fromMillisecondsSinceEpoch(0),
+          dateOrNull('plan_expires_at') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
       isActive: json['is_active'] as bool? ?? false,
       isClaimed: json['is_claimed'] as bool? ?? true,
       createdAt:

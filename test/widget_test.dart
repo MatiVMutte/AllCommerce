@@ -31,7 +31,8 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
-          activeTenantsProvider(null).overrideWith((_) async => <TenantModel>[tenantDemo]),
+          activeTenantsProvider(null)
+              .overrideWith((_) async => <TenantModel>[tenantDemo]),
         ],
         child: const MaterialApp(home: StoreDirectoryView()),
       ),

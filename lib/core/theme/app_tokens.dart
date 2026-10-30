@@ -117,17 +117,18 @@ class AppTokens extends ThemeExtension<AppTokens> {
       surfaceMuted: Color.lerp(surfaceMuted, other.surfaceMuted, t)!,
       border: Color.lerp(border, other.border, t)!,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
-      textSecondary:
-          Color.lerp(textSecondary, other.textSecondary, t)!,
+      textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textTertiary: Color.lerp(textTertiary, other.textTertiary, t)!,
       success: Color.lerp(success, other.success, t)!,
       warning: Color.lerp(warning, other.warning, t)!,
       danger: Color.lerp(danger, other.danger, t)!,
       shimmerBase: Color.lerp(shimmerBase, other.shimmerBase, t)!,
-      shimmerHighlight:
-          Color.lerp(shimmerHighlight, other.shimmerHighlight, t)!,
-      navBackground:
-          Color.lerp(navBackground, other.navBackground, t)!,
+      shimmerHighlight: Color.lerp(
+        shimmerHighlight,
+        other.shimmerHighlight,
+        t,
+      )!,
+      navBackground: Color.lerp(navBackground, other.navBackground, t)!,
       overlay: Color.lerp(overlay, other.overlay, t)!,
     );
   }

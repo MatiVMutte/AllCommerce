@@ -4,12 +4,7 @@ import 'package:shimmer/shimmer.dart';
 
 /// Shimmering placeholder box.
 class AppSkeleton extends StatelessWidget {
-  const AppSkeleton({
-    this.width,
-    this.height,
-    this.radius = 14,
-    super.key,
-  });
+  const AppSkeleton({this.width, this.height, this.radius = 14, super.key});
 
   final double? width;
   final double? height;

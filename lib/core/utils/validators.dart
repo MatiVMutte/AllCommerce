@@ -66,11 +66,28 @@ abstract final class Validators {
 
   static String slugify(String input) {
     const Map<String, String> accents = <String, String>{
-      'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
-      'à': 'a', 'è': 'e', 'ì': 'i', 'ò': 'o', 'ù': 'u',
-      'ä': 'a', 'ë': 'e', 'ï': 'i', 'ö': 'o', 'ü': 'u',
-      'â': 'a', 'ê': 'e', 'î': 'i', 'ô': 'o', 'û': 'u',
-      'ñ': 'n', 'ç': 'c',
+      'á': 'a',
+      'é': 'e',
+      'í': 'i',
+      'ó': 'o',
+      'ú': 'u',
+      'à': 'a',
+      'è': 'e',
+      'ì': 'i',
+      'ò': 'o',
+      'ù': 'u',
+      'ä': 'a',
+      'ë': 'e',
+      'ï': 'i',
+      'ö': 'o',
+      'ü': 'u',
+      'â': 'a',
+      'ê': 'e',
+      'î': 'i',
+      'ô': 'o',
+      'û': 'u',
+      'ñ': 'n',
+      'ç': 'c',
     };
     String result = input.toLowerCase();
     accents.forEach((String from, String to) {

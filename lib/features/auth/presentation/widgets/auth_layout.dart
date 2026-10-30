@@ -3,11 +3,7 @@ import 'package:flutter/material.dart';
 
 /// Big left-aligned title + secondary subtitle used on auth screens.
 class AuthHeader extends StatelessWidget {
-  const AuthHeader({
-    required this.title,
-    required this.subtitle,
-    super.key,
-  });
+  const AuthHeader({required this.title, required this.subtitle, super.key});
 
   final String title;
   final String subtitle;
@@ -20,9 +16,7 @@ class AuthHeader extends StatelessWidget {
       children: <Widget>[
         Text(
           title,
-          style: Theme.of(context)
-              .textTheme
-              .headlineMedium
+          style: Theme.of(context).textTheme.headlineMedium
               ?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
@@ -37,11 +31,7 @@ class AuthHeader extends StatelessWidget {
 
 /// A 13px w600 label above the field (labels outside, hints inside).
 class LabeledField extends StatelessWidget {
-  const LabeledField({
-    required this.label,
-    required this.child,
-    super.key,
-  });
+  const LabeledField({required this.label, required this.child, super.key});
 
   final String label;
   final Widget child;

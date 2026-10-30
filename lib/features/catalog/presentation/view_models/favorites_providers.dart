@@ -22,5 +22,5 @@ class FavoriteStoresNotifier extends Notifier<Set<String>> {
 
 final favoriteStoresProvider =
     NotifierProvider<FavoriteStoresNotifier, Set<String>>(
-  FavoriteStoresNotifier.new,
-);
+      FavoriteStoresNotifier.new,
+    );

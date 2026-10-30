@@ -30,9 +30,7 @@ class ShareService {
 
   /// Default sender through share_plus.
   static Future<void> _share(String text, String url) {
-    return SharePlus.instance.share(
-      ShareParams(text: '$text\n$url'),
-    );
+    return SharePlus.instance.share(ShareParams(text: '$text\n$url'));
   }
 
   Future<ShareResult> shareLink({

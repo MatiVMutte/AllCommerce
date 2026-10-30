@@ -57,13 +57,16 @@ class OrderModel {
       total: num.parse(json['total'].toString()).toDouble(),
       couponId: json['coupon_id'] as String?,
       notes: json['notes'] as String?,
-      deliveryMethod:
-          DeliveryMethod.fromId(json['delivery_method'] as String? ?? 'pickup'),
+      deliveryMethod: DeliveryMethod.fromId(
+        json['delivery_method'] as String? ?? 'pickup',
+      ),
       deliveryAddress: json['delivery_address'] as String?,
       deliveryCost:
-          num.tryParse(json['delivery_cost']?.toString() ?? '0')?.toDouble() ?? 0,
-      paymentMethod:
-          PaymentMethod.fromId(json['payment_method'] as String? ?? 'cash'),
+          num.tryParse(json['delivery_cost']?.toString() ?? '0')?.toDouble() ??
+          0,
+      paymentMethod: PaymentMethod.fromId(
+        json['payment_method'] as String? ?? 'cash',
+      ),
       paymentNotes: json['payment_notes'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
@@ -94,8 +97,7 @@ class OrderModel {
       orderNumber: orderNumber ?? this.orderNumber,
       tenantId: tenantId ?? this.tenantId,
       customerId: customerId ?? this.customerId,
-      customerNameSnapshot:
-          customerNameSnapshot ?? this.customerNameSnapshot,
+      customerNameSnapshot: customerNameSnapshot ?? this.customerNameSnapshot,
       customerPhoneSnapshot:
           customerPhoneSnapshot ?? this.customerPhoneSnapshot,
       status: status ?? this.status,
@@ -105,12 +107,12 @@ class OrderModel {
       couponId: couponId != null ? couponId() : this.couponId,
       notes: notes != null ? notes() : this.notes,
       deliveryMethod: deliveryMethod ?? this.deliveryMethod,
-      deliveryAddress:
-          deliveryAddress != null ? deliveryAddress() : this.deliveryAddress,
+      deliveryAddress: deliveryAddress != null
+          ? deliveryAddress()
+          : this.deliveryAddress,
       deliveryCost: deliveryCost ?? this.deliveryCost,
       paymentMethod: paymentMethod ?? this.paymentMethod,
-      paymentNotes:
-          paymentNotes != null ? paymentNotes() : this.paymentNotes,
+      paymentNotes: paymentNotes != null ? paymentNotes() : this.paymentNotes,
       createdAt: createdAt ?? this.createdAt,
     );
   }

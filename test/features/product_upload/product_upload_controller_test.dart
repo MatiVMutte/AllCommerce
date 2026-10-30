@@ -74,9 +74,8 @@ void main() {
   });
 
   test('pickAndAnalyze stores suggestion and image', () async {
-    when(() => images.pick(any())).thenAnswer(
-      (_) async => PickedImage(bytes: bytes, name: 'a.jpg'),
-    );
+    when(() => images.pick(any()))
+        .thenAnswer((_) async => PickedImage(bytes: bytes, name: 'a.jpg'));
     when(() => images.compress(any())).thenAnswer((_) async => bytes);
     when(() => ai.analyze(any())).thenAnswer((_) async => suggestion);
 
@@ -88,13 +87,11 @@ void main() {
   });
 
   test('AI failure keeps image and sets infoMessage', () async {
-    when(() => images.pick(any())).thenAnswer(
-      (_) async => PickedImage(bytes: bytes, name: 'a.jpg'),
-    );
+    when(() => images.pick(any()))
+        .thenAnswer((_) async => PickedImage(bytes: bytes, name: 'a.jpg'));
     when(() => images.compress(any())).thenAnswer((_) async => bytes);
-    when(() => ai.analyze(any())).thenThrow(
-      const AiAnalyzeException('AI_UNAVAILABLE', 'down'),
-    );
+    when(() => ai.analyze(any()))
+        .thenThrow(const AiAnalyzeException('AI_UNAVAILABLE', 'down'));
 
     await controller().pickAndAnalyze(ImageSource.gallery);
 
@@ -113,9 +110,8 @@ void main() {
   });
 
   test('save runs create -> uploadImage -> setImageUrl in order', () async {
-    when(() => images.pick(any())).thenAnswer(
-      (_) async => PickedImage(bytes: bytes, name: 'a.jpg'),
-    );
+    when(() => images.pick(any()))
+        .thenAnswer((_) async => PickedImage(bytes: bytes, name: 'a.jpg'));
     when(() => images.compress(any())).thenAnswer((_) async => bytes);
     when(() => ai.analyze(any())).thenAnswer((_) async => suggestion);
     when(() => products.create(any(), any())).thenAnswer((_) async => product);
@@ -135,18 +131,17 @@ void main() {
     verifyInOrder(<dynamic Function()>[
       () => products.create(any(), any()),
       () => products.uploadImage(
-            tenantId: any(named: 'tenantId'),
-            productId: any(named: 'productId'),
-            jpegBytes: any(named: 'jpegBytes'),
-          ),
+        tenantId: any(named: 'tenantId'),
+        productId: any(named: 'productId'),
+        jpegBytes: any(named: 'jpegBytes'),
+      ),
       () => products.setImageUrl(any(), any()),
     ]);
   });
 
   test('save blocked by PRODUCT_LIMIT_REACHED skips upload', () async {
-    when(() => products.create(any(), any())).thenThrow(
-      const PostgrestException(message: 'PRODUCT_LIMIT_REACHED'),
-    );
+    when(() => products.create(any(), any()))
+        .thenThrow(const PostgrestException(message: 'PRODUCT_LIMIT_REACHED'));
 
     final ProductModel? result = await controller().save(input, 't1');
 
@@ -179,9 +174,8 @@ void main() {
   });
 
   test('update with image runs update -> uploadImage -> setImageUrl', () async {
-    when(() => images.pick(any())).thenAnswer(
-      (_) async => PickedImage(bytes: bytes, name: 'a.jpg'),
-    );
+    when(() => images.pick(any()))
+        .thenAnswer((_) async => PickedImage(bytes: bytes, name: 'a.jpg'));
     when(() => images.compress(any())).thenAnswer((_) async => bytes);
     when(() => ai.analyze(any())).thenAnswer((_) async => suggestion);
     when(() => products.update(any(), any(), any()))
@@ -202,18 +196,17 @@ void main() {
     verifyInOrder(<dynamic Function()>[
       () => products.update(any(), any(), any()),
       () => products.uploadImage(
-            tenantId: any(named: 'tenantId'),
-            productId: any(named: 'productId'),
-            jpegBytes: any(named: 'jpegBytes'),
-          ),
+        tenantId: any(named: 'tenantId'),
+        productId: any(named: 'productId'),
+        jpegBytes: any(named: 'jpegBytes'),
+      ),
       () => products.setImageUrl(any(), any()),
     ]);
   });
 
   test('update returns product even if image upload fails', () async {
-    when(() => images.pick(any())).thenAnswer(
-      (_) async => PickedImage(bytes: bytes, name: 'a.jpg'),
-    );
+    when(() => images.pick(any()))
+        .thenAnswer((_) async => PickedImage(bytes: bytes, name: 'a.jpg'));
     when(() => images.compress(any())).thenAnswer((_) async => bytes);
     when(() => ai.analyze(any())).thenAnswer((_) async => suggestion);
     when(() => products.update(any(), any(), any()))
@@ -234,9 +227,8 @@ void main() {
   });
 
   test('save returns product even if image upload fails', () async {
-    when(() => images.pick(any())).thenAnswer(
-      (_) async => PickedImage(bytes: bytes, name: 'a.jpg'),
-    );
+    when(() => images.pick(any()))
+        .thenAnswer((_) async => PickedImage(bytes: bytes, name: 'a.jpg'));
     when(() => images.compress(any())).thenAnswer((_) async => bytes);
     when(() => ai.analyze(any())).thenAnswer((_) async => suggestion);
     when(() => products.create(any(), any())).thenAnswer((_) async => product);

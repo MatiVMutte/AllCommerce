@@ -50,12 +50,9 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
 
   void _scheduleRetry() {
     if (_attempt >= 2 || (_retryTimer?.isActive ?? false)) return;
-    _retryTimer = Timer(
-      Duration(milliseconds: 500 * (_attempt + 1)),
-      () {
-        if (mounted) setState(() => _attempt++);
-      },
-    );
+    _retryTimer = Timer(Duration(milliseconds: 500 * (_attempt + 1)), () {
+      if (mounted) setState(() => _attempt++);
+    });
   }
 
   String get _effectiveUrl {
@@ -73,15 +70,16 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
         _effectiveUrl,
         key: ValueKey<String>(_effectiveUrl),
         fit: widget.fit,
-        frameBuilder: (
-          BuildContext context,
-          Widget child,
-          int? frame,
-          bool wasSynchronouslyLoaded,
-        ) {
-          if (wasSynchronouslyLoaded || frame != null) return child;
-          return loadingFallback;
-        },
+        frameBuilder:
+            (
+              BuildContext context,
+              Widget child,
+              int? frame,
+              bool wasSynchronouslyLoaded,
+            ) {
+              if (wasSynchronouslyLoaded || frame != null) return child;
+              return loadingFallback;
+            },
         errorBuilder: (BuildContext context, Object error, StackTrace? st) {
           _scheduleRetry();
           return widget.errorBuilder(context);
@@ -92,7 +90,9 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
       key: ValueKey<String>(_effectiveUrl),
       imageUrl: _effectiveUrl,
       fit: widget.fit,
-      placeholder: widget.placeholder != null ? (_, _) => loadingFallback : null,
+      placeholder: widget.placeholder != null
+          ? (_, _) => loadingFallback
+          : null,
       errorWidget: (BuildContext context, String url, Object error) {
         _scheduleRetry();
         return widget.errorBuilder(context);

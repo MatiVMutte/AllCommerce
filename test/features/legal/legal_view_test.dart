@@ -6,10 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   testWidgets('TermsView renders sections', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        home: const TermsView(),
-      ),
+      MaterialApp(theme: AppTheme.light(), home: const TermsView()),
     );
     expect(find.text('Términos y condiciones'), findsOneWidget);
     expect(find.text('1. Qué es AllCommerce'), findsOneWidget);
@@ -17,10 +14,7 @@ void main() {
 
   testWidgets('PrivacyView renders sections', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        home: const PrivacyView(),
-      ),
+      MaterialApp(theme: AppTheme.light(), home: const PrivacyView()),
     );
     expect(find.text('Política de privacidad'), findsOneWidget);
     expect(find.text('1. Datos que recopilamos'), findsOneWidget);

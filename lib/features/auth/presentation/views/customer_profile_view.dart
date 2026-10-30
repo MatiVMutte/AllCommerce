@@ -58,8 +58,7 @@ class _CustomerProfileViewState extends ConsumerState<CustomerProfileView> {
                   children: <Widget>[
                     const AuthHeader(
                       title: 'Tu perfil',
-                      subtitle:
-                          'Solo necesitamos tu nombre para tus pedidos',
+                      subtitle: 'Solo necesitamos tu nombre para tus pedidos',
                     ),
                     const SizedBox(height: 32),
                     LabeledField(
@@ -80,8 +79,7 @@ class _CustomerProfileViewState extends ConsumerState<CustomerProfileView> {
                         keyboardType: TextInputType.phone,
                         decoration: const InputDecoration(
                           hintText: '11 2233 4455',
-                          helperText:
-                              'Lo pedimos al confirmar un pedido',
+                          helperText: 'Lo pedimos al confirmar un pedido',
                         ),
                         validator: (String? value) {
                           if ((value ?? '').trim().isEmpty) {
@@ -98,9 +96,7 @@ class _CustomerProfileViewState extends ConsumerState<CustomerProfileView> {
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Text('Continuar'),
                     ),

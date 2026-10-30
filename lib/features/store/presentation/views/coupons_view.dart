@@ -122,7 +122,7 @@ class CouponsView extends ConsumerWidget {
 
   void _showCreateSheet(BuildContext context, WidgetRef ref, String tenantId) {
     final TextEditingController codeCtrl = TextEditingController();
-    final TextEditingController pctCtrl = TextEditingController();
+    final TextEditingController valueCtrl = TextEditingController();
     showModalBottomSheet<void>(
       context: context,
       useRootNavigator: true,
@@ -130,20 +130,28 @@ class CouponsView extends ConsumerWidget {
       isScrollControlled: true,
       builder: (BuildContext sheetContext) {
         bool busy = false;
+        String type = 'percent';
         String? error;
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             Future<void> save() async {
               final String code = codeCtrl.text.trim().toUpperCase();
-              final int? pct = int.tryParse(pctCtrl.text.trim());
+              final double? value = double.tryParse(
+                valueCtrl.text.trim().replaceAll(',', '.'),
+              );
               if (!_codeRe.hasMatch(code)) {
                 setState(
                   () => error = 'El código debe tener 3 a 20 letras/números (sin espacios).',
                 );
                 return;
               }
-              if (pct == null || pct < 1 || pct > 100) {
+              if (type == 'percent' &&
+                  (value == null || value < 1 || value > 100)) {
                 setState(() => error = 'El descuento debe ser entre 1 y 100%.');
+                return;
+              }
+              if (type == 'fixed' && (value == null || value <= 0)) {
+                setState(() => error = 'Ingresá un monto mayor a 0.');
                 return;
               }
               setState(() {
@@ -156,7 +164,11 @@ class CouponsView extends ConsumerWidget {
                     .create(
                       tenantId: tenantId,
                       code: code,
-                      discountPercent: pct,
+                      discountType: type,
+                      discountPercent: type == 'percent'
+                          ? value!.round()
+                          : null,
+                      discountAmount: type == 'fixed' ? value : null,
                     );
                 ref.invalidate(ownerCouponsProvider(tenantId));
                 if (context.mounted) {
@@ -204,17 +216,40 @@ class CouponsView extends ConsumerWidget {
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 12),
-                  TextField(
-                    controller: pctCtrl,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
+                  SegmentedButton<String>(
+                    segments: const <ButtonSegment<String>>[
+                      ButtonSegment<String>(
+                        value: 'percent',
+                        label: Text('Porcentaje'),
+                        icon: Icon(Icons.percent_rounded, size: 16),
+                      ),
+                      ButtonSegment<String>(
+                        value: 'fixed',
+                        label: Text('Monto fijo'),
+                        icon: Icon(Icons.payments_outlined, size: 16),
+                      ),
                     ],
-                    decoration: const InputDecoration(
-                      labelText: 'Descuento %',
-                      hintText: '10',
-                      suffixText: '%',
+                    selected: <String>{type},
+                    onSelectionChanged: (Set<String> v) =>
+                        setState(() => type = v.first),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: valueCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                      LengthLimitingTextInputFormatter(9),
+                    ],
+                    decoration: InputDecoration(
+                      labelText: type == 'percent'
+                          ? 'Descuento %'
+                          : 'Descuento \$',
+                      hintText: type == 'percent' ? '10' : '500',
+                      suffixText: type == 'percent' ? '%' : null,
+                      prefixText: type == 'fixed' ? r'$ ' : null,
                     ),
                   ),
                   if (error != null) ...<Widget>[
@@ -272,7 +307,7 @@ class _CouponTile extends ConsumerWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            '-${coupon.discountPercent}%',
+            coupon.discountLabel,
             style: TextStyle(
               fontWeight: FontWeight.w700,
               color: tokens.success,

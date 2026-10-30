@@ -42,8 +42,8 @@ class TenantRepository {
         .eq('is_active', true);
     final PostgrestTransformBuilder<List<Map<String, dynamic>>> ordered =
         zone == null || zone.isEmpty
-            ? query.order('name')
-            : query.eq('zone', zone).order('name');
+        ? query.order('name')
+        : query.eq('zone', zone).order('name');
     final List<Map<String, dynamic>> rows = await ordered;
     return rows.map(TenantModel.fromJson).toList();
   }

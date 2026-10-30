@@ -37,10 +37,7 @@ String _dayKey(DateTime d) => '${d.year}-${d.month}-${d.day}';
 
 /// Groups [orders] (already sorted desc) into day sections with
 /// Spanish labels. [now] is injectable for tests.
-List<OrderDayGroup> groupOrdersByDay(
-  List<OrderModel> orders, {
-  DateTime? now,
-}) {
+List<OrderDayGroup> groupOrdersByDay(List<OrderModel> orders, {DateTime? now}) {
   final DateTime ref = now ?? DateTime.now();
   final DateTime today = DateTime(ref.year, ref.month, ref.day);
   final List<OrderDayGroup> groups = <OrderDayGroup>[];
@@ -54,14 +51,15 @@ List<OrderDayGroup> groupOrdersByDay(
     } else if (day == today.subtract(const Duration(days: 1))) {
       label = 'Ayer';
     } else {
-      label =
-          '${_weekdays[d.weekday - 1]} ${d.day} ${_months[d.month - 1]}';
+      label = '${_weekdays[d.weekday - 1]} ${d.day} ${_months[d.month - 1]}';
     }
     final String key = _dayKey(day);
     final OrderDayGroup? existing = byKey[key];
     if (existing == null) {
-      final OrderDayGroup group =
-          OrderDayGroup(label: label, orders: <OrderModel>[order]);
+      final OrderDayGroup group = OrderDayGroup(
+        label: label,
+        orders: <OrderModel>[order],
+      );
       byKey[key] = group;
       groups.add(group);
     } else {

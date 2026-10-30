@@ -15,12 +15,13 @@ void main() {
     };
     expect(UserModel.fromJson(base).isAdmin, isFalse);
     expect(
-      UserModel.fromJson(<String, dynamic>{...base, 'is_admin': true})
-          .isAdmin,
+      UserModel.fromJson(<String, dynamic>{...base, 'is_admin': true}).isAdmin,
       isTrue,
     );
-    final UserModel admin =
-        UserModel.fromJson(<String, dynamic>{...base, 'is_admin': true});
+    final UserModel admin = UserModel.fromJson(<String, dynamic>{
+      ...base,
+      'is_admin': true,
+    });
     expect(admin.toJson()['is_admin'], isTrue);
     expect(admin.copyWith(fullName: 'B').isAdmin, isTrue);
   });
@@ -53,10 +54,14 @@ void main() {
   });
 
   test('AiUsage parses nullable limit and reached flag', () {
-    expect(AiUsage.fromJson(<String, dynamic>{'used': 12, 'limit': 60}).limit,
-        60);
-    final AiUsage unlimited =
-        AiUsage.fromJson(<String, dynamic>{'used': 5, 'limit': null});
+    expect(
+      AiUsage.fromJson(<String, dynamic>{'used': 12, 'limit': 60}).limit,
+      60,
+    );
+    final AiUsage unlimited = AiUsage.fromJson(<String, dynamic>{
+      'used': 5,
+      'limit': null,
+    });
     expect(unlimited.limit, isNull);
     expect(unlimited.reached, isFalse);
     expect(
@@ -83,8 +88,7 @@ void main() {
   });
 
   test('AdminTenantRow parses null last_order_at', () {
-    final AdminTenantRow row =
-        AdminTenantRow.fromJson(<String, dynamic>{
+    final AdminTenantRow row = AdminTenantRow.fromJson(<String, dynamic>{
       'id': 't1',
       'name': 'Demo',
       'slug': 'demo',

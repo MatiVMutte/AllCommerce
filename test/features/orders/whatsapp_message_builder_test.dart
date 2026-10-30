@@ -17,7 +17,7 @@ TenantModel _tenant() {
     trialStartedAt: DateTime(2024),
     planExpiresAt: DateTime.now().add(const Duration(days: 30)),
     isActive: true,
-      isClaimed: true,
+    isClaimed: true,
     createdAt: DateTime(2024),
   );
 }
@@ -82,7 +82,9 @@ void main() {
 
   test('buildWhatsAppUri encodes message and uses wa.me', () {
     final Uri uri = buildWhatsAppUri('5491122334455', 'Hola! Quiero pedir');
-    expect(uri.toString(),
-        'https://wa.me/5491122334455?text=Hola!%20Quiero%20pedir');
+    expect(
+      uri.toString(),
+      'https://wa.me/5491122334455?text=Hola!%20Quiero%20pedir',
+    );
   });
 }

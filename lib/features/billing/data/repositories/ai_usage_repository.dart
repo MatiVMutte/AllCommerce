@@ -23,8 +23,8 @@ class AiUsage {
 
 final Provider<AiUsageRepository> aiUsageRepositoryProvider =
     Provider<AiUsageRepository>(
-  (Ref ref) => AiUsageRepository(ref.watch(supabaseClientProvider)),
-);
+      (Ref ref) => AiUsageRepository(ref.watch(supabaseClientProvider)),
+    );
 
 final FutureProvider<AiUsage> aiUsageProvider = FutureProvider<AiUsage>(
   (Ref ref) => ref.watch(aiUsageRepositoryProvider).current(),
@@ -36,8 +36,9 @@ class AiUsageRepository {
   final SupabaseClient _client;
 
   Future<AiUsage> current() async {
-    final Map<String, dynamic> row =
-        await _client.rpc<Map<String, dynamic>>('ai_usage_current');
+    final Map<String, dynamic> row = await _client.rpc<Map<String, dynamic>>(
+      'ai_usage_current',
+    );
     return AiUsage.fromJson(row);
   }
 }

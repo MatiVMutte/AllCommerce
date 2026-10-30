@@ -37,10 +37,7 @@ Future<bool?> showAppConfirmSheet(
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              message,
-              style: TextStyle(color: tokens.textSecondary),
-            ),
+            Text(message, style: TextStyle(color: tokens.textSecondary)),
             const SizedBox(height: 20),
             if (destructive)
               FilledButton(

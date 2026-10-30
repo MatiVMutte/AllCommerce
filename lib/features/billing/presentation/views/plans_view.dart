@@ -58,9 +58,8 @@ class _PlansViewState extends ConsumerState<PlansView> {
             child: plansAsync.when(
               loading: () =>
                   const AppSkeletonList(itemCount: 3, itemHeight: 220),
-              error: (Object e, StackTrace s) => AppErrorState(
-                onRetry: () => ref.invalidate(plansProvider),
-              ),
+              error: (Object e, StackTrace s) =>
+                  AppErrorState(onRetry: () => ref.invalidate(plansProvider)),
               data: (List<PlanModel> plans) {
                 final List<PlanModel> visible = plans
                     .where((PlanModel p) => p.id != PlanType.trial)
@@ -72,12 +71,14 @@ class _PlansViewState extends ConsumerState<PlansView> {
                       'Elegí el plan que acompañe a tu local',
                       style: TextStyle(color: tokens.textSecondary),
                     ),
-                    if (tenant != null && tenant.plan == PlanType.trial &&
+                    if (tenant != null &&
+                        tenant.plan == PlanType.trial &&
                         tenant.canPublish) ...<Widget>[
                       const SizedBox(height: 16),
                       _TrialBanner(daysLeft: tenant.daysLeft),
                     ],
-                    if (tenant != null && tenant.plan == PlanType.free) ...<Widget>[
+                    if (tenant != null &&
+                        tenant.plan == PlanType.free) ...<Widget>[
                       const SizedBox(height: 16),
                       _FreeBanner(productsUsed: tenant.plan.maxProducts),
                     ],
@@ -207,11 +208,7 @@ class _FreeBanner extends StatelessWidget {
 }
 
 class _PlanCard extends StatelessWidget {
-  const _PlanCard({
-    required this.plan,
-    required this.current,
-    this.onChoose,
-  });
+  const _PlanCard({required this.plan, required this.current, this.onChoose});
 
   final PlanModel plan;
   final bool current;
@@ -226,9 +223,7 @@ class _PlanCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16),
       child: AppCard(
         padding: const EdgeInsets.all(20),
-        border: current
-            ? Border.all(color: scheme.primary, width: 2)
-            : null,
+        border: current ? Border.all(color: scheme.primary, width: 2) : null,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -237,9 +232,7 @@ class _PlanCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     plan.name,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
+                    style: Theme.of(context).textTheme.titleLarge
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -284,8 +277,7 @@ class _PlanCard extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: <Widget>[
-                    Icon(Icons.check_rounded,
-                        size: 18, color: scheme.primary),
+                    Icon(Icons.check_rounded, size: 18, color: scheme.primary),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -308,14 +300,14 @@ class _PlanCard extends StatelessWidget {
                       child: Text('Plan actual'),
                     )
                   : plan.id == PlanType.free
-                      ? const FilledButton.tonal(
-                          onPressed: null,
-                          child: Text('Incluido gratis'),
-                        )
-                      : FilledButton(
-                          onPressed: onChoose,
-                          child: const Text('Quiero este plan'),
-                        ),
+                  ? const FilledButton.tonal(
+                      onPressed: null,
+                      child: Text('Incluido gratis'),
+                    )
+                  : FilledButton(
+                      onPressed: onChoose,
+                      child: const Text('Quiero este plan'),
+                    ),
             ),
           ],
         ),

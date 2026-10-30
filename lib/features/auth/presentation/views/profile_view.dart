@@ -31,8 +31,9 @@ class ProfileView extends ConsumerWidget {
       destructive: true,
     );
     if (confirmed != true || !context.mounted) return;
-    final bool ok =
-        await ref.read(authControllerProvider.notifier).deleteAccount();
+    final bool ok = await ref
+        .read(authControllerProvider.notifier)
+        .deleteAccount();
     if (!context.mounted) return;
     if (!ok) {
       final Object? error = ref.read(authControllerProvider).error;
@@ -204,8 +205,9 @@ class ProfileView extends ConsumerWidget {
                     child: Row(
                       children: <Widget>[
                         CircleAvatar(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .primary,
                           child: const Icon(
                             Icons.storefront_rounded,
                             color: Colors.white,
@@ -244,8 +246,9 @@ class ProfileView extends ConsumerWidget {
                     child: Row(
                       children: <Widget>[
                         CircleAvatar(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .primary,
                           child: const Icon(
                             Icons.auto_awesome_rounded,
                             color: Colors.white,
@@ -302,8 +305,7 @@ class ProfileView extends ConsumerWidget {
                             Icons.admin_panel_settings_outlined,
                           ),
                           title: const Text('Administración'),
-                          trailing:
-                              const Icon(Icons.chevron_right_rounded),
+                          trailing: const Icon(Icons.chevron_right_rounded),
                           onTap: () => context.push('/admin'),
                         ),
                       ListTile(
@@ -393,14 +395,12 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final String rawPhone = _phone.text.trim();
-    final String? cleanPhone =
-        rawPhone.isEmpty ? null : Validators.normalizePhone(rawPhone);
+    final String? cleanPhone = rawPhone.isEmpty
+        ? null
+        : Validators.normalizePhone(rawPhone);
     final bool ok = await ref
         .read(authControllerProvider.notifier)
-        .updateProfile(
-          fullName: _name.text.trim(),
-          phone: cleanPhone,
-        );
+        .updateProfile(fullName: _name.text.trim(), phone: cleanPhone);
     if (!mounted) return;
     if (!ok) {
       final Object? error = ref.read(authControllerProvider).error;
@@ -430,9 +430,8 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
           children: <Widget>[
             Text(
               'Editar mis datos',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
             TextFormField(

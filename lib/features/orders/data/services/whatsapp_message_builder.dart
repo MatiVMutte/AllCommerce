@@ -46,7 +46,5 @@ String buildOrderMessage({
 }
 
 Uri buildWhatsAppUri(String phone, String message) {
-  return Uri.parse(
-    'https://wa.me/$phone?text=${Uri.encodeComponent(message)}',
-  );
+  return Uri.parse('https://wa.me/$phone?text=${Uri.encodeComponent(message)}');
 }

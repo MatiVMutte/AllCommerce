@@ -11,7 +11,11 @@ import 'package:go_router/go_router.dart';
 /// Resolves the product (deep-link safe) then renders the upload form
 /// in edit mode.
 class ProductEditView extends ConsumerWidget {
-  const ProductEditView({required this.product, required this.productId, super.key});
+  const ProductEditView({
+    required this.product,
+    required this.productId,
+    super.key,
+  });
 
   /// Product passed via `state.extra`; may be null on deep links.
   final ProductModel? product;
@@ -21,28 +25,26 @@ class ProductEditView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ProductModel? direct = product;
     if (direct != null) return ProductUploadView(existing: direct);
-    final AsyncValue<ProductModel?> async =
-        ref.watch(ownerProductProvider(productId));
+    final AsyncValue<ProductModel?> async = ref.watch(
+      ownerProductProvider(productId),
+    );
     return async.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (Object error, StackTrace stack) => Scaffold(
         appBar: AppBar(
           leading: const AppBackButton(fallback: '/owner/products'),
           title: const Text('Editar producto'),
         ),
         body: AppErrorState(
-          onRetry: () =>
-              ref.invalidate(ownerProductProvider(productId)),
+          onRetry: () => ref.invalidate(ownerProductProvider(productId)),
         ),
       ),
       data: (ProductModel? resolved) {
         if (resolved == null) {
           return Scaffold(
             appBar: AppBar(
-              leading:
-                  const AppBackButton(fallback: '/owner/products'),
+              leading: const AppBackButton(fallback: '/owner/products'),
               title: const Text('Editar producto'),
             ),
             body: AppEmptyState(

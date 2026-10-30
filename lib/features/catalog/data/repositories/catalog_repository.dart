@@ -1,3 +1,4 @@
+import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -63,6 +64,47 @@ class CatalogRepository {
         .map(GlobalProductHit.fromJson)
         .toList();
   }
+
+  /// Active coupons of a store so the catalog can advertise them.
+  /// Backed by the `list_active_coupons` RPC (anon-safe, returns only
+  /// code + discount, never internal fields).
+  Future<List<PublicCoupon>> listActiveCoupons(String tenantId) async {
+    final List<dynamic> rows = await _client.rpc<List<dynamic>>(
+      'list_active_coupons',
+      params: <String, dynamic>{'p_tenant_id': tenantId},
+    );
+    return rows
+        .whereType<Map<String, dynamic>>()
+        .map(PublicCoupon.fromJson)
+        .toList();
+  }
+}
+
+/// Public coupon info exposed on the catalog ("Usá PROMO10 → 10% OFF").
+class PublicCoupon {
+  const PublicCoupon({
+    required this.code,
+    required this.type,
+    required this.value,
+  });
+
+  final String code;
+
+  /// 'percent' or 'fixed'.
+  final String type;
+  final double value;
+
+  factory PublicCoupon.fromJson(Map<String, dynamic> json) {
+    return PublicCoupon(
+      code: json['code'] as String,
+      type: (json['type'] as String?) ?? 'percent',
+      value: num.parse(json['value'].toString()).toDouble(),
+    );
+  }
+
+  /// Short discount text for chips ("−10%" / "−$500").
+  String get label =>
+      type == 'fixed' ? '−${Formatters.price(value)}' : '−${value.round()}%';
 }
 
 /// Product search hit across all active stores for the global directory search.

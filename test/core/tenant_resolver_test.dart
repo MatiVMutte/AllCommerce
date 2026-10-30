@@ -27,10 +27,7 @@ void main() {
     test('returns null when all empty', () {
       const TenantResolver resolver = TenantResolver(fixedSlug: '');
       expect(resolver.resolveSlug(), isNull);
-      expect(
-        resolver.resolveSlug(routeSlug: '  ', selectedSlug: ''),
-        isNull,
-      );
+      expect(resolver.resolveSlug(routeSlug: '  ', selectedSlug: ''), isNull);
     });
 
     test('normalizes whitespace and case', () {
@@ -39,10 +36,7 @@ void main() {
     });
 
     test('isWhiteLabel reflects fixed slug', () {
-      expect(
-        const TenantResolver(fixedSlug: 'demo').isWhiteLabel,
-        isTrue,
-      );
+      expect(const TenantResolver(fixedSlug: 'demo').isWhiteLabel, isTrue);
       expect(const TenantResolver(fixedSlug: '').isWhiteLabel, isFalse);
     });
   });

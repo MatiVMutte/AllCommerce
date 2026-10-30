@@ -51,9 +51,7 @@ void main() {
       'La imagen supera los 2 MB',
     );
     expect(
-      AuthErrorMapper.toMessage(
-        const AiAnalyzeException('AI_EMPTY', 'x'),
-      ),
+      AuthErrorMapper.toMessage(const AiAnalyzeException('AI_EMPTY', 'x')),
       'La IA no pudo analizar la foto, completá los datos a mano',
     );
   });
@@ -63,19 +61,15 @@ void main() {
       'PHONE_REQUIRED': 'Necesitamos tu WhatsApp para enviar el pedido',
       'PROFILE_REQUIRED': 'Completá tu perfil para hacer el pedido',
       'EMPTY_CART': 'Tu carrito está vacío',
-      'PRODUCT_UNAVAILABLE':
-          'Un producto del carrito ya no está disponible',
+      'PRODUCT_UNAVAILABLE': 'Un producto del carrito ya no está disponible',
       'TENANT_INACTIVE': 'Este local no está recibiendo pedidos',
       'INVALID_COUPON': 'El cupón no es válido',
       'INVALID_QUANTITY': 'Cantidad inválida',
-      'OUT_OF_STOCK':
-          'No alcanza el stock disponible de uno de los productos',
+      'OUT_OF_STOCK': 'No alcanza el stock disponible de uno de los productos',
     };
     for (final MapEntry<String, String> entry in cases.entries) {
       expect(
-        AuthErrorMapper.toMessage(
-          PostgrestException(message: entry.key),
-        ),
+        AuthErrorMapper.toMessage(PostgrestException(message: entry.key)),
         entry.value,
         reason: entry.key,
       );

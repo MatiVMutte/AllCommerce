@@ -141,10 +141,7 @@ class _LegalDocumentScaffold extends StatelessWidget {
               children: <Widget>[
                 Text(
                   'Última actualización: $updatedAt',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: tokens.textTertiary,
-                  ),
+                  style: TextStyle(fontSize: 13, color: tokens.textTertiary),
                 ),
                 const SizedBox(height: 16),
                 for (final _LegalSection section in sections) ...<Widget>[

@@ -74,8 +74,7 @@ class _WelcomeViewState extends State<WelcomeView> {
                 child: PageView.builder(
                   controller: _controller,
                   itemCount: _slides.length,
-                  onPageChanged: (int index) =>
-                      setState(() => _page = index),
+                  onPageChanged: (int index) => setState(() => _page = index),
                   itemBuilder: (BuildContext context, int index) {
                     final _Slide slide = _slides[index];
                     return Padding(
@@ -88,35 +87,22 @@ class _WelcomeViewState extends State<WelcomeView> {
                             height: 120,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color:
-                                  primary.withValues(alpha: 0.1),
+                              color: primary.withValues(alpha: 0.1),
                             ),
-                            child: Icon(
-                              slide.icon,
-                              size: 52,
-                              color: primary,
-                            ),
+                            child: Icon(slide.icon, size: 52, color: primary),
                           ),
                           const SizedBox(height: 32),
                           Text(
                             slide.title,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(fontWeight: FontWeight.w700),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 12),
                           Text(
                             slide.text,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyLarge
-                                ?.copyWith(
-                                  color: tokens.textSecondary,
-                                ),
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(color: tokens.textSecondary),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -134,13 +120,10 @@ class _WelcomeViewState extends State<WelcomeView> {
                     curve: Curves.easeOutCubic,
                     width: index == _page ? 24 : 8,
                     height: 8,
-                    margin:
-                        const EdgeInsets.symmetric(horizontal: 4),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(999),
-                      color: index == _page
-                          ? primary
-                          : tokens.border,
+                      color: index == _page ? primary : tokens.border,
                     ),
                   ),
                 ),
@@ -156,15 +139,12 @@ class _WelcomeViewState extends State<WelcomeView> {
                           context.push('/register');
                         } else {
                           _controller.nextPage(
-                            duration:
-                                const Duration(milliseconds: 300),
+                            duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
                           );
                         }
                       },
-                      child: Text(
-                        isLast ? 'Crear cuenta' : 'Siguiente',
-                      ),
+                      child: Text(isLast ? 'Crear cuenta' : 'Siguiente'),
                     ),
                     TextButton(
                       onPressed: () => context.push('/login'),

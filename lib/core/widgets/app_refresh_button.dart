@@ -54,11 +54,7 @@ class _AppRefreshButtonState extends State<AppRefreshButton> {
                   color: tokens.textPrimary,
                 ),
               )
-            : Icon(
-                Icons.refresh_rounded,
-                size: 18,
-                color: tokens.textPrimary,
-              ),
+            : Icon(Icons.refresh_rounded, size: 18, color: tokens.textPrimary),
       ),
     );
   }

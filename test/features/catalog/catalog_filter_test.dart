@@ -1,4 +1,3 @@
-import 'package:all_commerce/core/constants/categories.dart';
 import 'package:all_commerce/core/constants/plans.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
@@ -48,10 +47,7 @@ void main() {
 
   group('applyCatalogFilter', () {
     test('empty filter returns all', () {
-      expect(
-        applyCatalogFilter(products, const CatalogFilter()).length,
-        3,
-      );
+      expect(applyCatalogFilter(products, const CatalogFilter()).length, 3);
     });
 
     test('query matches title case-insensitively', () {
@@ -81,7 +77,7 @@ void main() {
     test('category filter', () {
       final List<ProductModel> result = applyCatalogFilter(
         products,
-        const CatalogFilter(category: ProductCategory.clothing),
+        const CatalogFilter(category: 'clothing'),
       );
       expect(result.map((ProductModel p) => p.id), <String>['2']);
     });
@@ -89,10 +85,7 @@ void main() {
     test('category + query combined', () {
       final List<ProductModel> result = applyCatalogFilter(
         products,
-        const CatalogFilter(
-          query: 'termico',
-          category: ProductCategory.clothing,
-        ),
+        const CatalogFilter(query: 'termico', category: 'clothing'),
       );
       expect(result, isEmpty);
     });
@@ -119,7 +112,7 @@ void main() {
         trialStartedAt: DateTime(2025),
         planExpiresAt: DateTime.now().add(const Duration(days: 5)),
         isActive: true,
-      isClaimed: true,
+        isClaimed: true,
         createdAt: DateTime(2025),
       ),
     ];

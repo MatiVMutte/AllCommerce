@@ -163,9 +163,8 @@ void main() {
       );
 
       expect(ok, isTrue);
-      verify(
-        () => products.setStock('p1', 't1', stock: 8, trackStock: true),
-      ).called(1);
+      verify(() => products.setStock('p1', 't1', stock: 8, trackStock: true))
+          .called(1);
     });
   });
 

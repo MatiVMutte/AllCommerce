@@ -323,7 +323,7 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  product.categoryEnum.label,
+                  product.categoryLabel,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,

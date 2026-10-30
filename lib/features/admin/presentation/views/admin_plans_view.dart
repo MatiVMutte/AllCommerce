@@ -29,9 +29,8 @@ class AdminPlansView extends ConsumerWidget {
             child: plansAsync.when(
               loading: () =>
                   const AppSkeletonList(itemCount: 3, itemHeight: 260),
-              error: (Object e, StackTrace s) => AppErrorState(
-                onRetry: () => ref.invalidate(plansProvider),
-              ),
+              error: (Object e, StackTrace s) =>
+                  AppErrorState(onRetry: () => ref.invalidate(plansProvider)),
               data: (List<PlanModel> plans) => ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
                 children: <Widget>[
@@ -53,8 +52,7 @@ class _EditablePlanCard extends ConsumerStatefulWidget {
   final PlanModel plan;
 
   @override
-  ConsumerState<_EditablePlanCard> createState() =>
-      _EditablePlanCardState();
+  ConsumerState<_EditablePlanCard> createState() => _EditablePlanCardState();
 }
 
 class _EditablePlanCardState extends ConsumerState<_EditablePlanCard> {
@@ -72,8 +70,9 @@ class _EditablePlanCardState extends ConsumerState<_EditablePlanCard> {
     _aiLimit = TextEditingController(
       text: widget.plan.aiAnalysesPerMonth?.toString() ?? '',
     );
-    _highlights =
-        TextEditingController(text: widget.plan.highlights.join('\n'));
+    _highlights = TextEditingController(
+      text: widget.plan.highlights.join('\n'),
+    );
   }
 
   @override
@@ -103,7 +102,9 @@ class _EditablePlanCardState extends ConsumerState<_EditablePlanCard> {
         .toList();
     setState(() => _saving = true);
     try {
-      await ref.read(planRepositoryProvider).updatePlan(
+      await ref
+          .read(planRepositoryProvider)
+          .updatePlan(
             widget.plan.id,
             priceArs: price,
             highlights: highlights,
@@ -144,9 +145,7 @@ class _EditablePlanCardState extends ConsumerState<_EditablePlanCard> {
                 Expanded(
                   child: Text(
                     widget.plan.name,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
+                    style: Theme.of(context).textTheme.titleLarge
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -161,10 +160,7 @@ class _EditablePlanCardState extends ConsumerState<_EditablePlanCard> {
                   ),
                   child: Text(
                     'máx. ${widget.plan.maxProducts} productos',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: tokens.textSecondary,
-                    ),
+                    style: TextStyle(fontSize: 12, color: tokens.textSecondary),
                   ),
                 ),
               ],

@@ -53,10 +53,12 @@ class _AdminHomeViewState extends ConsumerState<AdminHomeView> {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    final AsyncValue<AdminMetrics> metricsAsync =
-        ref.watch(adminMetricsProvider);
-    final AsyncValue<List<AdminTenantRow>> tenantsAsync =
-        ref.watch(adminTenantsProvider);
+    final AsyncValue<AdminMetrics> metricsAsync = ref.watch(
+      adminMetricsProvider,
+    );
+    final AsyncValue<List<AdminTenantRow>> tenantsAsync = ref.watch(
+      adminTenantsProvider,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -71,9 +73,7 @@ class _AdminHomeViewState extends ConsumerState<AdminHomeView> {
                 ref.invalidate(adminTenantsProvider);
                 await ref
                     .read(adminTenantsProvider.future)
-                    .catchError(
-                      (Object _) => const <AdminTenantRow>[],
-                    );
+                    .catchError((Object _) => const <AdminTenantRow>[]);
               },
             ),
           ),
@@ -147,9 +147,7 @@ class _AdminHomeViewState extends ConsumerState<AdminHomeView> {
                         borderRadius: BorderRadius.circular(999),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -157,8 +155,8 @@ class _AdminHomeViewState extends ConsumerState<AdminHomeView> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: <Widget>[
-                        for (final (_TenantFilter f, String label) in
-                            <(_TenantFilter, String)>[
+                        for (final (_TenantFilter f, String label)
+                            in <(_TenantFilter, String)>[
                               (_TenantFilter.all, 'Todos'),
                               (_TenantFilter.paying, 'Pagando'),
                               (_TenantFilter.trial, 'Prueba'),
@@ -171,8 +169,7 @@ class _AdminHomeViewState extends ConsumerState<AdminHomeView> {
                               label: Text(label),
                               selected: _filter == f,
                               showCheckmark: false,
-                              onSelected: (_) =>
-                                  setState(() => _filter = f),
+                              onSelected: (_) => setState(() => _filter = f),
                             ),
                           ),
                       ],
@@ -192,8 +189,7 @@ class _AdminHomeViewState extends ConsumerState<AdminHomeView> {
                       onRetry: () => ref.invalidate(adminTenantsProvider),
                     ),
                     data: (List<AdminTenantRow> rows) {
-                      final List<AdminTenantRow> filtered =
-                          _applyFilters(rows);
+                      final List<AdminTenantRow> filtered = _applyFilters(rows);
                       if (filtered.isEmpty) {
                         return const AppEmptyState(
                           icon: Icons.storefront_outlined,
@@ -206,12 +202,13 @@ class _AdminHomeViewState extends ConsumerState<AdminHomeView> {
                         padding: EdgeInsets.zero,
                         child: Column(
                           children: <Widget>[
-                            for (int i = 0; i < filtered.length; i++) ...<Widget>[
+                            for (
+                              int i = 0;
+                              i < filtered.length;
+                              i++
+                            ) ...<Widget>[
                               if (i > 0)
-                                Divider(
-                                  height: 1,
-                                  color: tokens.border,
-                                ),
+                                Divider(height: 1, color: tokens.border),
                               _TenantRow(row: filtered[i]),
                             ],
                           ],
@@ -294,19 +291,13 @@ class _MetricsGrid extends StatelessWidget {
               value: '${metrics.tenantsPaying}',
               color: scheme.primary,
             ),
-            _MetricCell(
-              label: 'En prueba',
-              value: '${metrics.tenantsTrial}',
-            ),
+            _MetricCell(label: 'En prueba', value: '${metrics.tenantsTrial}'),
             _MetricCell(
               label: 'Vencidos',
               value: '${metrics.tenantsExpired}',
               color: metrics.tenantsExpired > 0 ? tokens.danger : null,
             ),
-            _MetricCell(
-              label: 'MRR',
-              value: Formatters.price(metrics.mrrArs),
-            ),
+            _MetricCell(label: 'MRR', value: Formatters.price(metrics.mrrArs)),
             _MetricCell(
               label: 'Pedidos este mes',
               value: '${metrics.ordersMonth}',
@@ -371,16 +362,24 @@ class _TenantRow extends StatelessWidget {
   final AdminTenantRow row;
 
   static const List<String> _months = <String>[
-    'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-    'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic',
   ];
 
   String _expiryText(AdminTenantStatus status) {
     final DateTime d = row.planExpiresAt;
     final String date = '${d.day} ${_months[d.month - 1]}';
-    return status == AdminTenantStatus.expired
-        ? 'venció $date'
-        : 'vence $date';
+    return status == AdminTenantStatus.expired ? 'venció $date' : 'vence $date';
   }
 
   Color _dotColor(
@@ -447,10 +446,7 @@ class _TenantRow extends StatelessWidget {
                     '${row.slug} · ${row.ownerName ?? 'sin dueño'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: tokens.textTertiary,
-                    ),
+                    style: TextStyle(fontSize: 12, color: tokens.textTertiary),
                   ),
                 ],
               ),

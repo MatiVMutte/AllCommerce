@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-
 /// A single draft product during a bulk AI upload session.
 @immutable
 class BulkProductDraft {

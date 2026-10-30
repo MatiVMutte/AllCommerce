@@ -30,8 +30,7 @@ class AiAnalyzeService {
           'mimeType': 'image/jpeg',
         },
       );
-      final Map<String, dynamic> data =
-          response.data as Map<String, dynamic>;
+      final Map<String, dynamic> data = response.data as Map<String, dynamic>;
       return AiProductSuggestion.fromJson(
         data['product'] as Map<String, dynamic>,
       );

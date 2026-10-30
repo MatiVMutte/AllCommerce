@@ -15,8 +15,9 @@ class _FakeGeocoder extends NominatimGeocoder {
 }
 
 void main() {
-  testWidgets('location picker sheet lays out without exceptions',
-      (tester) async {
+  testWidgets('location picker sheet lays out without exceptions', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
@@ -34,8 +35,9 @@ void main() {
     expect(find.text('Quitar ubicación'), findsOneWidget);
   });
 
-  testWidgets('typing an address shows suggestions and selects pin',
-      (tester) async {
+  testWidgets('typing an address shows suggestions and selects pin', (
+    tester,
+  ) async {
     const _FakeGeocoder geocoder = _FakeGeocoder(<AddressSuggestion>[
       AddressSuggestion(
         displayName:
@@ -56,9 +58,7 @@ void main() {
                 picked = await showModalBottomSheet<LocationPickResult>(
                   context: context,
                   isScrollControlled: true,
-                  builder: (_) => const LocationPickerSheet(
-                    geocoder: geocoder,
-                  ),
+                  builder: (_) => const LocationPickerSheet(geocoder: geocoder),
                 );
               },
               child: const Text('Abrir'),
@@ -88,9 +88,6 @@ void main() {
 
     expect(picked?.point?.latitude, closeTo(-34.6715, 0.0001));
     expect(picked?.point?.longitude, closeTo(-58.4142, 0.0001));
-    expect(
-      picked?.addressLabel,
-      'Yatay 448, Valentín Alsina, Buenos Aires',
-    );
+    expect(picked?.addressLabel, 'Yatay 448, Valentín Alsina, Buenos Aires');
   });
 }

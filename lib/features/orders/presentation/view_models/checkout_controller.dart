@@ -41,11 +41,11 @@ class CheckoutState {
       order: order ?? this.order,
       error: error ?? this.error,
       deliveryMethod: deliveryMethod ?? this.deliveryMethod,
-      deliveryAddress:
-          deliveryAddress != null ? deliveryAddress() : this.deliveryAddress,
+      deliveryAddress: deliveryAddress != null
+          ? deliveryAddress()
+          : this.deliveryAddress,
       paymentMethod: paymentMethod ?? this.paymentMethod,
-      paymentNotes:
-          paymentNotes != null ? paymentNotes() : this.paymentNotes,
+      paymentNotes: paymentNotes != null ? paymentNotes() : this.paymentNotes,
     );
   }
 }
@@ -62,10 +62,7 @@ class CheckoutController extends Notifier<CheckoutState> {
   }
 
   void setPayment(PaymentMethod method, {String? notes}) {
-    state = state.copyWith(
-      paymentMethod: method,
-      paymentNotes: () => notes,
-    );
+    state = state.copyWith(paymentMethod: method, paymentNotes: () => notes);
   }
 
   Future<OrderModel?> placeOrder({
@@ -76,7 +73,9 @@ class CheckoutController extends Notifier<CheckoutState> {
   }) async {
     state = state.copyWith(sending: true);
     try {
-      final OrderModel order = await ref.read(orderRepositoryProvider).placeOrder(
+      final OrderModel order = await ref
+          .read(orderRepositoryProvider)
+          .placeOrder(
             tenantId: tenantId,
             items: items,
             couponCode: couponCode,
@@ -98,9 +97,7 @@ class CheckoutController extends Notifier<CheckoutState> {
 
   void _notifyOwner(OrderModel order) {
     try {
-      unawaited(
-        ref.read(orderRepositoryProvider).notifyOwner(order),
-      );
+      unawaited(ref.read(orderRepositoryProvider).notifyOwner(order));
     } catch (_) {
       // Best-effort notification.
     }
@@ -109,5 +106,5 @@ class CheckoutController extends Notifier<CheckoutState> {
 
 final checkoutControllerProvider =
     NotifierProvider.autoDispose<CheckoutController, CheckoutState>(
-  CheckoutController.new,
-);
+      CheckoutController.new,
+    );

@@ -4,11 +4,7 @@ import 'package:flutter/material.dart';
 
 /// White/dark pill with the price, meant to float over photos.
 class PricePill extends StatelessWidget {
-  const PricePill({
-    required this.price,
-    this.compareAtPrice,
-    super.key,
-  });
+  const PricePill({required this.price, this.compareAtPrice, super.key});
 
   final double price;
   final double? compareAtPrice;

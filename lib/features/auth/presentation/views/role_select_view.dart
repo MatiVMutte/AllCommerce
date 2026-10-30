@@ -29,8 +29,7 @@ class RoleSelectView extends ConsumerWidget {
                   _RoleCard(
                     icon: Icons.storefront_outlined,
                     title: 'Soy dueño de un local',
-                    subtitle:
-                        'Subo productos y recibo pedidos por WhatsApp',
+                    subtitle: 'Subo productos y recibo pedidos por WhatsApp',
                     onTap: () => context.go('/onboarding/business'),
                   ),
                   const SizedBox(height: 12),
@@ -42,9 +41,8 @@ class RoleSelectView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   TextButton(
-                    onPressed: () => ref
-                        .read(authControllerProvider.notifier)
-                        .signOut(),
+                    onPressed: () =>
+                        ref.read(authControllerProvider.notifier).signOut(),
                     child: const Text('Cerrar sesión'),
                   ),
                 ],
@@ -120,10 +118,7 @@ class _RoleCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: tokens.textTertiary,
-              ),
+              Icon(Icons.chevron_right_rounded, color: tokens.textTertiary),
             ],
           ),
         ),

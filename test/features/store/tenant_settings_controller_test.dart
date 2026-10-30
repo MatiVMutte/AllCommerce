@@ -27,7 +27,7 @@ TenantModel _tenant() {
     trialStartedAt: DateTime(2025),
     planExpiresAt: DateTime.now().add(const Duration(days: 10)),
     isActive: true,
-      isClaimed: true,
+    isClaimed: true,
     createdAt: DateTime(2025),
   );
 }
@@ -85,12 +85,10 @@ void main() {
     );
   });
 
-  test('save with logo runs update -> uploadLogo -> setLogoUrl',
-      () async {
+  test('save with logo runs update -> uploadLogo -> setLogoUrl', () async {
     final Uint8List jpeg = Uint8List.fromList(<int>[1, 2, 3]);
-    when(() => images.pick(any())).thenAnswer(
-      (_) async => PickedImage(bytes: jpeg, name: 'logo.png'),
-    );
+    when(() => images.pick(any()))
+        .thenAnswer((_) async => PickedImage(bytes: jpeg, name: 'logo.png'));
     when(() => images.compressLogo(jpeg)).thenAnswer((_) async => jpeg);
     when(
       () => repo.update(
@@ -102,15 +100,12 @@ void main() {
         primaryColor: any(named: 'primaryColor'),
       ),
     ).thenAnswer((_) async => tenant);
-    when(
-      () => repo.uploadLogo(tenantId: 't1', bytes: jpeg),
-    ).thenAnswer((_) async => 'https://x/logo.jpg?v=1');
+    when(() => repo.uploadLogo(tenantId: 't1', bytes: jpeg))
+        .thenAnswer((_) async => 'https://x/logo.jpg?v=1');
     when(() => repo.setLogoUrl('t1', 'https://x/logo.jpg?v=1'))
         .thenAnswer((_) async {});
 
-    await container
-        .read(tenantSettingsControllerProvider.notifier)
-        .pickLogo();
+    await container.read(tenantSettingsControllerProvider.notifier).pickLogo();
     final TenantModel? result = await container
         .read(tenantSettingsControllerProvider.notifier)
         .save(
@@ -123,13 +118,13 @@ void main() {
     expect(result, isNotNull);
     verifyInOrder(<Future<dynamic> Function()>[
       () => repo.update(
-            't1',
-            name: any(named: 'name'),
-            description: any(named: 'description'),
-            address: any(named: 'address'),
-            whatsapp: any(named: 'whatsapp'),
-            primaryColor: any(named: 'primaryColor'),
-          ),
+        't1',
+        name: any(named: 'name'),
+        description: any(named: 'description'),
+        address: any(named: 'address'),
+        whatsapp: any(named: 'whatsapp'),
+        primaryColor: any(named: 'primaryColor'),
+      ),
       () => repo.uploadLogo(tenantId: 't1', bytes: jpeg),
       () => repo.setLogoUrl('t1', 'https://x/logo.jpg?v=1'),
     ]);
@@ -157,14 +152,8 @@ void main() {
         );
 
     expect(result, isNull);
-    expect(
-      container.read(tenantSettingsControllerProvider).error,
-      isNotNull,
-    );
-    expect(
-      container.read(tenantSettingsControllerProvider).saving,
-      isFalse,
-    );
+    expect(container.read(tenantSettingsControllerProvider).error, isNotNull);
+    expect(container.read(tenantSettingsControllerProvider).saving, isFalse);
   });
 
   test('toggleOpen calls setOpen with inverted value', () async {

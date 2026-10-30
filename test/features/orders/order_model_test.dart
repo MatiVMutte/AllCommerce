@@ -27,9 +27,7 @@ void main() {
   });
 
   test('parses numeric fields encoded as strings', () {
-    final OrderModel order = OrderModel.fromJson(
-      _json(orderNumber: '7'),
-    );
+    final OrderModel order = OrderModel.fromJson(_json(orderNumber: '7'));
     expect(order.orderNumber, 7);
     expect(order.subtotal, 25500);
     expect(order.discount, 0);

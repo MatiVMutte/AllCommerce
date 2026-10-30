@@ -65,9 +65,7 @@ void main() {
 
   testWidgets('center tap fires the callback', (tester) async {
     int taps = 0;
-    await tester.pumpWidget(
-      buildBar(onCenterTap: () => taps++),
-    );
+    await tester.pumpWidget(buildBar(onCenterTap: () => taps++));
     await tester.tap(find.byIcon(Icons.shopping_cart_rounded));
     expect(taps, 1);
   });

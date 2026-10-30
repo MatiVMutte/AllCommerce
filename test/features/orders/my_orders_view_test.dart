@@ -20,7 +20,7 @@ void main() {
     trialStartedAt: DateTime(2025),
     planExpiresAt: DateTime.now().add(const Duration(days: 10)),
     isActive: true,
-      isClaimed: true,
+    isClaimed: true,
     createdAt: DateTime(2025),
   );
 
@@ -42,15 +42,15 @@ void main() {
     return ProviderScope(
       overrides: [
         myOrdersProvider.overrideWith((Ref ref) async => orders),
-        tenantByIdProvider('t1')
-            .overrideWith((Ref ref) async => tenant),
+        tenantByIdProvider('t1').overrideWith((Ref ref) async => tenant),
       ],
       child: const MaterialApp(home: MyOrdersView()),
     );
   }
 
-  testWidgets('shows order with store name and status chip',
-      (WidgetTester tester) async {
+  testWidgets('shows order with store name and status chip', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(buildView(orders: <OrderModel>[order]));
     await tester.pumpAndSettle();
 

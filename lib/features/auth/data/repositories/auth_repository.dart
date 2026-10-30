@@ -79,10 +79,10 @@ class AuthRepository {
     required String fullName,
     String? phone,
   }) async {
-    await _client.from('users').update(<String, dynamic>{
-      'full_name': fullName,
-      'phone': phone,
-    }).eq('id', userId);
+    await _client
+        .from('users')
+        .update(<String, dynamic>{'full_name': fullName, 'phone': phone})
+        .eq('id', userId);
   }
 
   Future<TenantModel> createTenant({

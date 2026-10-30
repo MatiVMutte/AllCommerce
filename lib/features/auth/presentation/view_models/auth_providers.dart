@@ -12,8 +12,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final Provider<AuthRepository> authRepositoryProvider =
     Provider<AuthRepository>(
-  (Ref ref) => AuthRepository(ref.watch(supabaseClientProvider)),
-);
+      (Ref ref) => AuthRepository(ref.watch(supabaseClientProvider)),
+    );
 
 final StreamProvider<AuthState> authStateProvider = StreamProvider<AuthState>(
   (Ref ref) => ref.watch(authRepositoryProvider).onAuthStateChange,
@@ -27,10 +27,10 @@ final Provider<Session?> sessionProvider = Provider<Session?>((Ref ref) {
 
 final FutureProvider<UserModel?> currentProfileProvider =
     FutureProvider<UserModel?>((Ref ref) {
-  final Session? session = ref.watch(sessionProvider);
-  if (session == null) return null;
-  return ref.watch(authRepositoryProvider).fetchProfile();
-});
+      final Session? session = ref.watch(sessionProvider);
+      if (session == null) return null;
+      return ref.watch(authRepositoryProvider).fetchProfile();
+    });
 
 enum SignUpResult { signedIn, needsEmailConfirmation, failed }
 
@@ -91,10 +91,7 @@ class AuthController extends Notifier<AsyncValue<void>> {
     return true;
   }
 
-  Future<bool> updateProfile({
-    required String fullName,
-    String? phone,
-  }) async {
+  Future<bool> updateProfile({required String fullName, String? phone}) async {
     final String? uid = _repository.currentUserId;
     if (uid == null) return false;
     state = const AsyncLoading<void>();
@@ -171,5 +168,6 @@ class AuthController extends Notifier<AsyncValue<void>> {
 }
 
 final NotifierProvider<AuthController, AsyncValue<void>>
-    authControllerProvider =
-    NotifierProvider<AuthController, AsyncValue<void>>(AuthController.new);
+authControllerProvider = NotifierProvider<AuthController, AsyncValue<void>>(
+  AuthController.new,
+);

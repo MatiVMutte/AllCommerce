@@ -50,10 +50,10 @@ class BulkUploadState {
 }
 
 final NotifierProvider<BulkUploadController, BulkUploadState>
-    bulkUploadControllerProvider =
+bulkUploadControllerProvider =
     NotifierProvider<BulkUploadController, BulkUploadState>(
-  BulkUploadController.new,
-);
+      BulkUploadController.new,
+    );
 
 class BulkUploadController extends Notifier<BulkUploadState> {
   final ImageService _imageService = const ImageService();
@@ -74,8 +74,9 @@ class BulkUploadController extends Notifier<BulkUploadState> {
 
   /// Pick images, compress them, and run AI analysis one by one.
   Future<void> pickAndAnalyze() async {
-    final List<PickedImage> images =
-        await _imageService.pickMultiple(limit: kBulkUploadLimit);
+    final List<PickedImage> images = await _imageService.pickMultiple(
+      limit: kBulkUploadLimit,
+    );
     if (images.isEmpty) return;
 
     final List<BulkProductDraft> drafts = <BulkProductDraft>[
@@ -98,10 +99,12 @@ class BulkUploadController extends Notifier<BulkUploadState> {
     final BulkProductDraft draft = state.drafts[index];
     _setDraft(index, draft.copyWith(analyzing: true));
     try {
-      final Uint8List compressed =
-          await _imageService.compress(draft.imageBytes);
-      final AiProductSuggestion suggestion =
-          await _aiService.analyze(compressed);
+      final Uint8List compressed = await _imageService.compress(
+        draft.imageBytes,
+      );
+      final AiProductSuggestion suggestion = await _aiService.analyze(
+        compressed,
+      );
       _setDraft(
         index,
         draft.copyWith(
@@ -119,11 +122,7 @@ class BulkUploadController extends Notifier<BulkUploadState> {
     } on AiAnalyzeException catch (e) {
       _setDraft(
         index,
-        draft.copyWith(
-          analyzing: false,
-          analyzed: true,
-          error: e.message,
-        ),
+        draft.copyWith(analyzing: false, analyzed: true, error: e.message),
       );
     } catch (e) {
       _setDraft(
@@ -158,8 +157,7 @@ class BulkUploadController extends Notifier<BulkUploadState> {
 
   /// Publish all valid drafts. Returns the number of products created.
   Future<int> publishAll() async {
-    final String? tenantId =
-        ref.read(currentProfileProvider).value?.tenantId;
+    final String? tenantId = ref.read(currentProfileProvider).value?.tenantId;
     if (tenantId == null) {
       state = state.copyWith(error: 'No se encontró el local');
       return 0;
@@ -167,8 +165,7 @@ class BulkUploadController extends Notifier<BulkUploadState> {
 
     final List<BulkProductDraft> toPublish = state.drafts
         .where(
-          (BulkProductDraft d) =>
-              d.isValid && d.analyzed && d.error == null,
+          (BulkProductDraft d) => d.isValid && d.analyzed && d.error == null,
         )
         .toList();
     if (toPublish.isEmpty) {
@@ -185,8 +182,8 @@ class BulkUploadController extends Notifier<BulkUploadState> {
       _setDraft(i, draft.copyWith(publishing: true));
       try {
         final double actualPrice = draft.price ?? 0;
-        final double? compareAt = draft.compareAtPrice != null &&
-                draft.compareAtPrice! > actualPrice
+        final double? compareAt =
+            draft.compareAtPrice != null && draft.compareAtPrice! > actualPrice
             ? draft.compareAtPrice
             : null;
         final ProductInput input = ProductInput(
@@ -201,8 +198,9 @@ class BulkUploadController extends Notifier<BulkUploadState> {
           trackStock: draft.stock > 0,
         );
         final product = await _productRepository.create(input, tenantId);
-        final Uint8List compressed =
-            await _imageService.compress(draft.imageBytes);
+        final Uint8List compressed = await _imageService.compress(
+          draft.imageBytes,
+        );
         final String url = await _productRepository.uploadImage(
           tenantId: tenantId,
           productId: product.id,

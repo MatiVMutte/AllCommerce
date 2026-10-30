@@ -25,8 +25,7 @@ class AiProductSuggestion {
       tags: (json['tags'] as List<dynamic>? ?? <dynamic>[])
           .map((dynamic t) => t as String)
           .toList(),
-      suggestedPriceArs:
-          (json['suggested_price_ars'] as num?)?.toDouble(),
+      suggestedPriceArs: (json['suggested_price_ars'] as num?)?.toDouble(),
       sku: json['sku'] as String?,
     );
   }

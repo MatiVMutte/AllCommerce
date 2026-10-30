@@ -8,9 +8,7 @@ void main() {
   testWidgets('profile without session shows login CTAs', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          sessionProvider.overrideWith((Ref ref) => null),
-        ],
+        overrides: [sessionProvider.overrideWith((Ref ref) => null)],
         child: const MaterialApp(home: ProfileView()),
       ),
     );

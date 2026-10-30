@@ -19,12 +19,9 @@ class AppPageTransitionsBuilder extends PageTransitionsBuilder {
     final Animation<Offset> slide = Tween<Offset>(
       begin: const Offset(0, 0.03),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-    );
+    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
     return FadeTransition(
-      opacity:
-          CurvedAnimation(parent: animation, curve: Curves.easeOut),
+      opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
       child: SlideTransition(position: slide, child: child),
     );
   }
@@ -32,20 +29,20 @@ class AppPageTransitionsBuilder extends PageTransitionsBuilder {
 
 abstract final class AppTheme {
   static ThemeData light() => _build(
-        brightness: Brightness.light,
-        primary: AppColors.primary,
-        background: AppColors.background,
-        surface: AppColors.card,
-        tokens: AppTokens.light,
-      );
+    brightness: Brightness.light,
+    primary: AppColors.primary,
+    background: AppColors.background,
+    surface: AppColors.card,
+    tokens: AppTokens.light,
+  );
 
   static ThemeData dark() => _build(
-        brightness: Brightness.dark,
-        primary: AppColors.primaryDark,
-        background: AppColors.backgroundDark,
-        surface: AppColors.cardDark,
-        tokens: AppTokens.dark,
-      );
+    brightness: Brightness.dark,
+    primary: AppColors.primaryDark,
+    background: AppColors.backgroundDark,
+    surface: AppColors.cardDark,
+    tokens: AppTokens.dark,
+  );
 
   static ThemeData _build({
     required Brightness brightness,
@@ -54,21 +51,19 @@ abstract final class AppTheme {
     required Color surface,
     required AppTokens tokens,
   }) {
-    final TextTheme textTheme =
-        GoogleFonts.interTextTheme().copyWith(
-      displaySmall: const TextStyle(
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.8,
-      ),
-      headlineMedium: const TextStyle(
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.6,
-      ),
-      titleLarge: const TextStyle(fontWeight: FontWeight.w700),
-    ).apply(
-      bodyColor: tokens.textPrimary,
-      displayColor: tokens.textPrimary,
-    );
+    final TextTheme textTheme = GoogleFonts.interTextTheme()
+        .copyWith(
+          displaySmall: const TextStyle(
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.8,
+          ),
+          headlineMedium: const TextStyle(
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.6,
+          ),
+          titleLarge: const TextStyle(fontWeight: FontWeight.w700),
+        )
+        .apply(bodyColor: tokens.textPrimary, displayColor: tokens.textPrimary);
     final ColorScheme scheme = ColorScheme(
       brightness: brightness,
       primary: primary,
@@ -119,8 +114,10 @@ abstract final class AppTheme {
         filled: true,
         fillColor: tokens.surfaceMuted,
         hintStyle: TextStyle(color: tokens.textTertiary),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
@@ -137,10 +134,7 @@ abstract final class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(52),
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -163,15 +157,11 @@ abstract final class AppTheme {
           fontWeight: FontWeight.w500,
         ),
         side: BorderSide.none,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         showDragHandle: true,

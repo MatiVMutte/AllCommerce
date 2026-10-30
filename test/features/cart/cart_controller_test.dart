@@ -19,7 +19,7 @@ TenantModel _tenant({String id = 't1', String slug = 'local-uno'}) {
     trialStartedAt: DateTime(2024),
     planExpiresAt: DateTime.now().add(const Duration(days: 30)),
     isActive: true,
-      isClaimed: true,
+    isClaimed: true,
     createdAt: DateTime(2024),
   );
 }
@@ -42,9 +42,7 @@ void main() {
 
   ProviderContainer makeContainer() {
     return ProviderContainer(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ],
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
     );
   }
 
@@ -60,10 +58,7 @@ void main() {
     final TenantModel tenant = _tenant();
 
     expect(cart.add(_product('p1'), tenant), AddResult.added);
-    expect(
-      cart.add(_product('p1'), tenant, quantity: 2),
-      AddResult.added,
-    );
+    expect(cart.add(_product('p1'), tenant, quantity: 2), AddResult.added);
 
     final CartState state = container.read(cartProvider);
     expect(state.items, hasLength(1));

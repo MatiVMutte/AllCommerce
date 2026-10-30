@@ -19,7 +19,7 @@ void main() {
     trialStartedAt: DateTime(2025),
     planExpiresAt: DateTime.now().add(const Duration(days: 10)),
     isActive: true,
-      isClaimed: true,
+    isClaimed: true,
     createdAt: DateTime(2025),
   );
 
@@ -29,9 +29,7 @@ void main() {
     return ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
-        tenantBySlugProvider('demo').overrideWith(
-          (Ref ref) async => tenant,
-        ),
+        tenantBySlugProvider('demo').overrideWith((Ref ref) async => tenant),
       ],
       child: const MaterialApp(home: CartView(slug: 'demo')),
     );
@@ -48,10 +46,12 @@ void main() {
     expect(find.text('Ver catálogo'), findsOneWidget);
   });
 
-  testWidgets('cart with two items shows titles and subtotal',
-      (WidgetTester tester) async {
+  testWidgets('cart with two items shows titles and subtotal', (
+    WidgetTester tester,
+  ) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
-      'cart_v1': '{"tenant_id":"t1","tenant_slug":"demo","items":['
+      'cart_v1':
+          '{"tenant_id":"t1","tenant_slug":"demo","items":['
           '{"product_id":"p1","title":"Vaso térmico","price":100,'
           '"image_url":null,"quantity":1},'
           '{"product_id":"p2","title":"Remera","price":200,'

@@ -39,9 +39,7 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
     final DateTime initial = _expiresAt ?? row.planExpiresAt;
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: initial.isBefore(DateTime.now())
-          ? DateTime.now()
-          : initial,
+      initialDate: initial.isBefore(DateTime.now()) ? DateTime.now() : initial,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
@@ -63,7 +61,8 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
       final bool? ok = await showAppConfirmSheet(
         context,
         title: 'Desactivar local',
-        message: 'El local dejará de ser visible y su dueño no podrá '
+        message:
+            'El local dejará de ser visible y su dueño no podrá '
             'publicar productos. ¿Continuar?',
         confirmLabel: 'Desactivar',
         destructive: true,
@@ -72,7 +71,9 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
     }
     setState(() => _saving = true);
     try {
-      await ref.read(adminRepositoryProvider).setTenantPlan(
+      await ref
+          .read(adminRepositoryProvider)
+          .setTenantPlan(
             tenantId: row.id,
             plan: _plan ?? row.plan,
             expiresAt: _expiresAt ?? row.planExpiresAt,
@@ -100,8 +101,9 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<AdminTenantRow?> rowAsync =
-        ref.watch(adminTenantProvider(widget.tenantId));
+    final AsyncValue<AdminTenantRow?> rowAsync = ref.watch(
+      adminTenantProvider(widget.tenantId),
+    );
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/admin'),
@@ -152,8 +154,7 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
                 children: <Widget>[
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor:
-                        scheme.primary.withValues(alpha: 0.1),
+                    backgroundColor: scheme.primary.withValues(alpha: 0.1),
                     child: Text(
                       row.name.isEmpty ? '?' : row.name[0].toUpperCase(),
                       style: TextStyle(
@@ -170,9 +171,7 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
                       children: <Widget>[
                         Text(
                           row.name,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
+                          style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         Text(
@@ -230,14 +229,16 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
                       label: row.ownerPhone ?? 'Sin teléfono',
                       trailing: IconButton(
                         tooltip: 'Escribir por WhatsApp',
-                        icon: const Icon(Icons.chat_bubble_outline_rounded,
-                            size: 18),
+                        icon: const Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          size: 18,
+                        ),
                         onPressed: row.ownerPhone == null
                             ? null
                             : () => launchUrl(
-                                  buildWhatsAppUri(row.ownerPhone!, ''),
-                                  mode: LaunchMode.externalApplication,
-                                ),
+                                buildWhatsAppUri(row.ownerPhone!, ''),
+                                mode: LaunchMode.externalApplication,
+                              ),
                       ),
                     ),
                   ],
@@ -368,8 +369,8 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
                     Wrap(
                       spacing: 8,
                       children: <Widget>[
-                        for (final (String label, int months) in
-                            <(String, int)>[
+                        for (final (String label, int months)
+                            in <(String, int)>[
                               ('+1 mes', 1),
                               ('+3 meses', 3),
                               ('+12 meses', 12),
@@ -385,8 +386,7 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Local activo'),
                       value: isActive,
-                      onChanged: (bool v) =>
-                          setState(() => _isActive = v),
+                      onChanged: (bool v) => setState(() => _isActive = v),
                     ),
                   ],
                 ),
@@ -442,11 +442,7 @@ class _Section extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    this.trailing,
-  });
+  const _InfoRow({required this.icon, required this.label, this.trailing});
 
   final IconData icon;
   final String label;

@@ -8,10 +8,7 @@ void main() {
     });
 
     test('international format stays', () {
-      expect(
-        Validators.normalizePhone('+54 9 11 2233 4455'),
-        '5491122334455',
-      );
+      expect(Validators.normalizePhone('+54 9 11 2233 4455'), '5491122334455');
     });
 
     test('leading zero is stripped', () {
@@ -19,10 +16,7 @@ void main() {
     });
 
     test('already normalized stays', () {
-      expect(
-        Validators.normalizePhone('5491122334455'),
-        '5491122334455',
-      );
+      expect(Validators.normalizePhone('5491122334455'), '5491122334455');
     });
   });
 
@@ -38,8 +32,10 @@ void main() {
       final String result = Validators.slugify('a' * 50);
       expect(result.length, 40);
       expect(result.endsWith('-'), isFalse);
-      expect(Validators.slugify('tienda ${'x' * 40} nombre').length <= 40,
-          isTrue);
+      expect(
+        Validators.slugify('tienda ${'x' * 40} nombre').length <= 40,
+        isTrue,
+      );
     });
   });
 

@@ -111,7 +111,8 @@ class TenantModel {
 
   /// Free-plan tenants can publish forever; paid tenants need an active subscription.
   bool get canPublish =>
-      isActive && (plan == PlanType.free || planExpiresAt.isAfter(DateTime.now()));
+      isActive &&
+      (plan == PlanType.free || planExpiresAt.isAfter(DateTime.now()));
 
   /// Whether the local has been claimed by its owner. Pre-registered leads are not.
   bool get isUnclaimedLead => isActive && !isClaimed;

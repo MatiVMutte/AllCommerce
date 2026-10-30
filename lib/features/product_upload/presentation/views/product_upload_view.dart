@@ -17,6 +17,7 @@ import 'package:all_commerce/features/product_upload/data/models/ai_product_sugg
 import 'package:all_commerce/features/product_upload/data/services/ai_analyze_service.dart';
 import 'package:all_commerce/features/product_upload/data/models/product_input.dart';
 import 'package:all_commerce/features/product_upload/presentation/view_models/product_upload_controller.dart';
+import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:all_commerce/features/product_upload/presentation/widgets/plan_blocked_card.dart';
 import 'package:animate_do/animate_do.dart';
@@ -57,7 +58,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
   final TextEditingController _sku = TextEditingController();
   final TextEditingController _stock = TextEditingController(text: '0');
   bool _trackStock = false;
-  ProductCategory _category = ProductCategory.other;
+  final TextEditingController _category = TextEditingController();
   bool _categoryTouched = false;
 
   @override
@@ -80,7 +81,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       _sku.text = existing.sku ?? '';
       _stock.text = existing.stock.toString();
       _trackStock = existing.trackStock;
-      _category = existing.categoryEnum;
+      _category.text = existing.categoryLabel;
       _categoryTouched = true;
     }
     // Manual edits clear the AI marker on the field.
@@ -105,7 +106,21 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
     _tags.dispose();
     _sku.dispose();
     _stock.dispose();
+    _category.dispose();
     super.dispose();
+  }
+
+  /// Categories the store already uses, plus the generic enum labels —
+  /// shown as quick chips under the free-form category field.
+  List<String> _categorySuggestions(TenantModel tenant) {
+    final List<ProductModel> products =
+        ref.watch(ownerProductsProvider(tenant.id)).value ??
+        const <ProductModel>[];
+    final Set<String> labels = <String>{
+      for (final ProductModel p in products) p.categoryLabel,
+      for (final ProductCategory c in ProductCategory.values) c.label,
+    };
+    return labels.toList();
   }
 
   /// Values written by the last AI suggestion, used to tell AI-filled fields
@@ -131,7 +146,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
     _fill(_sku, suggestion.sku);
     if (!_categoryTouched) {
       setState(() {
-        _category = ProductCategory.fromId(suggestion.category);
+        _category.text = ProductCategory.labelOf(suggestion.category);
       });
     }
   }
@@ -182,7 +197,9 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       description: _description.text.trim().isEmpty
           ? null
           : _description.text.trim(),
-      category: _category.id,
+      category: _category.text.trim().isEmpty
+          ? ProductCategory.other.id
+          : ProductCategory.storedValue(_category.text),
       tags: _tags.text
           .split(',')
           .map((String t) => t.trim().toLowerCase())
@@ -505,28 +522,32 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                       if (analyzing)
                         const _FieldsSkeleton()
                       else ...<Widget>[
-                        DropdownButtonFormField<ProductCategory>(
-                          key: ValueKey<ProductCategory>(_category),
-                          initialValue: _category,
+                        TextFormField(
+                          controller: _category,
+                          onChanged: (_) =>
+                              setState(() => _categoryTouched = true),
                           decoration: const InputDecoration(
                             labelText: AppStrings.productCategory,
+                            hintText: 'Ej: Bebidas, Limpieza, Kiosco',
+                            helperText: 'Escribila o elegí una existente abajo',
                           ),
-                          items: ProductCategory.values
-                              .map(
-                                (ProductCategory c) =>
-                                    DropdownMenuItem<ProductCategory>(
-                                      value: c,
-                                      child: Text(c.label),
-                                    ),
-                              )
-                              .toList(),
-                          onChanged: (ProductCategory? value) {
-                            if (value == null) return;
-                            setState(() {
-                              _category = value;
-                              _categoryTouched = true;
-                            });
-                          },
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: <Widget>[
+                            for (final String suggestion
+                                in _categorySuggestions(tenant))
+                              ActionChip(
+                                label: Text(suggestion),
+                                visualDensity: VisualDensity.compact,
+                                onPressed: () => setState(() {
+                                  _category.text = suggestion;
+                                  _categoryTouched = true;
+                                }),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         TextFormField(

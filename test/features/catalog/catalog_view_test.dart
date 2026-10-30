@@ -29,7 +29,7 @@ void main() {
     trialStartedAt: DateTime(2025),
     planExpiresAt: DateTime.now().add(const Duration(days: 10)),
     isActive: true,
-      isClaimed: true,
+    isClaimed: true,
     createdAt: DateTime(2025),
   );
 
@@ -61,11 +61,9 @@ void main() {
     return ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
-        tenantBySlugProvider('demo').overrideWith(
-          (Ref ref) async => tenantExists ? tenant : null,
-        ),
-        catalogProductsProvider('t1')
-            .overrideWith((Ref ref) async => products),
+        tenantBySlugProvider('demo')
+            .overrideWith((Ref ref) async => tenantExists ? tenant : null),
+        catalogProductsProvider('t1').overrideWith((Ref ref) async => products),
       ],
       child: const MaterialApp(home: CatalogView(slug: 'demo')),
     );

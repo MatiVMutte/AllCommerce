@@ -9,6 +9,7 @@ import 'package:all_commerce/core/storage/shared_preferences_provider.dart';
 import 'package:all_commerce/core/theme/app_theme.dart';
 import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
 import 'package:all_commerce/features/orders/presentation/widgets/new_order_watcher.dart';
+import 'package:all_commerce/features/orders/presentation/widgets/order_status_watcher.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -121,19 +122,21 @@ class _AllCommerceAppState extends ConsumerState<AllCommerceApp>
       },
       builder: (BuildContext context, Widget? child) {
         return NewOrderWatcher(
-          child: Stack(
-            children: <Widget>[
-              ?child,
-              IgnorePointer(
-                ignoring: !_showSplash,
-                child: AnimatedOpacity(
-                  opacity: _showSplash ? 1 : 0,
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeOutCubic,
-                  child: const _BrandSplashOverlay(),
+          child: OrderStatusWatcher(
+            child: Stack(
+              children: <Widget>[
+                ?child,
+                IgnorePointer(
+                  ignoring: !_showSplash,
+                  child: AnimatedOpacity(
+                    opacity: _showSplash ? 1 : 0,
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeOutCubic,
+                    child: const _BrandSplashOverlay(),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

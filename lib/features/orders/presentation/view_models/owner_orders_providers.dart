@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/core/utils/text_utils.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
@@ -106,6 +108,8 @@ class OwnerOrdersController extends Notifier<OwnerOrdersState> {
           .updateStatus(order.id, order.tenantId, next);
       state = const OwnerOrdersState();
       ref.invalidate(ownerOrdersProvider(order.tenantId));
+      // Push to the customer (FCM on Android; no-op if not configured).
+      unawaited(ref.read(orderRepositoryProvider).notifyCustomer(updated));
       return updated;
     } catch (e) {
       state = OwnerOrdersState(error: e);

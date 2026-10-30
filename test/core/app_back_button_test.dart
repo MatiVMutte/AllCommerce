@@ -5,8 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-Widget _app(GoRouter router) =>
-    MaterialApp.router(routerConfig: router);
+Widget _app(GoRouter router) => MaterialApp.router(routerConfig: router);
 
 GoRouter _router() {
   return GoRouter(
@@ -15,14 +14,11 @@ GoRouter _router() {
       GoRoute(
         path: '/a',
         builder: (BuildContext context, GoRouterState state) =>
-            const Scaffold(
-          body: Center(child: Text('A')),
-        ),
+            const Scaffold(body: Center(child: Text('A'))),
       ),
       GoRoute(
         path: '/b',
-        builder: (BuildContext context, GoRouterState state) =>
-            const Scaffold(
+        builder: (BuildContext context, GoRouterState state) => const Scaffold(
           appBar: _BackAppBar(),
           body: Center(child: Text('B')),
         ),
@@ -56,8 +52,7 @@ void main() {
     expect(find.text('A'), findsOneWidget);
   });
 
-  testWidgets('goes to fallback without history',
-      (WidgetTester tester) async {
+  testWidgets('goes to fallback without history', (WidgetTester tester) async {
     final GoRouter router = _router();
     await tester.pumpWidget(_app(router));
     // Deep link straight into /b (no stack).

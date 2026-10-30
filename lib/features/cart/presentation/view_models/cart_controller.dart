@@ -26,20 +26,18 @@ class CartController extends Notifier<CartState> {
 
   /// Adds [quantity] of [product]. Returns [AddResult.differentStore]
   /// without modifying state when the cart belongs to another tenant.
-  AddResult add(
-    ProductModel product,
-    TenantModel tenant, {
-    int quantity = 1,
-  }) {
+  AddResult add(ProductModel product, TenantModel tenant, {int quantity = 1}) {
     if (state.tenantId != null && state.tenantId != tenant.id) {
       return AddResult.differentStore;
     }
     final List<CartItem> items = List<CartItem>.of(state.items);
-    final int index =
-        items.indexWhere((CartItem i) => i.productId == product.id);
+    final int index = items.indexWhere(
+      (CartItem i) => i.productId == product.id,
+    );
     if (index >= 0) {
-      items[index] =
-          items[index].copyWith(quantity: items[index].quantity + quantity);
+      items[index] = items[index].copyWith(
+        quantity: items[index].quantity + quantity,
+      );
     } else {
       items.add(
         CartItem(
@@ -102,9 +100,7 @@ class CartController extends Notifier<CartState> {
     final List<CartItem> items = state.items
         .where((CartItem i) => i.productId != productId)
         .toList();
-    state = items.isEmpty
-        ? const CartState()
-        : state.copyWith(items: items);
+    state = items.isEmpty ? const CartState() : state.copyWith(items: items);
     _persist();
   }
 

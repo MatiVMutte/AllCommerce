@@ -11,9 +11,6 @@ void main() {
   });
 
   test('formats dateTime as dd/MM HH:mm', () {
-    expect(
-      Formatters.dateTime(DateTime(2025, 3, 7, 9, 5)),
-      '07/03 09:05',
-    );
+    expect(Formatters.dateTime(DateTime(2025, 3, 7, 9, 5)), '07/03 09:05');
   });
 }

@@ -16,30 +16,29 @@ class SelectedTenantSlugNotifier extends Notifier<String?> {
 }
 
 final NotifierProvider<SelectedTenantSlugNotifier, String?>
-    selectedTenantSlugProvider =
+selectedTenantSlugProvider =
     NotifierProvider<SelectedTenantSlugNotifier, String?>(
-  SelectedTenantSlugNotifier.new,
-);
+      SelectedTenantSlugNotifier.new,
+    );
 
 final Provider<TenantRepository> tenantRepositoryProvider =
     Provider<TenantRepository>(
-  (Ref ref) => TenantRepository(ref.watch(supabaseClientProvider)),
-);
+      (Ref ref) => TenantRepository(ref.watch(supabaseClientProvider)),
+    );
 
 final tenantBySlugProvider = FutureProvider.family<TenantModel?, String>(
-  (Ref ref, String slug) =>
-      ref.watch(tenantRepositoryProvider).getBySlug(slug),
+  (Ref ref, String slug) => ref.watch(tenantRepositoryProvider).getBySlug(slug),
 );
 
 final tenantByIdProvider = FutureProvider.family<TenantModel?, String>(
   (Ref ref, String id) => ref.watch(tenantRepositoryProvider).getById(id),
 );
 
-final activeTenantsProvider =
-    FutureProvider.autoDispose.family<List<TenantModel>, String?>(
-  (Ref ref, String? zone) =>
-      ref.watch(tenantRepositoryProvider).listActiveByZone(zone),
-);
+final activeTenantsProvider = FutureProvider.autoDispose
+    .family<List<TenantModel>, String?>(
+      (Ref ref, String? zone) =>
+          ref.watch(tenantRepositoryProvider).listActiveByZone(zone),
+    );
 
 final publicZonesProvider = FutureProvider.autoDispose<List<String>>(
   (Ref ref) => ref.watch(tenantRepositoryProvider).listZones(),

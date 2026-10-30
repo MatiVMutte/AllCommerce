@@ -23,9 +23,7 @@ void showAppSnackBar(
       duration: Duration(milliseconds: action != null ? 3200 : 1800),
       backgroundColor: isError ? tokens.danger : const Color(0xEE18181B),
       padding: EdgeInsets.fromLTRB(16, 10, action != null ? 8 : 16, 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(999),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       margin: MediaQuery.sizeOf(context).width >= 600
           ? null
           : EdgeInsets.fromLTRB(

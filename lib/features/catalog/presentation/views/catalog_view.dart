@@ -19,12 +19,14 @@ import 'package:all_commerce/features/cart/data/models/cart_state.dart';
 import 'package:all_commerce/features/cart/presentation/view_models/cart_controller.dart';
 import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
+import 'package:all_commerce/features/catalog/data/repositories/catalog_repository.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
 import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:all_commerce/core/utils/app_motion.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -126,6 +128,7 @@ class _CatalogScaffold extends ConsumerWidget {
                   background: _StoreBanner(tenant: tenant),
                 ),
               ),
+              SliverToBoxAdapter(child: _CouponsBanner(tenantId: tenant.id)),
               SliverPersistentHeader(
                 pinned: true,
                 delegate: _SearchChipsHeader(
@@ -135,7 +138,7 @@ class _CatalogScaffold extends ConsumerWidget {
                   onQuery: (String q) => ref
                       .read(catalogFilterProvider(slug).notifier)
                       .setQuery(q),
-                  onCategory: (ProductCategory c) => ref
+                  onCategory: (String c) => ref
                       .read(catalogFilterProvider(slug).notifier)
                       .setCategory(c),
                   onToggleOnSale: () => ref
@@ -454,7 +457,7 @@ class _SearchChipsHeader extends SliverPersistentHeaderDelegate {
   final CatalogFilter filter;
   final List<ProductModel> products;
   final ValueChanged<String> onQuery;
-  final ValueChanged<ProductCategory> onCategory;
+  final ValueChanged<String> onCategory;
   final VoidCallback onToggleOnSale;
   final VoidCallback onClear;
 
@@ -470,8 +473,8 @@ class _SearchChipsHeader extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final Set<ProductCategory> present = products
-        .map((ProductModel p) => p.categoryEnum)
+    final Set<String> present = products
+        .map((ProductModel p) => p.category)
         .toSet();
     final bool hasOnSale = products.any((ProductModel p) => p.isOnSale);
     return Container(
@@ -504,9 +507,9 @@ class _SearchChipsHeader extends SliverPersistentHeaderDelegate {
                     selected: filter.onlyOnSale,
                     onTap: onToggleOnSale,
                   ),
-                for (final ProductCategory category in present)
+                for (final String category in present)
                   _CategoryChip(
-                    label: category.label,
+                    label: ProductCategory.labelOf(category),
                     selected: filter.category == category,
                     onTap: () => onCategory(category),
                   ),
@@ -571,6 +574,79 @@ class _CategoryChip extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Slim strip under the header advertising the store's active coupons.
+/// Tapping a code copies it so the customer can paste it in the cart.
+class _CouponsBanner extends ConsumerWidget {
+  const _CouponsBanner({required this.tenantId});
+
+  final String tenantId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppTokens tokens = context.tokens;
+    final AsyncValue<List<PublicCoupon>> couponsAsync = ref.watch(
+      activeCouponsProvider(tenantId),
+    );
+    final List<PublicCoupon> coupons =
+        couponsAsync.value ?? const <PublicCoupon>[];
+    if (coupons.isEmpty) return const SizedBox.shrink();
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: <Widget>[
+          for (final PublicCoupon coupon in coupons)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: coupon.code));
+                  showAppSnackBar(
+                    context,
+                    'Código ${coupon.code} copiado — pegalo en el carrito',
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: tokens.success.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: tokens.success),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Icon(
+                        Icons.local_offer_rounded,
+                        size: 14,
+                        color: tokens.success,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${coupon.code} · ${coupon.label}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: tokens.success,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

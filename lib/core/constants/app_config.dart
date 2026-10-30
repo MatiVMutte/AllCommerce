@@ -7,8 +7,9 @@ abstract final class AppConfig {
       'https://allcommerce.mativmutte.workers.dev';
 
   static String get publicBaseUrl {
-    final String raw =
-        dotenv.isInitialized ? (dotenv.env['PUBLIC_BASE_URL'] ?? '').trim() : '';
+    final String raw = dotenv.isInitialized
+        ? (dotenv.env['PUBLIC_BASE_URL'] ?? '').trim()
+        : '';
     if (raw.isEmpty) return defaultPublicBaseUrl;
     return raw.startsWith('http') ? raw : 'https://$raw';
   }

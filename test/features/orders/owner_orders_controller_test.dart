@@ -37,48 +37,37 @@ void main() {
   setUp(() {
     repo = MockOrderRepository();
     container = ProviderContainer(
-      overrides: [
-        orderRepositoryProvider.overrideWithValue(repo),
-      ],
+      overrides: [orderRepositoryProvider.overrideWithValue(repo)],
     );
     addTearDown(container.dispose);
   });
 
-  test('changeStatus calls updateStatus and returns updated order',
-      () async {
-    final OrderModel updated =
-        _order().copyWith(status: OrderStatus.preparing);
-    when(
-      () => repo.updateStatus('o1', 't1', OrderStatus.preparing),
-    ).thenAnswer((_) async => updated);
+  test('changeStatus calls updateStatus and returns updated order', () async {
+    final OrderModel updated = _order().copyWith(status: OrderStatus.preparing);
+    when(() => repo.updateStatus('o1', 't1', OrderStatus.preparing))
+        .thenAnswer((_) async => updated);
+    when(() => repo.notifyCustomer(updated)).thenAnswer((_) async {});
 
     final OrderModel? result = await container
         .read(ownerOrdersControllerProvider.notifier)
         .changeStatus(_order(), OrderStatus.preparing);
 
     expect(result?.status, OrderStatus.preparing);
-    expect(
-      container.read(ownerOrdersControllerProvider).busyOrderId,
-      isNull,
-    );
+    expect(container.read(ownerOrdersControllerProvider).busyOrderId, isNull);
     verify(() => repo.updateStatus('o1', 't1', OrderStatus.preparing))
         .called(1);
   });
 
   test('changeStatus error sets state.error and returns null', () async {
-    when(
-      () => repo.updateStatus('o1', 't1', OrderStatus.rejected),
-    ).thenThrow(Exception('boom'));
+    when(() => repo.updateStatus('o1', 't1', OrderStatus.rejected))
+        .thenThrow(Exception('boom'));
 
     final OrderModel? result = await container
         .read(ownerOrdersControllerProvider.notifier)
         .changeStatus(_order(), OrderStatus.rejected);
 
     expect(result, isNull);
-    expect(
-      container.read(ownerOrdersControllerProvider).error,
-      isNotNull,
-    );
+    expect(container.read(ownerOrdersControllerProvider).error, isNotNull);
   });
 
   test('filterOrders by status and query', () {
@@ -91,10 +80,7 @@ void main() {
         name: 'José Pérez',
       ),
     ];
-    expect(
-      filterOrders(orders, status: OrderStatus.preparing).single.id,
-      'o2',
-    );
+    expect(filterOrders(orders, status: OrderStatus.preparing).single.id, 'o2');
     expect(filterOrders(orders, query: '#42').single.id, 'o1');
     // accent-insensitive name search
     expect(filterOrders(orders, query: 'jose').single.id, 'o2');

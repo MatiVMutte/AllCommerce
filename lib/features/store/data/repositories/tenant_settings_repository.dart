@@ -7,9 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final Provider<TenantSettingsRepository> tenantSettingsRepositoryProvider =
     Provider<TenantSettingsRepository>(
-  (Ref ref) =>
-      TenantSettingsRepository(ref.watch(supabaseClientProvider)),
-);
+      (Ref ref) => TenantSettingsRepository(ref.watch(supabaseClientProvider)),
+    );
 
 class TenantSettingsRepository {
   const TenantSettingsRepository(this._client);
@@ -67,14 +66,17 @@ class TenantSettingsRepository {
     required Uint8List bytes,
   }) async {
     final String path = '$tenantId/logo.jpg';
-    await _client.storage.from('tenant-logos').uploadBinary(
+    await _client.storage
+        .from('tenant-logos')
+        .uploadBinary(
           path,
           bytes,
-          fileOptions:
-              const FileOptions(contentType: 'image/jpeg', upsert: true),
+          fileOptions: const FileOptions(
+            contentType: 'image/jpeg',
+            upsert: true,
+          ),
         );
-    final String url =
-        _client.storage.from('tenant-logos').getPublicUrl(path);
+    final String url = _client.storage.from('tenant-logos').getPublicUrl(path);
     return '$url?v=${DateTime.now().millisecondsSinceEpoch}';
   }
 

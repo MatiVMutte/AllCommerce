@@ -69,8 +69,8 @@ class _BusinessOnboardingViewState
     double? lat;
     double? lng;
     if (address.length >= 4) {
-      final List<AddressSuggestion> found =
-          await const NominatimGeocoder().search(address);
+      final List<AddressSuggestion> found = await const NominatimGeocoder()
+          .search(address);
       if (found.isNotEmpty) {
         lat = found.first.point.latitude;
         lng = found.first.point.longitude;
@@ -105,7 +105,7 @@ class _BusinessOnboardingViewState
         ref.watch(currentProfileProvider).value != null;
     final bool slugValid =
         Validators.slug(_slug.text.trim()) == null &&
-            _slug.text.trim().isNotEmpty;
+        _slug.text.trim().isNotEmpty;
     return Scaffold(
       appBar: hasCustomerProfile
           ? AppBar(leading: const AppBackButton(fallback: '/profile'))
@@ -123,8 +123,7 @@ class _BusinessOnboardingViewState
                   children: <Widget>[
                     const AuthHeader(
                       title: 'Creá tu local',
-                      subtitle:
-                          'Tu catálogo queda online en un minuto',
+                      subtitle: 'Tu catálogo queda online en un minuto',
                     ),
                     const SizedBox(height: 32),
                     LabeledField(
@@ -156,9 +155,7 @@ class _BusinessOnboardingViewState
                           color: tokens.surfaceMuted,
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
                         child: Row(
                           children: <Widget>[
                             Text(
@@ -176,14 +173,12 @@ class _BusinessOnboardingViewState
                                   enabledBorder: InputBorder.none,
                                   focusedBorder: InputBorder.none,
                                   errorBorder: InputBorder.none,
-                                  focusedErrorBorder:
-                                      InputBorder.none,
+                                  focusedErrorBorder: InputBorder.none,
                                   filled: false,
                                   hintText: 'tu-local',
                                   isDense: true,
                                 ),
-                                onChanged: (_) =>
-                                    _slugEdited = true,
+                                onChanged: (_) => _slugEdited = true,
                                 validator: Validators.slug,
                               ),
                             ),
@@ -205,8 +200,7 @@ class _BusinessOnboardingViewState
                         keyboardType: TextInputType.phone,
                         decoration: const InputDecoration(
                           hintText: '11 2233 4455',
-                          helperText:
-                              'Con código de área, sin 0 ni 15',
+                          helperText: 'Con código de área, sin 0 ni 15',
                         ),
                         validator: Validators.phone,
                       ),
@@ -228,9 +222,7 @@ class _BusinessOnboardingViewState
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Text('Crear mi local'),
                     ),

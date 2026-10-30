@@ -25,31 +25,31 @@ class DefaultFirebaseOptions {
   }
 
   static FirebaseOptions get web => FirebaseOptions(
-        apiKey: _env('FIREBASE_API_KEY'),
-        appId: _env('FIREBASE_APP_ID'),
-        messagingSenderId: _env('FIREBASE_MESSAGING_SENDER_ID'),
-        projectId: _env('FIREBASE_PROJECT_ID'),
-        authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'],
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
-        measurementId: dotenv.env['FIREBASE_MEASUREMENT_ID'],
-      );
+    apiKey: _env('FIREBASE_API_KEY'),
+    appId: _env('FIREBASE_APP_ID'),
+    messagingSenderId: _env('FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: _env('FIREBASE_PROJECT_ID'),
+    authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'],
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
+    measurementId: dotenv.env['FIREBASE_MEASUREMENT_ID'],
+  );
 
   static FirebaseOptions get android => FirebaseOptions(
-        apiKey: _env('FIREBASE_API_KEY'),
-        appId: _env('FIREBASE_APP_ID'),
-        messagingSenderId: _env('FIREBASE_MESSAGING_SENDER_ID'),
-        projectId: _env('FIREBASE_PROJECT_ID'),
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
-      );
+    apiKey: _env('FIREBASE_API_KEY'),
+    appId: _env('FIREBASE_APP_ID'),
+    messagingSenderId: _env('FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: _env('FIREBASE_PROJECT_ID'),
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
+  );
 
   static FirebaseOptions get ios => FirebaseOptions(
-        apiKey: _env('FIREBASE_API_KEY'),
-        appId: _env('FIREBASE_APP_ID'),
-        messagingSenderId: _env('FIREBASE_MESSAGING_SENDER_ID'),
-        projectId: _env('FIREBASE_PROJECT_ID'),
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
-        iosBundleId: dotenv.env['FIREBASE_IOS_BUNDLE_ID'],
-      );
+    apiKey: _env('FIREBASE_API_KEY'),
+    appId: _env('FIREBASE_APP_ID'),
+    messagingSenderId: _env('FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: _env('FIREBASE_PROJECT_ID'),
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'],
+    iosBundleId: dotenv.env['FIREBASE_IOS_BUNDLE_ID'],
+  );
 
   static String _env(String key) {
     final String? value = dotenv.env[key];

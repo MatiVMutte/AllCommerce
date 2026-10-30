@@ -39,6 +39,10 @@ class ProductModel {
 
   ProductCategory get categoryEnum => ProductCategory.fromId(category);
 
+  /// Display label: Spanish name for known enum ids, the typed text for
+  /// store-defined categories ("Bebidas", "Limpieza"...).
+  String get categoryLabel => ProductCategory.labelOf(category);
+
   bool get isOnSale =>
       compareAtPrice != null && compareAtPrice! > price && price > 0;
 
@@ -48,9 +52,10 @@ class ProductModel {
 
   int get discountPercent {
     if (!isOnSale) return 0;
-    return (((compareAtPrice! - price) / compareAtPrice!) * 100)
-        .round()
-        .clamp(1, 99);
+    return (((compareAtPrice! - price) / compareAtPrice!) * 100).round().clamp(
+      1,
+      99,
+    );
   }
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {

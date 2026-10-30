@@ -42,10 +42,9 @@ enum OrderStatus {
   }
 
   /// Text color that stays readable on top of [color].
-  Color onColor(ColorScheme scheme) =>
-      color(scheme).computeLuminance() > 0.45
-          ? const Color(0xFF1A1A1A)
-          : Colors.white;
+  Color onColor(ColorScheme scheme) => color(scheme).computeLuminance() > 0.45
+      ? const Color(0xFF1A1A1A)
+      : Colors.white;
 
   /// Statuses this order may move to.
   List<OrderStatus> get nextOptions {
@@ -57,15 +56,9 @@ enum OrderStatus {
           OrderStatus.rejected,
         ];
       case OrderStatus.preparing:
-        return const <OrderStatus>[
-          OrderStatus.ready,
-          OrderStatus.rejected,
-        ];
+        return const <OrderStatus>[OrderStatus.ready, OrderStatus.rejected];
       case OrderStatus.ready:
-        return const <OrderStatus>[
-          OrderStatus.delivered,
-          OrderStatus.rejected,
-        ];
+        return const <OrderStatus>[OrderStatus.delivered, OrderStatus.rejected];
       case OrderStatus.delivered:
       case OrderStatus.rejected:
         return const <OrderStatus>[];

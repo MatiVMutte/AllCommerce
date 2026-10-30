@@ -28,36 +28,35 @@ void main() {
   );
 
   List<AdminTenantRow> rows() => <AdminTenantRow>[
-        AdminTenantRow(
-          id: 't1',
-          name: 'Tienda Norte',
-          slug: 'norte',
-          plan: PlanType.inicial,
-          planExpiresAt: DateTime.now().add(const Duration(days: 20)),
-          isActive: true,
+    AdminTenantRow(
+      id: 't1',
+      name: 'Tienda Norte',
+      slug: 'norte',
+      plan: PlanType.inicial,
+      planExpiresAt: DateTime.now().add(const Duration(days: 20)),
+      isActive: true,
       isClaimed: true,
-          createdAt: DateTime(2025),
-          ownerName: 'Ana',
-          productCount: 4,
-          orderCount: 2,
-          aiUsedMonth: 1,
-        ),
-        AdminTenantRow(
-          id: 't2',
-          name: 'Tienda Sur',
-          slug: 'sur',
-          plan: PlanType.crecimiento,
-          planExpiresAt:
-              DateTime.now().subtract(const Duration(days: 2)),
-          isActive: true,
+      createdAt: DateTime(2025),
+      ownerName: 'Ana',
+      productCount: 4,
+      orderCount: 2,
+      aiUsedMonth: 1,
+    ),
+    AdminTenantRow(
+      id: 't2',
+      name: 'Tienda Sur',
+      slug: 'sur',
+      plan: PlanType.crecimiento,
+      planExpiresAt: DateTime.now().subtract(const Duration(days: 2)),
+      isActive: true,
       isClaimed: true,
-          createdAt: DateTime(2025),
-          ownerName: 'Beto',
-          productCount: 8,
-          orderCount: 5,
-          aiUsedMonth: 0,
-        ),
-      ];
+      createdAt: DateTime(2025),
+      ownerName: 'Beto',
+      productCount: 8,
+      orderCount: 5,
+      aiUsedMonth: 0,
+    ),
+  ];
 
   Widget app() {
     return ProviderScope(
@@ -79,8 +78,10 @@ void main() {
     expect(find.text('\$19.900'), findsOneWidget);
     expect(find.text('Tienda Norte'), findsOneWidget);
     expect(find.text('Tienda Sur'), findsOneWidget);
-    expect(find.text('Clientes registrados 9 · Pedidos totales 30'),
-        findsOneWidget);
+    expect(
+      find.text('Clientes registrados 9 · Pedidos totales 30'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Vencidos chip filters the list', (WidgetTester tester) async {

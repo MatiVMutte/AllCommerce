@@ -1,4 +1,3 @@
-import 'package:all_commerce/core/constants/categories.dart';
 import 'package:all_commerce/core/supabase/supabase_client_provider.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/utils/text_utils.dart';
@@ -32,12 +31,14 @@ class CatalogFilter {
   });
 
   final String query;
-  final ProductCategory? category;
+
+  /// Raw stored category value (enum id or free-form store category).
+  final String? category;
   final bool onlyOnSale;
 
   CatalogFilter copyWith({
     String? query,
-    ProductCategory? Function()? category,
+    String? Function()? category,
     bool? onlyOnSale,
   }) {
     return CatalogFilter(
@@ -62,7 +63,7 @@ class CatalogFilterNotifier extends Notifier<CatalogFilter> {
   }
 
   /// Toggles [category] off when it's already selected.
-  void setCategory(ProductCategory category) {
+  void setCategory(String category) {
     state = state.copyWith(
       category: () => state.category == category ? null : category,
       onlyOnSale: false,
@@ -91,7 +92,7 @@ List<ProductModel> applyCatalogFilter(
     if (filter.onlyOnSale && !product.isOnSale) {
       return false;
     }
-    if (filter.category != null && product.category != filter.category!.id) {
+    if (filter.category != null && product.category != filter.category) {
       return false;
     }
     if (query.isEmpty) return true;
@@ -128,6 +129,13 @@ final globalProductSearchProvider =
 final onSaleProductsProvider =
     FutureProvider.autoDispose<List<GlobalProductHit>>(
       (Ref ref) => ref.watch(catalogRepositoryProvider).onSaleProducts(),
+    );
+
+/// Active coupons of a store, advertised on its catalog.
+final activeCouponsProvider = FutureProvider.autoDispose
+    .family<List<PublicCoupon>, String>(
+      (Ref ref, String tenantId) =>
+          ref.watch(catalogRepositoryProvider).listActiveCoupons(tenantId),
     );
 
 /// Pure directory filtering (name, description, address; accent-insensitive).

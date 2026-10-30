@@ -17,8 +17,7 @@ class AddressSuggestion {
 
   factory AddressSuggestion.fromJson(Map<String, dynamic> json) {
     final String display = (json['display_name'] as String? ?? '').trim();
-    final Map<String, dynamic>? addr =
-        json['address'] as Map<String, dynamic>?;
+    final Map<String, dynamic>? addr = json['address'] as Map<String, dynamic>?;
     final String shortLabel = _buildShortLabel(addr, display);
     return AddressSuggestion(
       displayName: display,
@@ -30,19 +29,18 @@ class AddressSuggestion {
     );
   }
 
-  static String _buildShortLabel(
-    Map<String, dynamic>? addr,
-    String fallback,
-  ) {
+  static String _buildShortLabel(Map<String, dynamic>? addr, String fallback) {
     if (addr == null) return fallback;
     final String? road = (addr['road'] ?? addr['pedestrian']) as String?;
     final String? number = addr['house_number'] as String?;
-    final String? area = (addr['suburb'] ??
-        addr['neighbourhood'] ??
-        addr['city'] ??
-        addr['town'] ??
-        addr['village'] ??
-        addr['municipality']) as String?;
+    final String? area =
+        (addr['suburb'] ??
+                addr['neighbourhood'] ??
+                addr['city'] ??
+                addr['town'] ??
+                addr['village'] ??
+                addr['municipality'])
+            as String?;
     final String? state = addr['state'] as String?;
     final String street = <String>[
       if (road != null && road.isNotEmpty) road,

@@ -119,10 +119,7 @@ class ProductRepository {
   }) async {
     await _client
         .from('products')
-        .update(<String, dynamic>{
-          'stock': stock,
-          'track_stock': trackStock,
-        })
+        .update(<String, dynamic>{'stock': stock, 'track_stock': trackStock})
         .eq('id', productId)
         .eq('tenant_id', tenantId);
   }

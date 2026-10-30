@@ -79,8 +79,7 @@ void main() {
         sessionProvider.overrideWith((Ref ref) => session),
         currentProfileProvider.overrideWith((Ref ref) async => owner),
         tenantByIdProvider('t1').overrideWith((Ref ref) async => tenant),
-        ownerProductsProvider('t1')
-            .overrideWith(() => _EmptyOwnerProducts()),
+        ownerProductsProvider('t1').overrideWith(() => _EmptyOwnerProducts()),
         ownerOrdersProvider('t1')
             .overrideWith((Ref ref) async => const <OrderModel>[]),
         ownerSalesMetricsProvider('t1').overrideWith(
@@ -92,12 +91,10 @@ void main() {
             topProducts: <SalesTopProduct>[],
           ),
         ),
-        aiUsageProvider
-            .overrideWith((Ref ref) async => const AiUsage(used: 0)),
+        aiUsageProvider.overrideWith((Ref ref) async => const AiUsage(used: 0)),
         activeTenantsProvider(null)
             .overrideWith((Ref ref) async => <TenantModel>[tenant]),
-        publicZonesProvider
-            .overrideWith((Ref ref) async => const <String>[]),
+        publicZonesProvider.overrideWith((Ref ref) async => const <String>[]),
       ],
     );
     await tester.pumpWidget(
@@ -112,7 +109,9 @@ void main() {
     return container;
   }
 
-  testWidgets('owner can switch to customer directory and back', (tester) async {
+  testWidgets('owner can switch to customer directory and back', (
+    tester,
+  ) async {
     final ProviderContainer container = await pumpApp(tester);
     await tester.pumpAndSettle();
 

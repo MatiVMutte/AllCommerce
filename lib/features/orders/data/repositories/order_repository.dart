@@ -2,6 +2,7 @@ import 'package:all_commerce/core/constants/delivery_method.dart';
 import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/core/constants/payment_method.dart';
 import 'package:all_commerce/core/supabase/supabase_client_provider.dart';
+import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/features/cart/data/models/cart_item.dart';
 import 'package:all_commerce/features/orders/data/models/order_item_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
@@ -53,17 +54,19 @@ class OrderRepository {
     return OrderModel.fromJson(row);
   }
 
-  /// Returns the coupon's discount percent (1-100) or null if the code
-  /// does not exist / is inactive for this tenant.
-  Future<int?> validateCoupon(String tenantId, String code) async {
-    final int? pct = await _client.rpc<int?>(
+  /// Returns the coupon's discount info or null if the code does not
+  /// exist / is inactive for this tenant. Preview only — `place_order`
+  /// re-validates authoritatively.
+  Future<CouponPreview?> validateCoupon(String tenantId, String code) async {
+    final dynamic row = await _client.rpc<dynamic>(
       'validate_coupon',
       params: <String, dynamic>{
         'p_tenant_id': tenantId,
         'p_code': code.trim().toUpperCase(),
       },
     );
-    return pct;
+    if (row == null) return null;
+    return CouponPreview.fromJson(row as Map<String, dynamic>);
   }
 
   /// Best-effort notification to the store owner. Failures are ignored so the
@@ -78,6 +81,19 @@ class OrderRepository {
           'order_number': order.orderNumber,
           'total': order.total,
         },
+      );
+    } catch (_) {
+      // Do nothing: notification is optional.
+    }
+  }
+
+  /// Best-effort push to the customer when the owner changes the order
+  /// status. Same fire-and-forget contract as [notifyOwner].
+  Future<void> notifyCustomer(OrderModel order) async {
+    try {
+      await _client.functions.invoke(
+        'notify-customer',
+        body: <String, dynamic>{'id': order.id},
       );
     } catch (_) {
       // Do nothing: notification is optional.
@@ -145,4 +161,33 @@ class OrderRepository {
         .single();
     return OrderModel.fromJson(row);
   }
+}
+
+/// Result of `validate_coupon`: what a code is worth, for the cart preview.
+/// `place_order` re-validates authoritatively at checkout.
+class CouponPreview {
+  const CouponPreview({required this.type, required this.value});
+
+  /// 'percent' or 'fixed'.
+  final String type;
+  final double value;
+
+  bool get isPercent => type == 'percent';
+
+  factory CouponPreview.fromJson(Map<String, dynamic> json) {
+    return CouponPreview(
+      type: (json['type'] as String?) ?? 'percent',
+      value: num.parse(json['value'].toString()).toDouble(),
+    );
+  }
+
+  /// Discount for a given subtotal. Fixed amounts are clamped so the
+  /// total never goes negative — same rule the server applies.
+  double discountFor(double subtotal) => isPercent
+      ? subtotal * value / 100
+      : (value < subtotal ? value : subtotal);
+
+  /// "−10%" / "−$500" — shown inside the applied-coupon chip.
+  String get label =>
+      isPercent ? '−${value.round()}%' : '−${Formatters.price(value)}';
 }
