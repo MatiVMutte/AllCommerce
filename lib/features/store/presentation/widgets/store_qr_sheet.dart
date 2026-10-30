@@ -16,6 +16,7 @@ Future<void> showStoreQrSheet(BuildContext context, TenantModel tenant) {
   return showModalBottomSheet<void>(
     context: context,
     useRootNavigator: true,
+    useSafeArea: true,
     showDragHandle: true,
     builder: (BuildContext sheetContext) =>
         _StoreQrSheet(parentContext: context, tenant: tenant),
