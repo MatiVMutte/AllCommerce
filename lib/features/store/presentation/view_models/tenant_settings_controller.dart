@@ -27,12 +27,19 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
   TenantSettingsState build() => const TenantSettingsState();
 
   Future<void> pickLogo() async {
-    final PickedImage? picked =
-        await ref.read(imageServiceProvider).pick(ImageSource.gallery);
-    if (picked == null) return;
-    final Uint8List jpeg =
-        await ref.read(imageServiceProvider).compressLogo(picked.bytes);
-    state = TenantSettingsState(pendingLogo: jpeg);
+    final keepAlive = ref.keepAlive();
+    try {
+      final PickedImage? picked = await ref
+          .read(imageServiceProvider)
+          .pick(ImageSource.gallery);
+      if (picked == null) return;
+      final Uint8List jpeg = await ref
+          .read(imageServiceProvider)
+          .compressLogo(picked.bytes);
+      state = TenantSettingsState(pendingLogo: jpeg);
+    } finally {
+      keepAlive.close();
+    }
   }
 
   /// Returns the updated tenant on success, null on failure.
@@ -51,12 +58,11 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
     bool isOpen = true,
     String? openingHours,
   }) async {
-    final TenantSettingsRepository repo =
-        ref.read(tenantSettingsRepositoryProvider);
-    state = TenantSettingsState(
-      saving: true,
-      pendingLogo: state.pendingLogo,
+    final keepAlive = ref.keepAlive();
+    final TenantSettingsRepository repo = ref.read(
+      tenantSettingsRepositoryProvider,
     );
+    state = TenantSettingsState(saving: true, pendingLogo: state.pendingLogo);
     try {
       final TenantModel updated = await repo.update(
         current.id,
@@ -75,8 +81,10 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
       );
       final Uint8List? logo = state.pendingLogo;
       if (logo != null) {
-        final String url =
-            await repo.uploadLogo(tenantId: current.id, bytes: logo);
+        final String url = await repo.uploadLogo(
+          tenantId: current.id,
+          bytes: logo,
+        );
         await repo.setLogoUrl(current.id, url);
       }
       state = const TenantSettingsState();
@@ -86,13 +94,20 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
     } catch (e) {
       state = TenantSettingsState(pendingLogo: state.pendingLogo, error: e);
       return null;
+    } finally {
+      keepAlive.close();
     }
   }
 
   Future<bool> toggleOpen(TenantModel current) async {
-    final TenantSettingsRepository repo =
-        ref.read(tenantSettingsRepositoryProvider);
+    // The provider is autoDispose: keep it alive across the async gap and
+    // the tenantByIdProvider invalidation, which can otherwise dispose this
+    // controller mid-flight (UnmountedRefException).
+    final keepAlive = ref.keepAlive();
     try {
+      final TenantSettingsRepository repo = ref.read(
+        tenantSettingsRepositoryProvider,
+      );
       await repo.setOpen(current.id, !current.isOpen);
       ref.invalidate(tenantByIdProvider(current.id));
       ref.invalidate(tenantBySlugProvider(current.slug));
@@ -100,11 +115,13 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
     } catch (e) {
       state = TenantSettingsState(pendingLogo: state.pendingLogo, error: e);
       return false;
+    } finally {
+      keepAlive.close();
     }
   }
 }
 
-final tenantSettingsControllerProvider = NotifierProvider.autoDispose<
-    TenantSettingsController, TenantSettingsState>(
-  TenantSettingsController.new,
-);
+final tenantSettingsControllerProvider =
+    NotifierProvider.autoDispose<TenantSettingsController, TenantSettingsState>(
+      TenantSettingsController.new,
+    );
