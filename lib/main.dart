@@ -7,6 +7,7 @@ import 'package:all_commerce/core/router/app_router.dart';
 import 'package:all_commerce/core/router/parent_path.dart';
 import 'package:all_commerce/core/storage/shared_preferences_provider.dart';
 import 'package:all_commerce/core/theme/app_theme.dart';
+import 'package:all_commerce/core/utils/safe_area_probe/safe_area_probe.dart';
 import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
 import 'package:all_commerce/features/orders/presentation/widgets/new_order_watcher.dart';
 import 'package:all_commerce/features/orders/presentation/widgets/order_status_watcher.dart';
@@ -60,6 +61,23 @@ class _AllCommerceAppState extends ConsumerState<AllCommerceApp>
     _splashTimer = Timer(const Duration(milliseconds: 650), () {
       if (mounted) setState(() => _showSplash = false);
     });
+    unawaited(_probeSafeArea());
+  }
+
+  /// Web-only: CSS env(safe-area-inset-bottom) merged into MediaQuery —
+  /// the web engine never reports the Android gesture-bar inset itself.
+  double _safeAreaBottom = 0;
+
+  Future<void> _probeSafeArea() async {
+    final double v = await probeSafeAreaBottom();
+    if (mounted && v != _safeAreaBottom) {
+      setState(() => _safeAreaBottom = v);
+    }
+  }
+
+  @override
+  void didChangeMetrics() {
+    unawaited(_probeSafeArea());
   }
 
   Timer? _splashTimer;
@@ -121,21 +139,33 @@ class _AllCommerceAppState extends ConsumerState<AllCommerceApp>
         return true;
       },
       builder: (BuildContext context, Widget? child) {
-        return NewOrderWatcher(
-          child: OrderStatusWatcher(
-            child: Stack(
-              children: <Widget>[
-                ?child,
-                IgnorePointer(
-                  ignoring: !_showSplash,
-                  child: AnimatedOpacity(
-                    opacity: _showSplash ? 1 : 0,
-                    duration: const Duration(milliseconds: 280),
-                    curve: Curves.easeOutCubic,
-                    child: const _BrandSplashOverlay(),
+        final MediaQueryData mq = MediaQuery.of(context);
+        final MediaQueryData merged = mq.copyWith(
+          padding: mq.padding.copyWith(
+            bottom: math.max(mq.padding.bottom, _safeAreaBottom),
+          ),
+          viewPadding: mq.viewPadding.copyWith(
+            bottom: math.max(mq.viewPadding.bottom, _safeAreaBottom),
+          ),
+        );
+        return MediaQuery(
+          data: merged,
+          child: NewOrderWatcher(
+            child: OrderStatusWatcher(
+              child: Stack(
+                children: <Widget>[
+                  ?child,
+                  IgnorePointer(
+                    ignoring: !_showSplash,
+                    child: AnimatedOpacity(
+                      opacity: _showSplash ? 1 : 0,
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.easeOutCubic,
+                      child: const _BrandSplashOverlay(),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
