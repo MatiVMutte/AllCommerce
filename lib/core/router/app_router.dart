@@ -24,6 +24,7 @@ import 'package:all_commerce/features/store/presentation/views/coupons_view.dart
 import 'package:all_commerce/features/catalog/presentation/views/product_detail_view.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/legal/presentation/views/legal_view.dart';
+import 'package:all_commerce/features/marketing/presentation/views/landing_view.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:all_commerce/features/orders/presentation/views/my_orders_view.dart';
 import 'package:all_commerce/features/orders/presentation/views/order_success_view.dart';
@@ -116,6 +117,11 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
               slug: state.pathParameters['slug'] ?? '',
               productId: state.pathParameters['id'] ?? '',
             ),
+      ),
+      GoRoute(
+        path: '/para-locales',
+        builder: (BuildContext context, GoRouterState state) =>
+            const LandingView(),
       ),
       GoRoute(
         path: '/welcome',
@@ -247,6 +253,7 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
       final String loc = state.matchedLocation;
       const Set<String> publicPaths = <String>{
         '/',
+        '/para-locales',
         '/welcome',
         '/login',
         '/register',

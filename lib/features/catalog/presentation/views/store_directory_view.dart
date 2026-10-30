@@ -329,6 +329,20 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                 ),
                 const SizedBox(height: 10),
                 const InstallAppCard(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () => context.push('/para-locales'),
+                      icon: const Icon(Icons.storefront_outlined, size: 16),
+                      label: const Text('¿Tenés un local? Sumalo gratis'),
+                      style: TextButton.styleFrom(
+                        textStyle: const TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Expanded(
                   child: tenants.when(
