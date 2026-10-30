@@ -25,6 +25,7 @@ import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/utils/app_motion.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -70,12 +71,21 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
       if (pos == null) {
         showAppSnackBar(
           context,
-          result.permissionBlockedForever
+          result.serviceDisabled
+              ? 'La ubicación está desactivada en este dispositivo.'
+              : result.permissionBlockedForever
               ? 'La ubicación está bloqueada para este sitio. Habilitála '
                     'desde el ícono del candado en la barra del navegador.'
               : 'No pudimos obtener tu ubicación. Aceptá el permiso que '
                     'aparece arriba, junto a la barra de direcciones.',
           isError: true,
+          action: result.serviceDisabled && !kIsWeb
+              ? SnackBarAction(
+                  label: 'Activar',
+                  onPressed: () =>
+                      const UserLocationService().openLocationSettings(),
+                )
+              : null,
         );
         return;
       }

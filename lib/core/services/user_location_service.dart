@@ -7,6 +7,7 @@ final class UserLocationResult {
   const UserLocationResult({
     this.position,
     this.permissionBlockedForever = false,
+    this.serviceDisabled = false,
   });
 
   final LatLng? position;
@@ -14,6 +15,10 @@ final class UserLocationResult {
   /// True when the browser/OS has the site permission hard-blocked —
   /// the only fix is the user re-enabling it from the address-bar icon.
   final bool permissionBlockedForever;
+
+  /// True when the OS location service is off entirely (e.g. Windows
+  /// Settings → Privacy → Location). The user can fix it in settings.
+  final bool serviceDisabled;
 }
 
 /// One-shot user position used by "Locales cerca de vos".
@@ -32,7 +37,7 @@ class UserLocationService {
         const Duration(seconds: 4),
         onTimeout: () => false,
       );
-      if (!enabled) return const UserLocationResult();
+      if (!enabled) return const UserLocationResult(serviceDisabled: true);
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -86,6 +91,11 @@ class UserLocationService {
       LatLng(tenant.lat!, tenant.lng!),
     );
   }
+
+  /// Opens the OS location settings (Windows: ms-settings:privacy-location,
+  /// Android: location settings). Returns false on platforms without
+  /// settings support (web).
+  Future<bool> openLocationSettings() => Geolocator.openLocationSettings();
 
   /// "350 m" / "1,2 km".
   static String distanceLabel(double meters) {
