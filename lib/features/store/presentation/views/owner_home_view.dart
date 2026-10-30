@@ -1322,18 +1322,58 @@ class _WeeklySalesCard extends StatelessWidget {
       (double a, double b) => a > b ? a : b,
     );
     final double week = totals.fold<double>(0, (double a, double b) => a + b);
+    // Same window one week earlier (days 7–13 ago) for the delta chip.
+    final DateTime today = DateTime(now.year, now.month, now.day);
+    double prevWeek = 0;
+    for (final OrderModel o in orders) {
+      final DateTime d = o.createdAt.toLocal();
+      final int daysAgo = today
+          .difference(DateTime(d.year, d.month, d.day))
+          .inDays;
+      if (daysAgo >= 7 && daysAgo < 14) prevWeek += o.total;
+    }
+    final double? deltaPct = prevWeek > 0
+        ? (week - prevWeek) / prevWeek * 100
+        : null;
     return AppCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            'Esta semana: ${Formatters.price(week)}',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: tokens.textPrimary,
-            ),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  'Esta semana: ${Formatters.price(week)}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: tokens.textPrimary,
+                  ),
+                ),
+              ),
+              if (deltaPct != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: (deltaPct >= 0 ? tokens.success : tokens.danger)
+                        .withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${deltaPct >= 0 ? '+' : ''}'
+                    '${deltaPct.toStringAsFixed(0)}% vs sem. anterior',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: deltaPct >= 0 ? tokens.success : tokens.danger,
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 10),
           SizedBox(

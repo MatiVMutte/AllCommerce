@@ -1,6 +1,7 @@
 import 'package:all_commerce/core/constants/app_config.dart';
 import 'package:all_commerce/core/constants/app_strings.dart';
 import 'package:all_commerce/core/router/customer_mode.dart';
+import 'package:all_commerce/core/services/user_location_service.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
@@ -12,6 +13,7 @@ import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
+import 'package:all_commerce/core/widgets/install_app_card.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/catalog/data/repositories/catalog_repository.dart';
@@ -47,6 +49,36 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
   bool _animated = false;
   _DirectoryView _view = _DirectoryView.list;
   String? _zone;
+  bool _nearby = false;
+  bool _locating = false;
+  LatLng? _userPos;
+
+  Future<void> _toggleNearby() async {
+    if (_nearby) {
+      setState(() => _nearby = false);
+      return;
+    }
+    LatLng? pos = _userPos;
+    if (pos == null) {
+      setState(() => _locating = true);
+      pos = await const UserLocationService().currentPosition();
+      if (!mounted) return;
+      setState(() => _locating = false);
+      if (pos == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No pudimos obtener tu ubicación. Activá el GPS '
+              'o permití el acceso a la ubicación.',
+            ),
+          ),
+        );
+        return;
+      }
+      _userPos = pos;
+    }
+    setState(() => _nearby = true);
+  }
 
   @override
   void initState() {
@@ -163,26 +195,55 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                 const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SegmentedButton<_DirectoryView>(
-                    selected: <_DirectoryView>{_view},
-                    onSelectionChanged: (Set<_DirectoryView> value) {
-                      setState(() => _view = value.first);
-                    },
-                    segments: const <ButtonSegment<_DirectoryView>>[
-                      ButtonSegment<_DirectoryView>(
-                        value: _DirectoryView.list,
-                        label: Text('Lista'),
-                        icon: Icon(Icons.list_rounded),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: SegmentedButton<_DirectoryView>(
+                          selected: <_DirectoryView>{_view},
+                          onSelectionChanged: (Set<_DirectoryView> value) {
+                            setState(() => _view = value.first);
+                          },
+                          segments: const <ButtonSegment<_DirectoryView>>[
+                            ButtonSegment<_DirectoryView>(
+                              value: _DirectoryView.list,
+                              label: Text('Lista'),
+                              icon: Icon(Icons.list_rounded),
+                            ),
+                            ButtonSegment<_DirectoryView>(
+                              value: _DirectoryView.map,
+                              label: Text('Mapa'),
+                              icon: Icon(Icons.map_rounded),
+                            ),
+                          ],
+                        ),
                       ),
-                      ButtonSegment<_DirectoryView>(
-                        value: _DirectoryView.map,
-                        label: Text('Mapa'),
-                        icon: Icon(Icons.map_rounded),
-                      ),
+                      const SizedBox(width: 10),
+                      _locating
+                          ? const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 10),
+                              child: SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : FilterChip(
+                              label: const Text('Cerca de vos'),
+                              avatar: const Icon(
+                                Icons.near_me_rounded,
+                                size: 16,
+                              ),
+                              selected: _nearby,
+                              onSelected: (_) => _toggleNearby(),
+                            ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
+                const InstallAppCard(),
+                const SizedBox(height: 2),
                 Expanded(
                   child: tenants.when(
                     loading: () =>
@@ -197,11 +258,27 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                       final Set<String> favs = ref.watch(
                         favoriteStoresProvider,
                       );
-                      filtered.sort(
-                        (TenantModel a, TenantModel b) =>
+                      filtered.sort((TenantModel a, TenantModel b) {
+                        final int fav =
                             (favs.contains(a.id) ? 0 : 1) -
-                            (favs.contains(b.id) ? 0 : 1),
-                      );
+                            (favs.contains(b.id) ? 0 : 1);
+                        if (fav != 0) return fav;
+                        if (_nearby && _userPos != null) {
+                          final double? da = UserLocationService.distanceTo(
+                            a,
+                            _userPos,
+                          );
+                          final double? db = UserLocationService.distanceTo(
+                            b,
+                            _userPos,
+                          );
+                          if (da == null && db == null) return 0;
+                          if (da == null) return 1;
+                          if (db == null) return -1;
+                          return da.compareTo(db);
+                        }
+                        return 0;
+                      });
                       final bool searchingProducts = search.trim().length >= 2;
                       final List<GlobalProductHit> productHits =
                           searchingProducts
@@ -312,6 +389,12 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                           isMine:
                                               profile?.tenantId ==
                                               filtered[index].id,
+                                          distanceMeters: _nearby
+                                              ? UserLocationService.distanceTo(
+                                                  filtered[index],
+                                                  _userPos,
+                                                )
+                                              : null,
                                         );
                                         return animate
                                             ? card
@@ -361,6 +444,12 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                   bottomMargin: 0,
                                   isMine:
                                       profile?.tenantId == filtered[index].id,
+                                  distanceMeters: _nearby
+                                      ? UserLocationService.distanceTo(
+                                          filtered[index],
+                                          _userPos,
+                                        )
+                                      : null,
                                 );
                                 return animate
                                     ? card
@@ -700,10 +789,14 @@ class _StoreCard extends StatelessWidget {
     required this.tenant,
     this.bottomMargin = 16,
     this.isMine = false,
+    this.distanceMeters,
   });
 
   final TenantModel tenant;
   final double bottomMargin;
+
+  /// Distance to the user when "Cerca de vos" is active (km badge).
+  final double? distanceMeters;
 
   /// True when this store belongs to the signed-in owner (customer mode).
   final bool isMine;
@@ -764,6 +857,40 @@ class _StoreCard extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+                        ),
+                      ),
+                    ),
+                  if (distanceMeters != null)
+                    Positioned(
+                      bottom: 10,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.72),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            const Icon(
+                              Icons.near_me_rounded,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'a ${UserLocationService.distanceLabel(distanceMeters!)}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

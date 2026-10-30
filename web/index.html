@@ -38,6 +38,17 @@
 
   <title>AllCommerce - Tu catálogo con IA</title>
   <link rel="manifest" href="manifest.json">
+  <script>
+    // Capture the PWA install prompt so Flutter can trigger it on demand.
+    window.__allcommerceInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      window.__allcommerceInstallPrompt = e;
+    });
+    window.__clearAllcommerceInstallPrompt = function () {
+      window.__allcommerceInstallPrompt = null;
+    };
+  </script>
 </head>
 <body>
   <!--
