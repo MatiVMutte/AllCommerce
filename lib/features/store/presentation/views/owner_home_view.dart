@@ -17,6 +17,7 @@ import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/core/widgets/order_status_chip.dart';
+import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/billing/data/repositories/ai_usage_repository.dart';
@@ -402,19 +403,76 @@ class _OwnerPanel extends ConsumerWidget {
                         products: products,
                       ),
                     ),
+                  _FadeInStep(
+                    step: 3,
+                    child: Column(
+                      children: <Widget>[
+                        const SizedBox(height: 16),
+                        _QuickActionsCard(tenant: tenant),
+                        const SizedBox(height: 16),
+                        _TipsCard(
+                          tips: <({IconData icon, String text, Color color})>[
+                            if (pending > 0)
+                              (
+                                icon: Icons.notifications_active_outlined,
+                                text:
+                                    'Tenés $pending pedidos nuevos esperando respuesta',
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            if (products != null)
+                              if (products.any(
+                                (ProductModel p) =>
+                                    p.isActive &&
+                                    (p.imageUrl == null || p.imageUrl!.isEmpty),
+                              ))
+                                (
+                                  icon: Icons.photo_library_outlined,
+                                  text: 'Hay productos sin foto: la foto vende el doble',
+                                  color: tokens.warning,
+                                ),
+                            if (products != null)
+                              if (products.any(
+                                (ProductModel p) =>
+                                    p.isActive && p.trackStock && p.stock <= 3,
+                              ))
+                                (
+                                  icon: Icons.inventory_2_outlined,
+                                  text: 'Stock bajo en algunos productos: actualizá las cantidades',
+                                  color: tokens.warning,
+                                ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 28),
                 ],
                 <Widget>[
                   const _SectionTitle('Ventas del mes'),
                   const SizedBox(height: 8),
                   _FadeInStep(
-                    step: 3,
+                    step: 4,
                     child: _SalesCard(
                       metricsAsync: ref.watch(
                         ownerSalesMetricsProvider(tenant.id),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  _WeeklySalesCard(orders: orders ?? const <OrderModel>[]),
+                  if (pending > 0) ...<Widget>[
+                    const SizedBox(height: 28),
+                    const _SectionTitle('Pedidos nuevos'),
+                    const SizedBox(height: 8),
+                    for (final OrderModel o
+                        in (orders ?? const <OrderModel>[])
+                            .where(
+                              (OrderModel o) =>
+                                  o.status == OrderStatus.requested,
+                            )
+                            .take(3))
+                      _OrderRow(order: o),
+                  ],
                   const SizedBox(height: 28),
                   const _SectionTitle('Últimos pedidos'),
                   const SizedBox(height: 8),
@@ -1120,6 +1178,203 @@ class _ActivationChecklistCard extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Quick action shortcuts for the most common owner tasks.
+class _QuickActionsCard extends StatelessWidget {
+  const _QuickActionsCard({required this.tenant});
+
+  final TenantModel tenant;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    Widget action(IconData icon, String label, VoidCallback onTap) {
+      return Expanded(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Column(
+              children: <Widget>[
+                Icon(icon, size: 22, color: tokens.textPrimary),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: tokens.textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Row(
+        children: <Widget>[
+          action(
+            Icons.add_a_photo_outlined,
+            'Subir\nproducto',
+            () => context.push('/owner/products/new'),
+          ),
+          action(
+            Icons.ios_share_outlined,
+            'Compartir\ncatálogo',
+            () => const ShareService().shareLink(
+              url: ShareService.catalogUrl(tenant.slug),
+              text: 'Mirá el catálogo de ${tenant.name}',
+            ),
+          ),
+          action(Icons.link_rounded, 'Copiar\nlink', () async {
+            await Clipboard.setData(
+              ClipboardData(
+                text: 'https://${ShareService.linkBase}/s/${tenant.slug}',
+              ),
+            );
+            if (context.mounted) showAppSnackBar(context, 'Link copiado');
+          }),
+          action(
+            Icons.travel_explore_rounded,
+            'Ver como\ncliente',
+            () => context.push('/s/${tenant.slug}'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Contextual tips computed from live data (pending orders, missing
+/// photos, low stock, plan status).
+class _TipsCard extends StatelessWidget {
+  const _TipsCard({required this.tips});
+
+  final List<({IconData icon, String text, Color color})> tips;
+
+  @override
+  Widget build(BuildContext context) {
+    if (tips.isEmpty) return const SizedBox.shrink();
+    final AppTokens tokens = context.tokens;
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          for (final ({IconData icon, String text, Color color}) tip in tips)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Row(
+                children: <Widget>[
+                  Icon(tip.icon, size: 18, color: tip.color),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      tip.text,
+                      style: TextStyle(fontSize: 13, color: tokens.textPrimary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Mini bar chart of sales totals for the last 7 days (built from the
+/// already-loaded orders list, no extra queries).
+class _WeeklySalesCard extends StatelessWidget {
+  const _WeeklySalesCard({required this.orders});
+
+  final List<OrderModel> orders;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final DateTime now = DateTime.now();
+    final List<double> totals = List<double>.filled(7, 0);
+    final List<String> labels = <String>[];
+    const List<String> dow = <String>['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
+    for (int i = 0; i < 7; i++) {
+      final DateTime day = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: 6 - i));
+      labels.add(dow[day.weekday - 1]);
+      for (final OrderModel o in orders) {
+        final DateTime d = o.createdAt.toLocal();
+        if (d.year == day.year && d.month == day.month && d.day == day.day) {
+          totals[i] += o.total;
+        }
+      }
+    }
+    final double maxV = totals.fold<double>(
+      0,
+      (double a, double b) => a > b ? a : b,
+    );
+    final double week = totals.fold<double>(0, (double a, double b) => a + b);
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Esta semana: ${Formatters.price(week)}',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: tokens.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 84,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                for (int i = 0; i < 7; i++)
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: <Widget>[
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeOutCubic,
+                          height: maxV <= 0
+                              ? 4
+                              : (totals[i] / maxV * 56).clamp(4.0, 56.0),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: totals[i] > 0
+                                ? Theme.of(context).colorScheme.primary
+                                : tokens.surfaceMuted,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          labels[i],
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: tokens.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

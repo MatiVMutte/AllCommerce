@@ -15,6 +15,7 @@ import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
+import 'package:all_commerce/features/product_upload/presentation/views/product_upload_view.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,106 +48,143 @@ class OwnerProductsView extends ConsumerWidget {
     final int max = tenant?.plan.maxProducts ?? 0;
     final bool nearLimit = max > 0 && count / max >= 0.9;
 
+    final bool wide = AdaptiveNavShell.isWide(context);
+    final String? selectedId = ref.watch(selectedOwnerProductProvider);
+    final Widget listPane = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  'Productos',
+                  style: Theme.of(context).textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              AppRefreshButton(
+                onRefresh: () async {
+                  ref.invalidate(ownerProductsProvider(tenantId));
+                  await ref
+                      .read(ownerProductsProvider(tenantId).future)
+                      .catchError((Object _) => const <ProductModel>[]);
+                },
+              ),
+              const SizedBox(width: 8),
+              if (tenant != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: nearLimit
+                        ? tokens.danger.withValues(alpha: 0.1)
+                        : tokens.surfaceMuted,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '$count / $max',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: nearLimit ? tokens.danger : tokens.textSecondary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: TextField(
+            decoration: const InputDecoration(
+              hintText: AppStrings.searchProducts,
+              prefixIcon: Icon(Icons.search),
+            ),
+            onChanged: (String value) =>
+                ref.read(ownerProductQueryProvider.notifier).setQuery(value),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push('/owner/products/bulk-upload'),
+                  icon: const Icon(Icons.layers_outlined, size: 18),
+                  label: const Text('Carga masiva'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => AdaptiveNavShell.isWide(context)
+                      ? ref
+                            .read(selectedOwnerProductProvider.notifier)
+                            .select('new')
+                      : context.push('/owner/products/new'),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Subir uno'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: _FilterSegmented(),
+        ),
+        const SizedBox(height: 4),
+        Expanded(child: _ProductList(tenantId: tenantId)),
+      ],
+    );
+    if (wide) {
+      final ProductModel? selected = selectedId == null
+          ? null
+          : productsAsync.value
+                ?.where((ProductModel p) => p.id == selectedId)
+                .firstOrNull;
+      return Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: Row(
+            children: <Widget>[
+              SizedBox(width: 430, child: listPane),
+              const VerticalDivider(width: 1, thickness: 1),
+              Expanded(
+                child: selectedId == null
+                    ? const AppEmptyState(
+                        icon: Icons.inventory_2_outlined,
+                        title: 'Seleccioná un producto',
+                        subtitle: 'Tocá uno de la lista o creá uno nuevo con "Subir uno".',
+                      )
+                    : ProductUploadView(
+                        key: ValueKey<String>(selectedId),
+                        existing: selectedId == 'new' ? null : selected,
+                        embedded: true,
+                        onClose: () => ref
+                            .read(selectedOwnerProductProvider.notifier)
+                            .select(null),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
       body: SafeArea(
         bottom: false,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1080),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          'Productos',
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      AppRefreshButton(
-                        onRefresh: () async {
-                          ref.invalidate(ownerProductsProvider(tenantId));
-                          await ref
-                              .read(ownerProductsProvider(tenantId).future)
-                              .catchError((Object _) => const <ProductModel>[]);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      if (tenant != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: nearLimit
-                                ? tokens.danger.withValues(alpha: 0.1)
-                                : tokens.surfaceMuted,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            '$count / $max',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: nearLimit
-                                  ? tokens.danger
-                                  : tokens.textSecondary,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      hintText: AppStrings.searchProducts,
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onChanged: (String value) => ref
-                        .read(ownerProductQueryProvider.notifier)
-                        .setQuery(value),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () =>
-                              context.push('/owner/products/bulk-upload'),
-                          icon: const Icon(Icons.layers_outlined, size: 18),
-                          label: const Text('Carga masiva'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () => context.push('/owner/products/new'),
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('Subir uno'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: _FilterSegmented(),
-                ),
-                const SizedBox(height: 4),
-                Expanded(child: _ProductList(tenantId: tenantId)),
-              ],
-            ),
+            child: listPane,
           ),
         ),
       ),
@@ -397,9 +435,15 @@ class _OwnerProductRow extends ConsumerWidget {
         .watch(ownerInventoryControllerProvider)
         .busyProductId;
     final bool paused = !product.isActive;
+    final bool wide = AdaptiveNavShell.isWide(context);
     return InkWell(
-      onTap: () =>
-          context.push('/owner/products/${product.id}/edit', extra: product),
+      onTap: () {
+        if (wide) {
+          ref.read(selectedOwnerProductProvider.notifier).select(product.id);
+        } else {
+          context.push('/owner/products/${product.id}/edit', extra: product);
+        }
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(

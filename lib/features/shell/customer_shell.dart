@@ -74,11 +74,11 @@ class CustomerShell extends ConsumerWidget {
           onTap: () => context.go('/'),
         ),
         FloatingNavItem(
-          icon: Icons.search_outlined,
-          activeIcon: Icons.search_rounded,
-          label: 'Buscar',
-          selected: false,
-          onTap: () => context.go('/?focus=search'),
+          icon: Icons.local_offer_outlined,
+          activeIcon: Icons.local_offer_rounded,
+          label: 'Ofertas',
+          selected: loc.startsWith('/ofertas'),
+          onTap: () => context.go('/ofertas'),
         ),
         FloatingNavItem(
           icon: Icons.receipt_long_outlined,

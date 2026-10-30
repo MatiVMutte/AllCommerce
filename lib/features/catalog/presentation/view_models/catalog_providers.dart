@@ -8,22 +8,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final Provider<CatalogRepository> catalogRepositoryProvider =
     Provider<CatalogRepository>(
-  (Ref ref) => CatalogRepository(ref.watch(supabaseClientProvider)),
-);
+      (Ref ref) => CatalogRepository(ref.watch(supabaseClientProvider)),
+    );
 
 final catalogProductsProvider =
     FutureProvider.family<List<ProductModel>, String>(
-  (Ref ref, String tenantId) =>
-      ref.watch(catalogRepositoryProvider).listActiveProducts(tenantId),
-);
+      (Ref ref, String tenantId) =>
+          ref.watch(catalogRepositoryProvider).listActiveProducts(tenantId),
+    );
 
-final productByIdProvider = FutureProvider.family<
-    ProductModel?,
-    ({String tenantId, String productId})>(
-  (Ref ref, ({String tenantId, String productId}) key) => ref
-      .watch(catalogRepositoryProvider)
-      .getProduct(key.tenantId, key.productId),
-);
+final productByIdProvider =
+    FutureProvider.family<ProductModel?, ({String tenantId, String productId})>(
+      (Ref ref, ({String tenantId, String productId}) key) => ref
+          .watch(catalogRepositoryProvider)
+          .getProduct(key.tenantId, key.productId),
+    );
 
 class CatalogFilter {
   const CatalogFilter({
@@ -71,10 +70,7 @@ class CatalogFilterNotifier extends Notifier<CatalogFilter> {
   }
 
   void toggleOnSale() {
-    state = state.copyWith(
-      onlyOnSale: !state.onlyOnSale,
-      category: () => null,
-    );
+    state = state.copyWith(onlyOnSale: !state.onlyOnSale, category: () => null);
   }
 
   void clear() => state = const CatalogFilter();
@@ -82,8 +78,8 @@ class CatalogFilterNotifier extends Notifier<CatalogFilter> {
 
 final catalogFilterProvider =
     NotifierProvider.family<CatalogFilterNotifier, CatalogFilter, String>(
-  CatalogFilterNotifier.new,
-);
+      CatalogFilterNotifier.new,
+    );
 
 /// Pure, widget-free catalog filtering.
 List<ProductModel> applyCatalogFilter(
@@ -119,13 +115,20 @@ final NotifierProvider<StoreSearchNotifier, String> storeSearchProvider =
     NotifierProvider<StoreSearchNotifier, String>(StoreSearchNotifier.new);
 
 final globalProductSearchProvider =
-    FutureProvider.family<List<GlobalProductHit>, String>(
-  (Ref ref, String rawQuery) async {
-    final String q = rawQuery.trim();
-    if (q.length < 2) return const <GlobalProductHit>[];
-    return ref.watch(catalogRepositoryProvider).searchPublicProducts(q);
-  },
-);
+    FutureProvider.family<List<GlobalProductHit>, String>((
+      Ref ref,
+      String rawQuery,
+    ) async {
+      final String q = rawQuery.trim();
+      if (q.length < 2) return const <GlobalProductHit>[];
+      return ref.watch(catalogRepositoryProvider).searchPublicProducts(q);
+    });
+
+/// All products on sale across active stores (Ofertas tab).
+final onSaleProductsProvider =
+    FutureProvider.autoDispose<List<GlobalProductHit>>(
+      (Ref ref) => ref.watch(catalogRepositoryProvider).onSaleProducts(),
+    );
 
 /// Pure directory filtering (name, description, address; accent-insensitive).
 List<TenantModel> filterTenants(List<TenantModel> tenants, String query) {

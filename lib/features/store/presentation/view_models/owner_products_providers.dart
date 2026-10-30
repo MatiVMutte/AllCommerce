@@ -123,21 +123,11 @@ class OwnerInventoryController extends Notifier<OwnerInventoryState> {
     required bool trackStock,
   }) async {
     final int normalized = stock < 0 ? 0 : stock;
-    return _run(
-      product,
-      (String id, String tenantId) {
-        return ref.read(productRepositoryProvider).setStock(
-              id,
-              tenantId,
-              stock: normalized,
-              trackStock: trackStock,
-            );
-      },
-      optimistic: product.copyWith(
-        stock: normalized,
-        trackStock: trackStock,
-      ),
-    );
+    return _run(product, (String id, String tenantId) {
+      return ref
+          .read(productRepositoryProvider)
+          .setStock(id, tenantId, stock: normalized, trackStock: trackStock);
+    }, optimistic: product.copyWith(stock: normalized, trackStock: trackStock));
   }
 
   Future<bool> delete(ProductModel product) async {
@@ -184,4 +174,17 @@ class OwnerInventoryController extends Notifier<OwnerInventoryState> {
 final ownerInventoryControllerProvider =
     NotifierProvider.autoDispose<OwnerInventoryController, OwnerInventoryState>(
       OwnerInventoryController.new,
+    );
+
+/// Product selected in the wide master–detail layout ('new' = blank form).
+class SelectedOwnerProductNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void select(String? id) => state = id;
+}
+
+final selectedOwnerProductProvider =
+    NotifierProvider<SelectedOwnerProductNotifier, String?>(
+      SelectedOwnerProductNotifier.new,
     );

@@ -27,10 +27,21 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ProductUploadView extends ConsumerStatefulWidget {
-  const ProductUploadView({this.existing, super.key});
+  const ProductUploadView({
+    this.existing,
+    this.embedded = false,
+    this.onClose,
+    super.key,
+  });
 
   /// When non-null the form edits this product instead of creating one.
   final ProductModel? existing;
+
+  /// Renders without Scaffold/AppBar inside the master–detail pane.
+  final bool embedded;
+
+  /// Close callback for the embedded header.
+  final VoidCallback? onClose;
 
   @override
   ConsumerState<ProductUploadView> createState() => _ProductUploadViewState();
@@ -238,6 +249,80 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       currentProfileProvider,
     );
     final ProductUploadState state = ref.watch(productUploadControllerProvider);
+    final Widget body = profileAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (Object error, StackTrace stack) =>
+          const Center(child: Text(AppStrings.genericError)),
+      data: (UserModel? profile) {
+        final String? tenantId = profile?.tenantId;
+        if (tenantId == null) {
+          return const Center(child: Text(AppStrings.storeNotFound));
+        }
+        final AsyncValue<TenantModel?> tenantAsync = ref.watch(
+          tenantByIdProvider(tenantId),
+        );
+        return tenantAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (Object error, StackTrace stack) =>
+              const Center(child: Text(AppStrings.genericError)),
+          data: (TenantModel? tenant) {
+            if (tenant == null) {
+              return const Center(child: Text(AppStrings.storeNotFound));
+            }
+            if (!tenant.canPublish) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: PlanBlockedCard(code: 'PLAN_EXPIRED', tenant: tenant),
+                ),
+              );
+            }
+            final String? blocked = state.blockedCode;
+            if (blocked != null) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: PlanBlockedCard(code: blocked, tenant: tenant),
+                ),
+              );
+            }
+            return _buildForm(context, tenant, state);
+          },
+        );
+      },
+    );
+    if (widget.embedded) {
+      return Column(
+        children: <Widget>[
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: context.tokens.border)),
+            ),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    widget.existing == null
+                        ? 'Nuevo producto'
+                        : 'Editar producto',
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                if (widget.onClose != null)
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    tooltip: 'Cerrar',
+                    onPressed: widget.onClose,
+                  ),
+              ],
+            ),
+          ),
+          Expanded(child: SafeArea(top: false, child: body)),
+        ],
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         leading: AppBackButton(
@@ -247,51 +332,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
           widget.existing == null ? 'Nuevo producto' : 'Editar producto',
         ),
       ),
-      body: profileAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace stack) =>
-            const Center(child: Text(AppStrings.genericError)),
-        data: (UserModel? profile) {
-          final String? tenantId = profile?.tenantId;
-          if (tenantId == null) {
-            return const Center(child: Text(AppStrings.storeNotFound));
-          }
-          final AsyncValue<TenantModel?> tenantAsync = ref.watch(
-            tenantByIdProvider(tenantId),
-          );
-          return tenantAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (Object error, StackTrace stack) =>
-                const Center(child: Text(AppStrings.genericError)),
-            data: (TenantModel? tenant) {
-              if (tenant == null) {
-                return const Center(child: Text(AppStrings.storeNotFound));
-              }
-              if (!tenant.canPublish) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: PlanBlockedCard(
-                      code: 'PLAN_EXPIRED',
-                      tenant: tenant,
-                    ),
-                  ),
-                );
-              }
-              final String? blocked = state.blockedCode;
-              if (blocked != null) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: PlanBlockedCard(code: blocked, tenant: tenant),
-                  ),
-                );
-              }
-              return _buildForm(context, tenant, state);
-            },
-          );
-        },
-      ),
+      body: body,
       bottomNavigationBar: null,
     );
   }

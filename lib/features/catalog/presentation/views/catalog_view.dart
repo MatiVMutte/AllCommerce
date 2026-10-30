@@ -13,6 +13,8 @@ import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/core/widgets/made_with_all_commerce.dart';
 import 'package:all_commerce/core/widgets/price_pill.dart';
 import 'package:all_commerce/core/widgets/quantity_stepper.dart';
+import 'package:all_commerce/features/cart/data/models/cart_item.dart';
+import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/features/cart/data/models/cart_state.dart';
 import 'package:all_commerce/features/cart/presentation/view_models/cart_controller.dart';
 import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart';
@@ -75,177 +77,189 @@ class _CatalogScaffold extends ConsumerWidget {
     final CatalogFilter filter = ref.watch(catalogFilterProvider(slug));
     final bool isWhiteLabel = ref.read(tenantResolverProvider).isWhiteLabel;
     final Color brand = tenant.primaryColorValue;
-    return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1320),
-          child: RefreshIndicator(
-            onRefresh: () async =>
-                ref.invalidate(catalogProductsProvider(tenant.id)),
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: <Widget>[
-                SliverAppBar(
-                  expandedHeight: 200,
-                  pinned: true,
-                  backgroundColor: brand,
-                  foregroundColor: Colors.white,
-                  leading: isWhiteLabel
-                      ? null
-                      : const _OverlayIconButton(
-                          icon: Icons.arrow_back,
-                          tooltip: 'Volver',
-                          fallback: '/',
-                        ),
-                  title: Text(
-                    tenant.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+    final Widget catalogBody = Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1320),
+        child: RefreshIndicator(
+          onRefresh: () async =>
+              ref.invalidate(catalogProductsProvider(tenant.id)),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: <Widget>[
+              SliverAppBar(
+                expandedHeight: 200,
+                pinned: true,
+                backgroundColor: brand,
+                foregroundColor: Colors.white,
+                leading: isWhiteLabel
+                    ? null
+                    : const _OverlayIconButton(
+                        icon: Icons.arrow_back,
+                        tooltip: 'Volver',
+                        fallback: '/',
+                      ),
+                title: Text(
+                  tenant.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
                   ),
-                  actions: <Widget>[
-                    _OverlayIconButton(
-                      icon: Icons.refresh_rounded,
-                      tooltip: 'Actualizar',
-                      onPressed: () =>
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                actions: <Widget>[
+                  _OverlayIconButton(
+                    icon: Icons.refresh_rounded,
+                    tooltip: 'Actualizar',
+                    onPressed: () =>
+                        ref.invalidate(catalogProductsProvider(tenant.id)),
+                  ),
+                  _OverlayIconButton(
+                    icon: Icons.share_outlined,
+                    tooltip: 'Compartir catálogo',
+                    onPressed: () => _shareCatalog(context),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.pin,
+                  background: _StoreBanner(tenant: tenant),
+                ),
+              ),
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _SearchChipsHeader(
+                  tokens: tokens,
+                  filter: filter,
+                  products: productsAsync.value ?? const <ProductModel>[],
+                  onQuery: (String q) => ref
+                      .read(catalogFilterProvider(slug).notifier)
+                      .setQuery(q),
+                  onCategory: (ProductCategory c) => ref
+                      .read(catalogFilterProvider(slug).notifier)
+                      .setCategory(c),
+                  onToggleOnSale: () => ref
+                      .read(catalogFilterProvider(slug).notifier)
+                      .toggleOnSale(),
+                  onClear: () =>
+                      ref.read(catalogFilterProvider(slug).notifier).clear(),
+                ),
+              ),
+              ...productsAsync.when(
+                loading: () => <Widget>[
+                  const SliverFillRemaining(child: AppSkeletonGrid()),
+                ],
+                error: (Object error, StackTrace stack) => <Widget>[
+                  SliverFillRemaining(
+                    child: AppErrorState(
+                      onRetry: () =>
                           ref.invalidate(catalogProductsProvider(tenant.id)),
                     ),
-                    _OverlayIconButton(
-                      icon: Icons.share_outlined,
-                      tooltip: 'Compartir catálogo',
-                      onPressed: () => _shareCatalog(context),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  flexibleSpace: FlexibleSpaceBar(
-                    collapseMode: CollapseMode.pin,
-                    background: _StoreBanner(tenant: tenant),
                   ),
-                ),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _SearchChipsHeader(
-                    tokens: tokens,
-                    filter: filter,
-                    products: productsAsync.value ?? const <ProductModel>[],
-                    onQuery: (String q) => ref
-                        .read(catalogFilterProvider(slug).notifier)
-                        .setQuery(q),
-                    onCategory: (ProductCategory c) => ref
-                        .read(catalogFilterProvider(slug).notifier)
-                        .setCategory(c),
-                    onToggleOnSale: () => ref
-                        .read(catalogFilterProvider(slug).notifier)
-                        .toggleOnSale(),
-                    onClear: () =>
-                        ref.read(catalogFilterProvider(slug).notifier).clear(),
-                  ),
-                ),
-                ...productsAsync.when(
-                  loading: () => <Widget>[
-                    const SliverFillRemaining(child: AppSkeletonGrid()),
-                  ],
-                  error: (Object error, StackTrace stack) => <Widget>[
-                    SliverFillRemaining(
-                      child: AppErrorState(
-                        onRetry: () =>
-                            ref.invalidate(catalogProductsProvider(tenant.id)),
-                      ),
-                    ),
-                  ],
-                  data: (List<ProductModel> products) {
-                    if (products.isEmpty) {
-                      return const <Widget>[
-                        SliverFillRemaining(
-                          child: AppEmptyState(
-                            icon: Icons.inventory_2_outlined,
-                            title: AppStrings.noProductsYet,
-                          ),
-                        ),
-                      ];
-                    }
-                    final List<ProductModel> filtered = applyCatalogFilter(
-                      products,
-                      filter,
-                    );
-                    if (filtered.isEmpty) {
-                      return <Widget>[
-                        SliverFillRemaining(
-                          child: AppEmptyState(
-                            icon: Icons.search_off_rounded,
-                            title: AppStrings.noProductsFound,
-                            actionLabel: AppStrings.clearFilters,
-                            onAction: () => ref
-                                .read(catalogFilterProvider(slug).notifier)
-                                .clear(),
-                          ),
-                        ),
-                      ];
-                    }
-                    return <Widget>[
-                      SliverPadding(
-                        padding: const EdgeInsets.all(16),
-                        sliver: SliverGrid(
-                          delegate: SliverChildBuilderDelegate((
-                            BuildContext context,
-                            int index,
-                          ) {
-                            final Widget card = _ProductCard(
-                              slug: slug,
-                              product: filtered[index],
-                              tenant: tenant,
-                            );
-                            if (!AppMotion.enabled(context)) {
-                              return card;
-                            }
-                            return FadeInUp(
-                              duration: const Duration(milliseconds: 260),
-                              delay: Duration(milliseconds: (index % 8) * 35),
-                              from: 16,
-                              child: card,
-                            );
-                          }, childCount: filtered.length),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount:
-                                    MediaQuery.of(context).size.width < 600
-                                    ? 2
-                                    : MediaQuery.of(context).size.width < 1000
-                                    ? 3
-                                    : MediaQuery.of(context).size.width < 1400
-                                    ? 4
-                                    : 5,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                                childAspectRatio: 0.62,
-                              ),
-                        ),
-                      ),
-                      const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.only(bottom: 16),
-                          child: MadeWithAllCommerce(),
+                ],
+                data: (List<ProductModel> products) {
+                  if (products.isEmpty) {
+                    return const <Widget>[
+                      SliverFillRemaining(
+                        child: AppEmptyState(
+                          icon: Icons.inventory_2_outlined,
+                          title: AppStrings.noProductsYet,
                         ),
                       ),
                     ];
-                  },
+                  }
+                  final List<ProductModel> filtered = applyCatalogFilter(
+                    products,
+                    filter,
+                  );
+                  if (filtered.isEmpty) {
+                    return <Widget>[
+                      SliverFillRemaining(
+                        child: AppEmptyState(
+                          icon: Icons.search_off_rounded,
+                          title: AppStrings.noProductsFound,
+                          actionLabel: AppStrings.clearFilters,
+                          onAction: () => ref
+                              .read(catalogFilterProvider(slug).notifier)
+                              .clear(),
+                        ),
+                      ),
+                    ];
+                  }
+                  return <Widget>[
+                    SliverPadding(
+                      padding: const EdgeInsets.all(16),
+                      sliver: SliverGrid(
+                        delegate: SliverChildBuilderDelegate((
+                          BuildContext context,
+                          int index,
+                        ) {
+                          final Widget card = _ProductCard(
+                            slug: slug,
+                            product: filtered[index],
+                            tenant: tenant,
+                          );
+                          if (!AppMotion.enabled(context)) {
+                            return card;
+                          }
+                          return FadeInUp(
+                            duration: const Duration(milliseconds: 260),
+                            delay: Duration(milliseconds: (index % 8) * 35),
+                            from: 16,
+                            child: card,
+                          );
+                        }, childCount: filtered.length),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount:
+                              MediaQuery.of(context).size.width < 600
+                              ? 2
+                              : MediaQuery.of(context).size.width < 1000
+                              ? 3
+                              : MediaQuery.of(context).size.width < 1400
+                              ? 4
+                              : 5,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.62,
+                        ),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: 16),
+                        child: MadeWithAllCommerce(),
+                      ),
+                    ),
+                  ];
+                },
+              ),
+              SliverPadding(
+                padding: EdgeInsets.only(
+                  bottom: AdaptiveNavShell.isWide(context)
+                      ? 24
+                      : FloatingNavBar.height,
                 ),
-                SliverPadding(
-                  padding: EdgeInsets.only(
-                    bottom: AdaptiveNavShell.isWide(context)
-                        ? 24
-                        : FloatingNavBar.height,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
+    if (AdaptiveNavShell.isWide(context)) {
+      return Scaffold(
+        body: Row(
+          children: <Widget>[
+            Expanded(child: catalogBody),
+            const VerticalDivider(width: 1, thickness: 1),
+            SizedBox(
+              width: 360,
+              child: _CartSidePanel(slug: slug, tenant: tenant),
+            ),
+          ],
+        ),
+      );
+    }
+    return Scaffold(body: catalogBody);
   }
 
   Future<void> _shareCatalog(BuildContext context) async {
@@ -830,6 +844,142 @@ class _AddButtonState extends State<_AddButton> {
             child: const Icon(Icons.add, color: Colors.white, size: 20),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Persistent cart column shown on wide screens (master–detail style).
+class _CartSidePanel extends ConsumerWidget {
+  const _CartSidePanel({required this.slug, required this.tenant});
+
+  final String slug;
+  final TenantModel tenant;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppTokens tokens = context.tokens;
+    final cart = ref.watch(cartProvider);
+    final double total = cart.items.fold<double>(
+      0,
+      (double s, CartItem i) => s + i.lineTotal,
+    );
+    return SafeArea(
+      left: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+            child: Text(
+              'Tu pedido',
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
+          Expanded(
+            child: cart.items.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'Todavía no agregaste productos',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: tokens.textSecondary),
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: cart.items.length,
+                    separatorBuilder: (_, _) =>
+                        Divider(height: 1, color: tokens.border),
+                    itemBuilder: (BuildContext context, int i) {
+                      final CartItem item = cart.items[i];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    item.title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: tokens.textPrimary,
+                                    ),
+                                  ),
+                                  Text(
+                                    Formatters.price(item.lineTotal),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: tokens.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            QuantityStepper(
+                              dense: true,
+                              quantity: item.quantity,
+                              onChanged: (int q) => ref
+                                  .read(cartProvider.notifier)
+                                  .setQuantity(item.productId, q),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: tokens.border)),
+            ),
+            child: Column(
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        'Total',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: tokens.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      Formatters.price(total),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        color: tokens.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.chat_bubble_outline_rounded),
+                    label: const Text('Enviar pedido'),
+                    onPressed: cart.items.isEmpty
+                        ? null
+                        : () => context.push('/s/$slug/cart'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
