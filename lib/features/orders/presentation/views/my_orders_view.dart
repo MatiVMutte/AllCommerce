@@ -4,6 +4,7 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
+import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
 import 'package:all_commerce/core/widgets/app_avatar.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/core/widgets/app_card.dart';
@@ -55,7 +56,7 @@ class MyOrdersView extends ConsumerWidget {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
+          constraints: const BoxConstraints(maxWidth: 960),
           child: ordersAsync.when(
             loading: () => const AppSkeletonList(itemCount: 4, itemHeight: 88),
             error: (Object e, StackTrace s) =>
@@ -72,11 +73,13 @@ class MyOrdersView extends ConsumerWidget {
               return RefreshIndicator(
                 onRefresh: () async => ref.invalidate(myOrdersProvider),
                 child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: EdgeInsets.fromLTRB(
                     16,
                     8,
                     16,
-                    FloatingNavBar.height,
+                    AdaptiveNavShell.isWide(context)
+                        ? 24
+                        : FloatingNavBar.height,
                   ),
                   itemCount: orders.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
@@ -124,7 +127,8 @@ class _MyOrderTile extends ConsumerWidget {
         final bool? ok = await showAppConfirmSheet(
           context,
           title: 'Carrito de otro local',
-          message: 'Tu carrito tiene productos de otro local. '
+          message:
+              'Tu carrito tiene productos de otro local. '
               '¿Vaciarlo y repetir este pedido?',
           confirmLabel: 'Vaciar y pedir',
         );
@@ -135,8 +139,9 @@ class _MyOrderTile extends ConsumerWidget {
       int added = 0;
       int skipped = 0;
       for (final OrderItemModel item in items) {
-        final ProductModel? p =
-            item.productId == null ? null : byId[item.productId];
+        final ProductModel? p = item.productId == null
+            ? null
+            : byId[item.productId];
         if (p == null || !p.isActive || p.isOutOfStock) {
           skipped++;
           continue;
@@ -164,11 +169,7 @@ class _MyOrderTile extends ConsumerWidget {
       unawaited(context.push('/s/${tenant.slug}/cart'));
     } catch (_) {
       if (context.mounted) {
-        showAppSnackBar(
-          context,
-          'No se pudo repetir el pedido',
-          isError: true,
-        );
+        showAppSnackBar(context, 'No se pudo repetir el pedido', isError: true);
       }
     }
   }

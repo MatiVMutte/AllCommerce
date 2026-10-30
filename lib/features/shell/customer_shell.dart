@@ -1,4 +1,5 @@
 import 'package:all_commerce/features/cart/presentation/view_models/cart_controller.dart';
+import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,44 +60,42 @@ class CustomerShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final String loc = state.matchedLocation;
     final int cartCount = ref.watch(cartProvider).itemCount;
-    return Scaffold(
-      extendBody: true,
-      body: child,
-      bottomNavigationBar: FloatingNavBar(
-        centerIcon: Icons.shopping_cart_rounded,
-        centerBadgeCount: cartCount,
-        onCenterTap: () => _openCart(context, ref),
-        items: <FloatingNavItem>[
-          FloatingNavItem(
-            icon: Icons.home_outlined,
-            activeIcon: Icons.home_rounded,
-            label: 'Inicio',
-            selected: loc == '/' || loc.startsWith('/s/'),
-            onTap: () => context.go('/'),
-          ),
-          FloatingNavItem(
-            icon: Icons.search_outlined,
-            activeIcon: Icons.search_rounded,
-            label: 'Buscar',
-            selected: false,
-            onTap: () => context.go('/?focus=search'),
-          ),
-          FloatingNavItem(
-            icon: Icons.receipt_long_outlined,
-            activeIcon: Icons.receipt_long_rounded,
-            label: 'Pedidos',
-            selected: loc.startsWith('/my-orders'),
-            onTap: () => context.go('/my-orders'),
-          ),
-          FloatingNavItem(
-            icon: Icons.person_outline_rounded,
-            activeIcon: Icons.person_rounded,
-            label: 'Perfil',
-            selected: loc.startsWith('/profile'),
-            onTap: () => context.go('/profile'),
-          ),
-        ],
-      ),
+    return AdaptiveNavShell(
+      centerIcon: Icons.shopping_cart_rounded,
+      centerBadgeCount: cartCount,
+      centerTooltip: 'Tu carrito',
+      onCenterTap: () => _openCart(context, ref),
+      items: <FloatingNavItem>[
+        FloatingNavItem(
+          icon: Icons.home_outlined,
+          activeIcon: Icons.home_rounded,
+          label: 'Inicio',
+          selected: loc == '/' || loc.startsWith('/s/'),
+          onTap: () => context.go('/'),
+        ),
+        FloatingNavItem(
+          icon: Icons.search_outlined,
+          activeIcon: Icons.search_rounded,
+          label: 'Buscar',
+          selected: false,
+          onTap: () => context.go('/?focus=search'),
+        ),
+        FloatingNavItem(
+          icon: Icons.receipt_long_outlined,
+          activeIcon: Icons.receipt_long_rounded,
+          label: 'Pedidos',
+          selected: loc.startsWith('/my-orders'),
+          onTap: () => context.go('/my-orders'),
+        ),
+        FloatingNavItem(
+          icon: Icons.person_outline_rounded,
+          activeIcon: Icons.person_rounded,
+          label: 'Perfil',
+          selected: loc.startsWith('/profile'),
+          onTap: () => context.go('/profile'),
+        ),
+      ],
+      child: child,
     );
   }
 }

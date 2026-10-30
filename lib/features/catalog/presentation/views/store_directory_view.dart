@@ -18,6 +18,7 @@ import 'package:all_commerce/features/catalog/data/repositories/catalog_reposito
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/favorites_providers.dart';
 import 'package:all_commerce/features/orders/data/services/whatsapp_message_builder.dart';
+import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:all_commerce/core/utils/app_motion.dart';
 import 'package:animate_do/animate_do.dart';
@@ -87,7 +88,7 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
         bottom: false,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1080),
+            constraints: const BoxConstraints(maxWidth: 1240),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -332,13 +333,19 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                 ],
                               );
                             }
-                            final int columns = box.maxWidth >= 980 ? 3 : 2;
+                            final int columns = box.maxWidth >= 1280
+                                ? 4
+                                : box.maxWidth >= 980
+                                ? 3
+                                : 2;
                             return GridView.builder(
-                              padding: const EdgeInsets.fromLTRB(
+                              padding: EdgeInsets.fromLTRB(
                                 16,
                                 4,
                                 16,
-                                FloatingNavBar.height,
+                                AdaptiveNavShell.isWide(context)
+                                    ? 24
+                                    : FloatingNavBar.height,
                               ),
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(

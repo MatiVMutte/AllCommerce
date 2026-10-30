@@ -4,6 +4,7 @@ import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
+import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
 import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
 import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
@@ -51,7 +52,7 @@ class OwnerProductsView extends ConsumerWidget {
         bottom: false,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
+            constraints: const BoxConstraints(maxWidth: 1080),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -71,9 +72,7 @@ class OwnerProductsView extends ConsumerWidget {
                           ref.invalidate(ownerProductsProvider(tenantId));
                           await ref
                               .read(ownerProductsProvider(tenantId).future)
-                              .catchError(
-                                (Object _) => const <ProductModel>[],
-                              );
+                              .catchError((Object _) => const <ProductModel>[]);
                         },
                       ),
                       const SizedBox(width: 8),
@@ -122,7 +121,8 @@ class OwnerProductsView extends ConsumerWidget {
                     children: <Widget>[
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => context.push('/owner/products/bulk-upload'),
+                          onPressed: () =>
+                              context.push('/owner/products/bulk-upload'),
                           icon: const Icon(Icons.layers_outlined, size: 18),
                           label: const Text('Carga masiva'),
                         ),
@@ -258,11 +258,11 @@ class _ProductList extends ConsumerWidget {
           onRefresh: () async =>
               ref.invalidate(ownerProductsProvider(tenantId)),
           child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               16,
               4,
               16,
-              FloatingNavBar.height,
+              AdaptiveNavShell.isWide(context) ? 24 : FloatingNavBar.height,
             ),
             itemCount: filtered.length,
             separatorBuilder: (BuildContext context, int index) =>
@@ -287,78 +287,74 @@ class _OwnerProductRow extends ConsumerWidget {
     final TextEditingController ctrl = TextEditingController(
       text: currentStock.toString(),
     );
-    final ({int stock, bool track})? result =
-        await showModalBottomSheet<({int stock, bool track})>(
-          context: context,
-          useRootNavigator: true,
-          useSafeArea: true,
-          isScrollControlled: true,
-          builder: (BuildContext sheetContext) {
-            return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setSheetState) {
-                return Padding(
-                  padding: EdgeInsets.fromLTRB(
+    final ({int stock, bool track})?
+    result = await showModalBottomSheet<({int stock, bool track})>(
+      context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (BuildContext sheetContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setSheetState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                MediaQuery.viewInsetsOf(context).bottom +
+                    MediaQuery.viewPaddingOf(context).bottom +
                     20,
-                    20,
-                    20,
-                    MediaQuery.viewInsetsOf(context).bottom +
-                        MediaQuery.viewPaddingOf(context).bottom +
-                        20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(
+                    'Stock · ${product.title}',
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Text(
-                        'Stock · ${product.title}',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 8),
-                      SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        value: track,
-                        onChanged: (bool v) {
-                          setSheetState(() {
-                            track = v;
-                            if (v &&
-                                (int.tryParse(ctrl.text.trim()) ?? 0) <= 0) {
-                              ctrl.text = '1';
-                            }
-                          });
-                        },
-                        title: const Text('Controlar stock disponible'),
-                      ),
-                      if (track) ...<Widget>[
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: ctrl,
-                          keyboardType: TextInputType.number,
-                          autofocus: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Unidades disponibles',
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: () {
-                          final int parsed =
-                              int.tryParse(ctrl.text.trim()) ?? 0;
-                          Navigator.of(sheetContext).pop((
-                            stock: track ? parsed : 0,
-                            track: track,
-                          ));
-                        },
-                        child: const Text('Guardar'),
-                      ),
-                    ],
+                  const SizedBox(height: 8),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    value: track,
+                    onChanged: (bool v) {
+                      setSheetState(() {
+                        track = v;
+                        if (v && (int.tryParse(ctrl.text.trim()) ?? 0) <= 0) {
+                          ctrl.text = '1';
+                        }
+                      });
+                    },
+                    title: const Text('Controlar stock disponible'),
                   ),
-                );
-              },
+                  if (track) ...<Widget>[
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: ctrl,
+                      keyboardType: TextInputType.number,
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Unidades disponibles',
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () {
+                      final int parsed = int.tryParse(ctrl.text.trim()) ?? 0;
+                      Navigator.of(sheetContext)
+                          .pop((stock: track ? parsed : 0, track: track));
+                    },
+                    child: const Text('Guardar'),
+                  ),
+                ],
+              ),
             );
           },
         );
+      },
+    );
     ctrl.dispose();
     if (result == null || !context.mounted) return;
     final bool ok = await ref

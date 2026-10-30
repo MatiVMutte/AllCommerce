@@ -9,6 +9,7 @@ import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
+import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
@@ -118,17 +119,17 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
   Future<void> _pickLocation() async {
     final LocationPickResult? result =
         await showModalBottomSheet<LocationPickResult>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (BuildContext context) => LocationPickerSheet(
-        initial: (_lat != null && _lng != null)
-            ? LatLng(_lat!, _lng!)
-            : null,
-        initialQuery: _address.text.trim(),
-      ),
-    );
+          context: context,
+          useRootNavigator: true,
+          isScrollControlled: true,
+          useSafeArea: true,
+          builder: (BuildContext context) => LocationPickerSheet(
+            initial: (_lat != null && _lng != null)
+                ? LatLng(_lat!, _lng!)
+                : null,
+            initialQuery: _address.text.trim(),
+          ),
+        );
     if (result == null || !mounted) return;
     setState(() {
       _lat = result.point?.latitude;
@@ -147,8 +148,8 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     double? lng = _lng;
     final String addrText = _address.text.trim();
     if ((lat == null || lng == null) && addrText.length >= 4) {
-      final List<AddressSuggestion> found =
-          await const NominatimGeocoder().search(addrText);
+      final List<AddressSuggestion> found = await const NominatimGeocoder()
+          .search(addrText);
       if (found.isNotEmpty) {
         lat = found.first.point.latitude;
         lng = found.first.point.longitude;
@@ -244,15 +245,18 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
             final bool dirty = _isDirty(tenant, state.pendingLogo != null);
             return Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
+                constraints: const BoxConstraints(maxWidth: 920),
                 child: Form(
                   key: _formKey,
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(
+                    padding: EdgeInsets.fromLTRB(
                       24,
                       16,
                       24,
-                      24 + FloatingNavBar.height,
+                      24 +
+                          (AdaptiveNavShell.isWide(context)
+                              ? 0
+                              : FloatingNavBar.height),
                     ),
                     children: <Widget>[
                       Align(
@@ -374,8 +378,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: <Widget>[
                                     const Text(
                                       'Ubicación en el mapa',
@@ -462,7 +465,8 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                                 ),
                                 actions: <Widget>[
                                   TextButton(
-                                    onPressed: () => Navigator.of(context).pop(),
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
                                     child: const Text('Entendido'),
                                   ),
                                 ],
@@ -491,7 +495,8 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                           ),
                           Switch(
                             value: _acceptsCash,
-                            onChanged: (bool value) => setState(() => _acceptsCash = value),
+                            onChanged: (bool value) =>
+                                setState(() => _acceptsCash = value),
                           ),
                         ],
                       ),
@@ -820,12 +825,8 @@ class LocationPickerSheetState extends State<LocationPickerSheet> {
     );
   }
 
-  Future<void> _runSearch(
-    String value, {
-    bool autoSelectFirst = false,
-  }) async {
-    final List<AddressSuggestion> results =
-        await widget.geocoder.search(value);
+  Future<void> _runSearch(String value, {bool autoSelectFirst = false}) async {
+    final List<AddressSuggestion> results = await widget.geocoder.search(value);
     if (!mounted) return;
     if (autoSelectFirst && results.isNotEmpty && _picked == null) {
       _selectSuggestion(results.first, keepRemaining: results.length > 1);
@@ -879,9 +880,8 @@ class LocationPickerSheetState extends State<LocationPickerSheet> {
               children: <Widget>[
                 Text(
                   'Ubicación del local',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -893,10 +893,8 @@ class LocationPickerSheetState extends State<LocationPickerSheet> {
                   controller: _queryController,
                   textInputAction: TextInputAction.search,
                   onChanged: _onQueryChanged,
-                  onSubmitted: (String v) => _runSearch(
-                    v,
-                    autoSelectFirst: true,
-                  ),
+                  onSubmitted: (String v) =>
+                      _runSearch(v, autoSelectFirst: true),
                   decoration: InputDecoration(
                     hintText: 'Ej: Yatay 448, Valentín Alsina',
                     prefixIcon: const Icon(Icons.search_rounded),
@@ -906,21 +904,19 @@ class LocationPickerSheetState extends State<LocationPickerSheet> {
                             child: SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                           )
                         : (_queryController.text.isNotEmpty
-                            ? IconButton(
-                                tooltip: 'Limpiar',
-                                icon: const Icon(Icons.close_rounded),
-                                onPressed: () {
-                                  _queryController.clear();
-                                  _onQueryChanged('');
-                                },
-                              )
-                            : null),
+                              ? IconButton(
+                                  tooltip: 'Limpiar',
+                                  icon: const Icon(Icons.close_rounded),
+                                  onPressed: () {
+                                    _queryController.clear();
+                                    _onQueryChanged('');
+                                  },
+                                )
+                              : null),
                   ),
                 ),
               ],
@@ -982,8 +978,7 @@ class LocationPickerSheetState extends State<LocationPickerSheet> {
                 child: FlutterMap(
                   mapController: _mapController,
                   options: MapOptions(
-                    initialCenter:
-                        _picked ?? const LatLng(-34.6, -58.4),
+                    initialCenter: _picked ?? const LatLng(-34.6, -58.4),
                     initialZoom: _picked != null ? 16 : 11,
                     onMapReady: () {
                       _mapReady = true;
@@ -1033,8 +1028,9 @@ class LocationPickerSheetState extends State<LocationPickerSheet> {
               children: <Widget>[
                 if (_picked != null || widget.initial != null) ...<Widget>[
                   TextButton(
-                    onPressed: () => Navigator.of(context)
-                        .pop(const LocationPickResult(null)),
+                    onPressed: () =>
+                        Navigator.of(context)
+                            .pop(const LocationPickResult(null)),
                     child: const Text('Quitar ubicación'),
                   ),
                   const SizedBox(width: 12),
@@ -1046,11 +1042,11 @@ class LocationPickerSheetState extends State<LocationPickerSheet> {
                     onPressed: _picked == null
                         ? null
                         : () => Navigator.of(context).pop(
-                              LocationPickResult(
-                                _picked,
-                                addressLabel: _pickedLabel,
-                              ),
+                            LocationPickResult(
+                              _picked,
+                              addressLabel: _pickedLabel,
                             ),
+                          ),
                     child: const Text('Usar esta ubicación'),
                   ),
                 ),

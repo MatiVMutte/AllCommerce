@@ -18,6 +18,7 @@ import 'package:all_commerce/features/cart/presentation/view_models/cart_control
 import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
+import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
 import 'package:all_commerce/core/utils/app_motion.dart';
 import 'package:animate_do/animate_do.dart';
@@ -77,7 +78,7 @@ class _CatalogScaffold extends ConsumerWidget {
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
+          constraints: const BoxConstraints(maxWidth: 1320),
           child: RefreshIndicator(
             onRefresh: () async =>
                 ref.invalidate(catalogProductsProvider(tenant.id)),
@@ -214,7 +215,9 @@ class _CatalogScaffold extends ConsumerWidget {
                                     ? 2
                                     : MediaQuery.of(context).size.width < 1000
                                     ? 3
-                                    : 4,
+                                    : MediaQuery.of(context).size.width < 1400
+                                    ? 4
+                                    : 5,
                                 crossAxisSpacing: 16,
                                 mainAxisSpacing: 16,
                                 childAspectRatio: 0.62,
@@ -230,8 +233,12 @@ class _CatalogScaffold extends ConsumerWidget {
                     ];
                   },
                 ),
-                const SliverPadding(
-                  padding: EdgeInsets.only(bottom: FloatingNavBar.height),
+                SliverPadding(
+                  padding: EdgeInsets.only(
+                    bottom: AdaptiveNavShell.isWide(context)
+                        ? 24
+                        : FloatingNavBar.height,
+                  ),
                 ),
               ],
             ),

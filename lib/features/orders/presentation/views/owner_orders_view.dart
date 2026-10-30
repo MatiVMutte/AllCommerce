@@ -2,6 +2,7 @@ import 'package:all_commerce/core/constants/order_status.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_motion.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
+import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
 import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
@@ -55,7 +56,7 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
         bottom: false,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
+            constraints: const BoxConstraints(maxWidth: 1080),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -177,11 +178,13 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                         onRefresh: () async =>
                             ref.invalidate(ownerOrdersProvider(tenantId)),
                         child: ListView(
-                          padding: const EdgeInsets.fromLTRB(
+                          padding: EdgeInsets.fromLTRB(
                             16,
                             8,
                             16,
-                            FloatingNavBar.height,
+                            AdaptiveNavShell.isWide(context)
+                                ? 24
+                                : FloatingNavBar.height,
                           ),
                           children: <Widget>[
                             for (final OrderDayGroup group

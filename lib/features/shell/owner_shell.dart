@@ -1,5 +1,6 @@
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
@@ -39,45 +40,43 @@ class OwnerShell extends ConsumerWidget {
         : ref.watch(ownerOrdersProvider(tenantId)).value;
     final int pending = orders == null ? 0 : pendingCount(orders);
 
-    return Scaffold(
-      extendBody: true,
-      body: child,
-      bottomNavigationBar: FloatingNavBar(
-        centerIcon: Icons.add_a_photo_outlined,
-        onCenterTap: () => _upload(context, tenant),
-        items: <FloatingNavItem>[
-          FloatingNavItem(
-            icon: Icons.dashboard_outlined,
-            activeIcon: Icons.dashboard_rounded,
-            label: 'Panel',
-            selected: loc == '/owner',
-            onTap: () => context.go('/owner'),
-          ),
-          FloatingNavItem(
-            icon: Icons.inventory_2_outlined,
-            activeIcon: Icons.inventory_2_rounded,
-            label: 'Productos',
-            badgeCount: 0,
-            selected: loc.startsWith('/owner/products'),
-            onTap: () => context.go('/owner/products'),
-          ),
-          FloatingNavItem(
-            icon: Icons.receipt_long_outlined,
-            activeIcon: Icons.receipt_long_rounded,
-            label: 'Pedidos',
-            badgeCount: pending,
-            selected: loc.startsWith('/owner/orders'),
-            onTap: () => context.go('/owner/orders'),
-          ),
-          FloatingNavItem(
-            icon: Icons.storefront_outlined,
-            activeIcon: Icons.storefront_rounded,
-            label: 'Local',
-            selected: loc.startsWith('/owner/settings'),
-            onTap: () => context.go('/owner/settings'),
-          ),
-        ],
-      ),
+    return AdaptiveNavShell(
+      centerIcon: Icons.add_a_photo_outlined,
+      centerTooltip: 'Subir producto',
+      onCenterTap: () => _upload(context, tenant),
+      items: <FloatingNavItem>[
+        FloatingNavItem(
+          icon: Icons.dashboard_outlined,
+          activeIcon: Icons.dashboard_rounded,
+          label: 'Panel',
+          selected: loc == '/owner',
+          onTap: () => context.go('/owner'),
+        ),
+        FloatingNavItem(
+          icon: Icons.inventory_2_outlined,
+          activeIcon: Icons.inventory_2_rounded,
+          label: 'Productos',
+          badgeCount: 0,
+          selected: loc.startsWith('/owner/products'),
+          onTap: () => context.go('/owner/products'),
+        ),
+        FloatingNavItem(
+          icon: Icons.receipt_long_outlined,
+          activeIcon: Icons.receipt_long_rounded,
+          label: 'Pedidos',
+          badgeCount: pending,
+          selected: loc.startsWith('/owner/orders'),
+          onTap: () => context.go('/owner/orders'),
+        ),
+        FloatingNavItem(
+          icon: Icons.storefront_outlined,
+          activeIcon: Icons.storefront_rounded,
+          label: 'Local',
+          selected: loc.startsWith('/owner/settings'),
+          onTap: () => context.go('/owner/settings'),
+        ),
+      ],
+      child: child,
     );
   }
 }
