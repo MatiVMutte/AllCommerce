@@ -10,6 +10,8 @@ class ProductModel {
     this.tags = const <String>[],
     required this.price,
     this.compareAtPrice,
+    this.wholesalePrice,
+    this.wholesaleMinQty,
     this.sku,
     this.imageUrl,
     this.stock = 0,
@@ -29,6 +31,10 @@ class ProductModel {
   final List<String> tags;
   final double price;
   final double? compareAtPrice;
+
+  /// Wholesale unit price when the buyer takes at least [wholesaleMinQty].
+  final double? wholesalePrice;
+  final int? wholesaleMinQty;
   final String? sku;
   final String? imageUrl;
   final int stock;
@@ -45,6 +51,25 @@ class ProductModel {
 
   bool get isOnSale =>
       compareAtPrice != null && compareAtPrice! > price && price > 0;
+
+  bool get hasWholesale =>
+      wholesalePrice != null && wholesaleMinQty != null && wholesaleMinQty! > 0;
+
+  /// Unit price the server charges for [quantity] units: switches to the
+  /// wholesale price when the quantity reaches the minimum, never above
+  /// retail. Mirrors `place_order`.
+  double unitPriceFor(int quantity) {
+    if (hasWholesale && quantity >= wholesaleMinQty!) {
+      return wholesalePrice! < price ? wholesalePrice! : price;
+    }
+    return price;
+  }
+
+  /// Units missing to unlock the wholesale price (0 when not applicable).
+  int wholesaleMissing(int quantity) =>
+      hasWholesale && quantity < wholesaleMinQty!
+      ? wholesaleMinQty! - quantity
+      : 0;
 
   bool get isOutOfStock => trackStock && stock <= 0;
 
@@ -63,6 +88,10 @@ class ProductModel {
     final double? parsedCompare = rawCompare == null
         ? null
         : num.tryParse(rawCompare.toString())?.toDouble();
+    final Object? rawWholesale = json['wholesale_price'];
+    final double? parsedWholesale = rawWholesale == null
+        ? null
+        : num.tryParse(rawWholesale.toString())?.toDouble();
     return ProductModel(
       id: json['id'] as String,
       tenantId: json['tenant_id'] as String,
@@ -74,6 +103,8 @@ class ProductModel {
           .toList(),
       price: num.parse(json['price'].toString()).toDouble(),
       compareAtPrice: parsedCompare,
+      wholesalePrice: parsedWholesale,
+      wholesaleMinQty: (json['wholesale_min_qty'] as num?)?.toInt(),
       sku: json['sku'] as String?,
       imageUrl: json['image_url'] as String?,
       stock: (json['stock'] as num?)?.toInt() ?? 0,
@@ -94,6 +125,8 @@ class ProductModel {
       'tags': tags,
       'price': price,
       'compare_at_price': compareAtPrice,
+      'wholesale_price': wholesalePrice,
+      'wholesale_min_qty': wholesaleMinQty,
       'sku': sku,
       'image_url': imageUrl,
       'stock': stock,
@@ -114,6 +147,9 @@ class ProductModel {
     double? price,
     double? compareAtPrice,
     bool clearCompareAtPrice = false,
+    double? wholesalePrice,
+    int? wholesaleMinQty,
+    bool clearWholesale = false,
     String? sku,
     String? imageUrl,
     int? stock,
@@ -133,6 +169,12 @@ class ProductModel {
       compareAtPrice: clearCompareAtPrice
           ? null
           : (compareAtPrice ?? this.compareAtPrice),
+      wholesalePrice: clearWholesale
+          ? null
+          : (wholesalePrice ?? this.wholesalePrice),
+      wholesaleMinQty: clearWholesale
+          ? null
+          : (wholesaleMinQty ?? this.wholesaleMinQty),
       sku: sku ?? this.sku,
       imageUrl: imageUrl ?? this.imageUrl,
       stock: stock ?? this.stock,

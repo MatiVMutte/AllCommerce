@@ -34,7 +34,8 @@ class CatalogRepository {
         .from('products')
         .select(
           'id, tenant_id, title, description, category, price, '
-          'compare_at_price, image_url, stock, track_stock, '
+          'compare_at_price, wholesale_price, wholesale_min_qty, '
+          'image_url, stock, track_stock, '
           'tenants!inner(slug,name,logo_url,primary_color,is_open,is_active)',
         )
         .eq('is_active', true)
@@ -117,6 +118,8 @@ class GlobalProductHit {
     required this.category,
     required this.price,
     this.compareAtPrice,
+    this.wholesalePrice,
+    this.wholesaleMinQty,
     this.imageUrl,
     required this.stock,
     required this.trackStock,
@@ -134,6 +137,8 @@ class GlobalProductHit {
   final String category;
   final double price;
   final double? compareAtPrice;
+  final double? wholesalePrice;
+  final int? wholesaleMinQty;
   final String? imageUrl;
   final int stock;
   final bool trackStock;
@@ -145,6 +150,8 @@ class GlobalProductHit {
 
   bool get isOnSale =>
       compareAtPrice != null && compareAtPrice! > price && price > 0;
+
+  bool get hasWholesale => wholesalePrice != null && wholesaleMinQty != null;
 
   /// Maps a `products` row joined with `tenants` (!inner select).
   factory GlobalProductHit.fromProductRow(Map<String, dynamic> json) {
@@ -160,6 +167,10 @@ class GlobalProductHit {
       compareAtPrice: json['compare_at_price'] == null
           ? null
           : num.parse(json['compare_at_price'].toString()).toDouble(),
+      wholesalePrice: json['wholesale_price'] == null
+          ? null
+          : num.tryParse(json['wholesale_price'].toString())?.toDouble(),
+      wholesaleMinQty: (json['wholesale_min_qty'] as num?)?.toInt(),
       imageUrl: json['image_url'] as String?,
       stock: (json['stock'] as num?)?.toInt() ?? 0,
       trackStock: (json['track_stock'] as bool?) ?? false,
@@ -176,6 +187,10 @@ class GlobalProductHit {
     final double? parsedCompare = rawCompare == null
         ? null
         : num.tryParse(rawCompare.toString())?.toDouble();
+    final Object? rawWholesale = json['wholesale_price'];
+    final double? parsedWholesale = rawWholesale == null
+        ? null
+        : num.tryParse(rawWholesale.toString())?.toDouble();
     return GlobalProductHit(
       productId: json['product_id'] as String,
       tenantId: json['tenant_id'] as String,
@@ -184,6 +199,8 @@ class GlobalProductHit {
       category: json['category'] as String? ?? 'other',
       price: num.parse(json['price'].toString()).toDouble(),
       compareAtPrice: parsedCompare,
+      wholesalePrice: parsedWholesale,
+      wholesaleMinQty: (json['wholesale_min_qty'] as num?)?.toInt(),
       imageUrl: json['image_url'] as String?,
       stock: (json['stock'] as num?)?.toInt() ?? 0,
       trackStock: json['track_stock'] as bool? ?? false,

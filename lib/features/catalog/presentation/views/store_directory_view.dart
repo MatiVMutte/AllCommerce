@@ -1260,6 +1260,15 @@ class _GlobalProductHitCard extends StatelessWidget {
                       decoration: TextDecoration.lineThrough,
                     ),
                   ),
+                if (hit.hasWholesale)
+                  Text(
+                    'Mayor. ${Formatters.price(hit.wholesalePrice!)}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: primary,
+                    ),
+                  ),
               ],
             ),
           ],

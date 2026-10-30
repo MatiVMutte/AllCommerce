@@ -12,6 +12,8 @@ class BulkProductDraft {
     this.sku,
     this.price,
     this.compareAtPrice,
+    this.wholesalePrice,
+    this.wholesaleMinQty,
     this.stock = 0,
     required this.imageBytes,
     required this.fileName,
@@ -30,6 +32,8 @@ class BulkProductDraft {
   final String? sku;
   final double? price;
   final double? compareAtPrice;
+  final double? wholesalePrice;
+  final int? wholesaleMinQty;
   final int stock;
   final Uint8List imageBytes;
   final String fileName;
@@ -47,6 +51,8 @@ class BulkProductDraft {
     String? sku,
     double? price,
     double? compareAtPrice,
+    double? wholesalePrice,
+    int? wholesaleMinQty,
     int? stock,
     Uint8List? imageBytes,
     String? fileName,
@@ -65,6 +71,8 @@ class BulkProductDraft {
       sku: sku ?? this.sku,
       price: price ?? this.price,
       compareAtPrice: compareAtPrice ?? this.compareAtPrice,
+      wholesalePrice: wholesalePrice ?? this.wholesalePrice,
+      wholesaleMinQty: wholesaleMinQty ?? this.wholesaleMinQty,
       stock: stock ?? this.stock,
       imageBytes: imageBytes ?? this.imageBytes,
       fileName: fileName ?? this.fileName,

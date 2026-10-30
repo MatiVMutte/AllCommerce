@@ -550,6 +550,15 @@ class _OwnerProductRow extends ConsumerWidget {
                     color: paused ? tokens.textTertiary : tokens.textPrimary,
                   ),
                 ),
+                if (product.hasWholesale)
+                  Text(
+                    'Mayor. ${Formatters.price(product.wholesalePrice!)} '
+                    '(${product.wholesaleMinQty}+ u.)',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
               ],
             ),
             const SizedBox(width: 4),

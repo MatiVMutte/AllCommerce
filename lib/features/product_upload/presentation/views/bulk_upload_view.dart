@@ -190,6 +190,8 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
   late final TextEditingController _description;
   late final TextEditingController _price;
   late final TextEditingController _compareAtPrice;
+  late final TextEditingController _wholesalePrice;
+  late final TextEditingController _wholesaleMinQty;
   late final TextEditingController _sku;
   late final TextEditingController _stock;
   late final TextEditingController _tags;
@@ -206,6 +208,12 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
     _compareAtPrice = TextEditingController(
       text: widget.draft.compareAtPrice?.toStringAsFixed(0) ?? '',
     );
+    _wholesalePrice = TextEditingController(
+      text: widget.draft.wholesalePrice?.toStringAsFixed(0) ?? '',
+    );
+    _wholesaleMinQty = TextEditingController(
+      text: widget.draft.wholesaleMinQty?.toString() ?? '',
+    );
     _sku = TextEditingController(text: widget.draft.sku ?? '');
     _stock = TextEditingController(text: widget.draft.stock.toString());
     _tags = TextEditingController(text: widget.draft.tags.join(', '));
@@ -220,6 +228,8 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
     _description.dispose();
     _price.dispose();
     _compareAtPrice.dispose();
+    _wholesalePrice.dispose();
+    _wholesaleMinQty.dispose();
     _sku.dispose();
     _stock.dispose();
     _tags.dispose();
@@ -234,6 +244,8 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
     _description.text = draft.description ?? '';
     _price.text = draft.price?.toStringAsFixed(0) ?? '';
     _compareAtPrice.text = draft.compareAtPrice?.toStringAsFixed(0) ?? '';
+    _wholesalePrice.text = draft.wholesalePrice?.toStringAsFixed(0) ?? '';
+    _wholesaleMinQty.text = draft.wholesaleMinQty?.toString() ?? '';
     _sku.text = draft.sku ?? '';
     _stock.text = draft.stock.toString();
     _tags.text = draft.tags.join(', ');
@@ -247,6 +259,10 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
     final double? compareAtPrice = double.tryParse(
       _compareAtPrice.text.replaceAll('.', '').replaceAll(',', '.'),
     );
+    final double? wholesalePrice = double.tryParse(
+      _wholesalePrice.text.replaceAll('.', '').replaceAll(',', '.'),
+    );
+    final int? wholesaleMinQty = int.tryParse(_wholesaleMinQty.text.trim());
     final int? stock = int.tryParse(_stock.text);
     final controller = ref.read(bulkUploadControllerProvider.notifier);
     controller.updateDraft(
@@ -256,6 +272,8 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
         description: _description.text.isEmpty ? null : _description.text,
         price: price,
         compareAtPrice: compareAtPrice,
+        wholesalePrice: wholesalePrice,
+        wholesaleMinQty: wholesaleMinQty,
         sku: _sku.text.isEmpty ? null : _sku.text,
         category: _category.text.trim().isEmpty
             ? ProductCategory.other.id
@@ -365,6 +383,30 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
                               child: _Field(
                                 label: 'Precio ant. (opc)',
                                 controller: _compareAtPrice,
+                                keyboardType: TextInputType.number,
+                                onChanged: (_) => _commit(),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              flex: 3,
+                              child: _Field(
+                                label: 'Precio mayorista (opc)',
+                                controller: _wholesalePrice,
+                                keyboardType: TextInputType.number,
+                                onChanged: (_) => _commit(),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              flex: 2,
+                              child: _Field(
+                                label: 'Desde (u.)',
+                                controller: _wholesaleMinQty,
                                 keyboardType: TextInputType.number,
                                 onChanged: (_) => _commit(),
                               ),

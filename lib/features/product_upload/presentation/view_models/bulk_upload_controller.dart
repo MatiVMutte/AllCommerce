@@ -186,6 +186,11 @@ class BulkUploadController extends Notifier<BulkUploadState> {
             draft.compareAtPrice != null && draft.compareAtPrice! > actualPrice
             ? draft.compareAtPrice
             : null;
+        final bool hasWholesale =
+            draft.wholesalePrice != null &&
+            draft.wholesalePrice! > 0 &&
+            draft.wholesaleMinQty != null &&
+            draft.wholesaleMinQty! >= 2;
         final ProductInput input = ProductInput(
           title: draft.title.trim(),
           description: draft.description?.trim(),
@@ -193,6 +198,8 @@ class BulkUploadController extends Notifier<BulkUploadState> {
           tags: draft.tags,
           price: actualPrice,
           compareAtPrice: compareAt,
+          wholesalePrice: hasWholesale ? draft.wholesalePrice : null,
+          wholesaleMinQty: hasWholesale ? draft.wholesaleMinQty : null,
           sku: draft.sku?.trim(),
           stock: draft.stock,
           trackStock: draft.stock > 0,

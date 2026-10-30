@@ -748,9 +748,28 @@ class _CartTile extends ConsumerWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    Formatters.price(item.price),
+                    Formatters.price(item.unitPrice),
                     style: TextStyle(color: tokens.textSecondary, fontSize: 13),
                   ),
+                  if (item.isWholesaleApplied)
+                    Text(
+                      'Precio mayorista',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: tokens.success,
+                      ),
+                    )
+                  else if (item.wholesaleMissing > 0)
+                    Text(
+                      'Sumá ${item.wholesaleMissing} más: '
+                      '${Formatters.price(item.wholesalePrice!)} c/u',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
                 ],
               ),
             ),

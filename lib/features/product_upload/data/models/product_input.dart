@@ -6,6 +6,8 @@ class ProductInput {
     this.tags = const <String>[],
     required this.price,
     this.compareAtPrice,
+    this.wholesalePrice,
+    this.wholesaleMinQty,
     this.sku,
     this.stock = 0,
     this.trackStock = false,
@@ -17,6 +19,10 @@ class ProductInput {
   final List<String> tags;
   final double price;
   final double? compareAtPrice;
+
+  /// Wholesale unit price when the buyer takes [wholesaleMinQty]+ units.
+  final double? wholesalePrice;
+  final int? wholesaleMinQty;
   final String? sku;
   final int stock;
   final bool trackStock;

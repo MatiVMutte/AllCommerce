@@ -382,6 +382,31 @@ class _ProductPanelState extends ConsumerState<_ProductPanel> {
                   ],
                 ],
               ),
+              if (product.hasWholesale)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          'Mayorista: ${Formatters.price(product.wholesalePrice!)} '
+                          'c/u llevando ${product.wholesaleMinQty} o más',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               if (product.isOutOfStock)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),

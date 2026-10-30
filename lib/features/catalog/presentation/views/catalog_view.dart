@@ -869,6 +869,21 @@ class _ProductCard extends ConsumerWidget {
             ),
           ),
         ),
+        if (product.hasWholesale)
+          Padding(
+            padding: const EdgeInsets.only(top: 2, left: 2, right: 2),
+            child: Text(
+              'Mayor. ${Formatters.price(product.wholesalePrice!)} c/u '
+              '(${product.wholesaleMinQty}+ u.)',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
       ],
     );
   }

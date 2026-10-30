@@ -54,6 +54,8 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
   final TextEditingController _description = TextEditingController();
   final TextEditingController _price = TextEditingController();
   final TextEditingController _compareAtPrice = TextEditingController();
+  final TextEditingController _wholesalePrice = TextEditingController();
+  final TextEditingController _wholesaleMinQty = TextEditingController();
   final TextEditingController _tags = TextEditingController();
   final TextEditingController _sku = TextEditingController();
   final TextEditingController _stock = TextEditingController(text: '0');
@@ -76,6 +78,15 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
         _compareAtPrice.text = cap == cap.roundToDouble()
             ? cap.toStringAsFixed(0)
             : cap.toString();
+      }
+      if (existing.wholesalePrice != null) {
+        final double wp = existing.wholesalePrice!;
+        _wholesalePrice.text = wp == wp.roundToDouble()
+            ? wp.toStringAsFixed(0)
+            : wp.toString();
+      }
+      if (existing.wholesaleMinQty != null) {
+        _wholesaleMinQty.text = existing.wholesaleMinQty.toString();
       }
       _tags.text = existing.tags.join(', ');
       _sku.text = existing.sku ?? '';
@@ -103,6 +114,8 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
     _description.dispose();
     _price.dispose();
     _compareAtPrice.dispose();
+    _wholesalePrice.dispose();
+    _wholesaleMinQty.dispose();
     _tags.dispose();
     _sku.dispose();
     _stock.dispose();
@@ -192,6 +205,14 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
     final double? compareAt = compareRaw.isEmpty
         ? null
         : double.tryParse(compareRaw);
+    final String wholesaleRaw = _wholesalePrice.text.trim().replaceAll(
+      ',',
+      '.',
+    );
+    final double? wholesalePrice = wholesaleRaw.isEmpty
+        ? null
+        : double.tryParse(wholesaleRaw);
+    final int? wholesaleMinQty = int.tryParse(_wholesaleMinQty.text.trim());
     final ProductInput input = ProductInput(
       title: _title.text.trim(),
       description: _description.text.trim().isEmpty
@@ -207,6 +228,8 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
           .toList(),
       price: double.parse(_price.text.trim().replaceAll(',', '.')),
       compareAtPrice: compareAt,
+      wholesalePrice: wholesalePrice,
+      wholesaleMinQty: wholesaleMinQty,
       sku: sku.isEmpty ? null : sku,
       stock: _trackStock ? (int.tryParse(_stock.text.trim()) ?? 0) : 0,
       trackStock: _trackStock,
@@ -476,6 +499,81 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                             }
                             return null;
                           },
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Precio mayorista (opcional)',
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Si el cliente lleva la cantidad mínima o más, '
+                          'se cobra el precio mayorista por unidad.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(
+                              flex: 3,
+                              child: TextFormField(
+                                controller: _wholesalePrice,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                decoration: const InputDecoration(
+                                  labelText: 'Precio mayorista',
+                                  prefixText: '\$ ',
+                                ),
+                                validator: (String? value) {
+                                  final String raw = (value ?? '')
+                                      .trim()
+                                      .replaceAll(',', '.');
+                                  final bool hasQty = _wholesaleMinQty.text
+                                      .trim()
+                                      .isNotEmpty;
+                                  if (raw.isEmpty) {
+                                    return hasQty
+                                        ? 'Ingresá el precio mayorista'
+                                        : null;
+                                  }
+                                  final double? parsed = double.tryParse(raw);
+                                  if (parsed == null || parsed <= 0) {
+                                    return 'Precio inválido';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: TextFormField(
+                                controller: _wholesaleMinQty,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Desde (u.)',
+                                  hintText: 'Ej: 3',
+                                ),
+                                validator: (String? value) {
+                                  final String raw = (value ?? '').trim();
+                                  final bool hasPrice = _wholesalePrice.text
+                                      .trim()
+                                      .isNotEmpty;
+                                  if (raw.isEmpty) {
+                                    return hasPrice ? 'Falta el mínimo' : null;
+                                  }
+                                  final int? parsed = int.tryParse(raw);
+                                  if (parsed == null || parsed < 2) {
+                                    return 'Mínimo 2';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         SwitchListTile.adaptive(
