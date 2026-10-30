@@ -11,8 +11,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final Provider<OrderRepository> orderRepositoryProvider =
     Provider<OrderRepository>(
-  (Ref ref) => OrderRepository(ref.watch(supabaseClientProvider)),
-);
+      (Ref ref) => OrderRepository(ref.watch(supabaseClientProvider)),
+    );
 
 class OrderRepository {
   const OrderRepository(this._client);
@@ -51,6 +51,19 @@ class OrderRepository {
       },
     );
     return OrderModel.fromJson(row);
+  }
+
+  /// Returns the coupon's discount percent (1-100) or null if the code
+  /// does not exist / is inactive for this tenant.
+  Future<int?> validateCoupon(String tenantId, String code) async {
+    final int? pct = await _client.rpc<int?>(
+      'validate_coupon',
+      params: <String, dynamic>{
+        'p_tenant_id': tenantId,
+        'p_code': code.trim().toUpperCase(),
+      },
+    );
+    return pct;
   }
 
   /// Best-effort notification to the store owner. Failures are ignored so the
@@ -113,9 +126,7 @@ class OrderRepository {
         .select()
         .eq('order_id', orderId);
     return rows
-        .map(
-          (dynamic r) => OrderItemModel.fromJson(r as Map<String, dynamic>),
-        )
+        .map((dynamic r) => OrderItemModel.fromJson(r as Map<String, dynamic>))
         .toList();
   }
 

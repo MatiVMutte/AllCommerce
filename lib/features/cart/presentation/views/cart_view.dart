@@ -21,6 +21,7 @@ import 'package:all_commerce/features/cart/data/models/cart_item.dart';
 import 'package:all_commerce/features/cart/data/models/cart_state.dart';
 import 'package:all_commerce/features/cart/presentation/view_models/cart_controller.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
+import 'package:all_commerce/features/orders/data/repositories/order_repository.dart';
 import 'package:all_commerce/features/orders/data/services/whatsapp_message_builder.dart';
 import 'package:all_commerce/features/orders/presentation/view_models/checkout_controller.dart';
 import 'package:all_commerce/features/orders/presentation/views/order_success_view.dart';
@@ -41,12 +42,47 @@ class CartView extends ConsumerStatefulWidget {
 class _CartViewState extends ConsumerState<CartView> {
   final TextEditingController _notes = TextEditingController();
   final TextEditingController _coupon = TextEditingController();
+  String? _appliedCode;
+  int? _appliedPercent;
+  String? _couponError;
+  bool _checkingCoupon = false;
 
   @override
   void dispose() {
     _notes.dispose();
     _coupon.dispose();
     super.dispose();
+  }
+
+  Future<void> _applyCoupon(TenantModel tenant) async {
+    final String code = _coupon.text.trim();
+    if (code.isEmpty) return;
+    setState(() {
+      _checkingCoupon = true;
+      _couponError = null;
+    });
+    try {
+      final int? pct = await ref
+          .read(orderRepositoryProvider)
+          .validateCoupon(tenant.id, code);
+      if (!mounted) return;
+      setState(() {
+        _checkingCoupon = false;
+        if (pct == null) {
+          _couponError = 'Cupón no válido o inactivo';
+        } else {
+          _appliedCode = code.toUpperCase();
+          _appliedPercent = pct;
+        }
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _checkingCoupon = false;
+          _couponError = 'No pudimos validar el cupón';
+        });
+      }
+    }
   }
 
   Future<void> _confirm(TenantModel tenant) async {
@@ -75,7 +111,7 @@ class _CartViewState extends ConsumerState<CartView> {
       ref.invalidate(currentProfileProvider);
       phone = entered;
     }
-    final String coupon = _coupon.text.trim();
+    final String coupon = _appliedCode ?? _coupon.text.trim();
     final OrderModel? order = await ref
         .read(checkoutControllerProvider.notifier)
         .placeOrder(
@@ -160,9 +196,11 @@ class _CartViewState extends ConsumerState<CartView> {
     return tenantAsync.when(
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (Object error, StackTrace stack) =>
-          Scaffold(body: AppErrorState(onRetry: () => ref.invalidate(
-            tenantBySlugProvider(widget.slug)))),
+      error: (Object error, StackTrace stack) => Scaffold(
+        body: AppErrorState(
+          onRetry: () => ref.invalidate(tenantBySlugProvider(widget.slug)),
+        ),
+      ),
       data: (TenantModel? tenant) {
         if (tenant == null) {
           return Scaffold(
@@ -233,10 +271,7 @@ class _CartViewState extends ConsumerState<CartView> {
                             ),
                           ),
                         Padding(
-                          padding: const EdgeInsets.only(
-                            left: 4,
-                            bottom: 8,
-                          ),
+                          padding: const EdgeInsets.only(left: 4, bottom: 8),
                           child: Text(
                             tenant.name,
                             style: TextStyle(
@@ -256,20 +291,102 @@ class _CartViewState extends ConsumerState<CartView> {
                                 controller: _notes,
                                 maxLines: 2,
                                 decoration: const InputDecoration(
-                                  labelText:
-                                      'Notas para el local (opcional)',
+                                  labelText: 'Notas para el local (opcional)',
                                 ),
                               ),
                               ExpansionTile(
                                 title: const Text('¿Tenés un cupón?'),
                                 tilePadding: EdgeInsets.zero,
                                 children: <Widget>[
-                                  TextField(
-                                    controller: _coupon,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Código de cupón',
+                                  if (_appliedCode != null)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: tokens.success.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: tokens.success,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: <Widget>[
+                                          Icon(
+                                            Icons.local_offer_rounded,
+                                            color: tokens.success,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              '$_appliedCode · '
+                                              '−$_appliedPercent%',
+                                              style: TextStyle(
+                                                color: tokens.success,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            tooltip: 'Quitar cupón',
+                                            icon: const Icon(
+                                              Icons.close_rounded,
+                                              size: 18,
+                                            ),
+                                            onPressed: () => setState(() {
+                                              _appliedCode = null;
+                                              _appliedPercent = null;
+                                              _coupon.clear();
+                                            }),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  else
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: <Widget>[
+                                        TextField(
+                                          controller: _coupon,
+                                          textCapitalization:
+                                              TextCapitalization.characters,
+                                          onSubmitted: (_) =>
+                                              _applyCoupon(tenant),
+                                          decoration: InputDecoration(
+                                            labelText: 'Código de cupón',
+                                            errorText: _couponError,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        FilledButton.icon(
+                                          icon: _checkingCoupon
+                                              ? const SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                      ),
+                                                )
+                                              : const Icon(
+                                                  Icons.local_offer_rounded,
+                                                ),
+                                          label: Text(
+                                            _checkingCoupon
+                                                ? 'Validando…'
+                                                : 'Aplicar cupón',
+                                          ),
+                                          onPressed: _checkingCoupon
+                                              ? null
+                                              : () => _applyCoupon(tenant),
+                                        ),
+                                      ],
                                     ),
-                                  ),
                                 ],
                               ),
                             ],
@@ -287,34 +404,46 @@ class _CartViewState extends ConsumerState<CartView> {
               ? null
               : SafeArea(
                   child: Container(
-                    padding:
-                        const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                     decoration: BoxDecoration(
                       color: tokens.surface,
-                      border: Border(
-                        top: BorderSide(color: tokens.border),
-                      ),
+                      border: Border(top: BorderSide(color: tokens.border)),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: <Widget>[
                             Text(
                               'Subtotal',
-                              style: TextStyle(
-                                color: tokens.textSecondary,
-                              ),
+                              style: TextStyle(color: tokens.textSecondary),
                             ),
                             Text(Formatters.price(cart.subtotal)),
                           ],
                         ),
+                        if (_appliedPercent != null) ...<Widget>[
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: <Widget>[
+                              Text(
+                                'Descuento ($_appliedCode)',
+                                style: TextStyle(color: tokens.success),
+                              ),
+                              Text(
+                                '−${Formatters.price(cart.subtotal * _appliedPercent! / 100)}',
+                                style: TextStyle(
+                                  color: tokens.success,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 6),
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: <Widget>[
                             const Text(
                               'Total',
@@ -324,7 +453,10 @@ class _CartViewState extends ConsumerState<CartView> {
                               ),
                             ),
                             Text(
-                              Formatters.price(cart.subtotal),
+                              Formatters.price(
+                                cart.subtotal *
+                                    (1 - (_appliedPercent ?? 0) / 100),
+                              ),
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
@@ -336,17 +468,12 @@ class _CartViewState extends ConsumerState<CartView> {
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton.icon(
-                            icon: const Icon(
-                              Icons.chat_bubble_rounded,
-                            ),
-                            label: const Text(
-                              'Confirmar por WhatsApp',
-                            ),
-                            onPressed: ref
-                                .watch(checkoutControllerProvider)
-                                .sending
-                            ? null
-                            : () => _confirm(tenant),
+                            icon: const Icon(Icons.chat_bubble_rounded),
+                            label: const Text('Confirmar por WhatsApp'),
+                            onPressed:
+                                ref.watch(checkoutControllerProvider).sending
+                                ? null
+                                : () => _confirm(tenant),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -521,8 +648,12 @@ class _ChoiceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
-    final Color bg = selected ? Theme.of(context).colorScheme.primaryContainer : tokens.surfaceMuted;
-    final Color fg = selected ? Theme.of(context).colorScheme.onPrimaryContainer : tokens.textSecondary;
+    final Color bg = selected
+        ? Theme.of(context).colorScheme.primaryContainer
+        : tokens.surfaceMuted;
+    final Color fg = selected
+        ? Theme.of(context).colorScheme.onPrimaryContainer
+        : tokens.textSecondary;
     return Material(
       color: bg,
       borderRadius: BorderRadius.circular(10),
@@ -533,7 +664,11 @@ class _ChoiceChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Text(
             label,
-            style: TextStyle(fontWeight: FontWeight.w600, color: fg, fontSize: 13),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: fg,
+              fontSize: 13,
+            ),
           ),
         ),
       ),
@@ -611,10 +746,7 @@ class _CartTile extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     Formatters.price(item.price),
-                    style: TextStyle(
-                      color: tokens.textSecondary,
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: tokens.textSecondary, fontSize: 13),
                   ),
                 ],
               ),
