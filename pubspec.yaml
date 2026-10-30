@@ -35,6 +35,8 @@ dependencies:
   pdf: ^3.13.1
   animate_do: 4.2.0
   geolocator: ^14.0.1
+  qr_flutter: ^4.1.0
+  web: ^1.1.2
 
 dev_dependencies:
   flutter_test:

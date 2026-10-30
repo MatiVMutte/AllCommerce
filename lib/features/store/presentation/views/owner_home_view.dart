@@ -18,20 +18,31 @@ import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/core/widgets/order_status_chip.dart';
 import 'package:all_commerce/core/constants/order_status.dart';
+
+import 'dart:convert';
+
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/billing/data/repositories/ai_usage_repository.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
+import 'package:all_commerce/features/catalog/data/repositories/catalog_visits_repository.dart';
+import 'package:all_commerce/features/orders/data/models/order_item_model.dart';
 import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:all_commerce/features/orders/data/models/sales_metrics.dart';
+import 'package:all_commerce/features/orders/data/repositories/order_repository.dart';
+import 'package:all_commerce/features/orders/data/services/sales_csv.dart';
 import 'package:all_commerce/features/orders/presentation/view_models/owner_orders_providers.dart';
 import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
 import 'package:all_commerce/features/store/presentation/view_models/tenant_settings_controller.dart';
+import 'package:all_commerce/features/store/presentation/widgets/store_qr_sheet.dart';
+import 'package:all_commerce/core/utils/file_download/file_download.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart' hide ShareResult;
 import 'package:url_launcher/url_launcher.dart';
 
 class OwnerHomeView extends ConsumerStatefulWidget {
@@ -460,6 +471,10 @@ class _OwnerPanel extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   _WeeklySalesCard(orders: orders ?? const <OrderModel>[]),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _ExportCsvButton(tenant: tenant),
+                  ),
                   if (pending > 0) ...<Widget>[
                     const SizedBox(height: 28),
                     const _SectionTitle('Pedidos nuevos'),
@@ -539,6 +554,15 @@ class _OwnerPanel extends ConsumerWidget {
                           ),
                           IconButton(
                             icon: Icon(
+                              Icons.qr_code_2,
+                              size: 20,
+                              color: tokens.textSecondary,
+                            ),
+                            tooltip: 'QR del local',
+                            onPressed: () => showStoreQrSheet(context, tenant),
+                          ),
+                          IconButton(
+                            icon: Icon(
                               Icons.ios_share_outlined,
                               size: 18,
                               color: tokens.textSecondary,
@@ -562,6 +586,8 @@ class _OwnerPanel extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  _VisitsStats(tenantId: tenant.id),
+                  const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -584,6 +610,7 @@ class _OwnerPanel extends ConsumerWidget {
     ref.invalidate(ownerProductsProvider(tenant.id));
     ref.invalidate(ownerOrdersProvider(tenant.id));
     ref.invalidate(ownerSalesMetricsProvider(tenant.id));
+    ref.invalidate(catalogVisitCountsProvider(tenant.id));
     ref.invalidate(aiUsageProvider);
     await ref
         .read(tenantByIdProvider(tenant.id).future)
@@ -1416,6 +1443,134 @@ class _WeeklySalesCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Visit counters for the owner's catalog (week + all-time).
+class _VisitsStats extends ConsumerWidget {
+  const _VisitsStats({required this.tenantId});
+
+  final String tenantId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppTokens tokens = context.tokens;
+    final AsyncValue<CatalogVisitCounts> counts = ref.watch(
+      catalogVisitCountsProvider(tenantId),
+    );
+    return counts.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (CatalogVisitCounts c) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          children: <Widget>[
+            Icon(
+              Icons.visibility_outlined,
+              size: 16,
+              color: tokens.textTertiary,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                '${c.week} ${c.week == 1 ? 'visita' : 'visitas'} esta '
+                'semana · ${c.total} en total',
+                style: TextStyle(fontSize: 12, color: tokens.textTertiary),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Downloads the current month's orders as an Excel-friendly CSV.
+class _ExportCsvButton extends ConsumerStatefulWidget {
+  const _ExportCsvButton({required this.tenant});
+
+  final TenantModel tenant;
+
+  @override
+  ConsumerState<_ExportCsvButton> createState() => _ExportCsvButtonState();
+}
+
+class _ExportCsvButtonState extends ConsumerState<_ExportCsvButton> {
+  bool _busy = false;
+
+  Future<void> _export() async {
+    setState(() => _busy = true);
+    try {
+      final OrderRepository repo = ref.read(orderRepositoryProvider);
+      final List<OrderModel> orders = await repo.listByTenant(widget.tenant.id);
+      final DateTime now = DateTime.now();
+      final List<OrderModel> month = orders
+          .where(
+            (OrderModel o) =>
+                o.createdAt.year == now.year && o.createdAt.month == now.month,
+          )
+          .toList();
+      if (!mounted) return;
+      if (month.isEmpty) {
+        showAppSnackBar(context, 'No hay pedidos este mes todavía');
+        return;
+      }
+      final List<OrderItemModel> items = await repo.listItemsByTenant(
+        widget.tenant.id,
+      );
+      final Set<String> ids = month.map((OrderModel o) => o.id).toSet();
+      final Map<String, List<OrderItemModel>> byOrder =
+          <String, List<OrderItemModel>>{};
+      for (final OrderItemModel item in items) {
+        if (ids.contains(item.orderId)) {
+          byOrder.putIfAbsent(item.orderId, () => <OrderItemModel>[]).add(item);
+        }
+      }
+      final String csv = SalesCsv.build(month, byOrder);
+      final Uint8List bytes = Uint8List.fromList(utf8.encode('﻿$csv'));
+      final String name =
+          'ventas-'
+          '${DateFormat('yyyy-MM').format(now)}.csv';
+      final bool downloaded = await downloadFile(
+        filename: name,
+        bytes: bytes,
+        mimeType: 'text/csv',
+      );
+      if (!downloaded) {
+        await SharePlus.instance.share(
+          ShareParams(
+            files: <XFile>[
+              XFile.fromData(bytes, mimeType: 'text/csv', name: name),
+            ],
+            subject: 'Ventas ${DateFormat('MM/yyyy').format(now)}',
+          ),
+        );
+      }
+      if (mounted) {
+        showAppSnackBar(context, 'CSV con ${month.length} pedidos exportado');
+      }
+    } catch (_) {
+      if (mounted) {
+        showAppSnackBar(context, 'No se pudo exportar el CSV', isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: _busy ? null : _export,
+      icon: _busy
+          ? const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.download_outlined, size: 16),
+      label: Text(_busy ? 'Exportando…' : 'Exportar CSV del mes'),
     );
   }
 }

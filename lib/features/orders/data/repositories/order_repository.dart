@@ -137,6 +137,18 @@ class OrderRepository {
         .toList();
   }
 
+  /// All order items of the tenant (one round-trip for the CSV export).
+  Future<List<OrderItemModel>> listItemsByTenant(String tenantId) async {
+    final List<dynamic> rows = await _client
+        .from('order_items')
+        .select()
+        .eq('tenant_id', tenantId)
+        .limit(5000);
+    return rows
+        .map((dynamic r) => OrderItemModel.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<List<OrderItemModel>> listItems(String orderId) async {
     final List<dynamic> rows = await _client
         .from('order_items')

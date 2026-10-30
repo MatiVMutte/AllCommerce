@@ -20,6 +20,7 @@ import 'package:all_commerce/features/cart/presentation/view_models/cart_control
 import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/data/repositories/catalog_repository.dart';
+import 'package:all_commerce/features/catalog/data/repositories/catalog_visits_repository.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
 import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
@@ -72,6 +73,8 @@ class _CatalogScaffold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Fire-and-forget: one visit per device/day (deduped in the repo).
+    ref.read(catalogVisitsRepositoryProvider).recordVisit(tenant.id);
     final AppTokens tokens = context.tokens;
     final AsyncValue<List<ProductModel>> productsAsync = ref.watch(
       catalogProductsProvider(tenant.id),
