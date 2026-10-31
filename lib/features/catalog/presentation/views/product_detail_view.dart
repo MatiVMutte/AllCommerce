@@ -184,30 +184,25 @@ class _ProductDetailScaffold extends ConsumerWidget {
                         MediaQuery.of(context).size.height * 0.45;
                     return Stack(
                       children: <Widget>[
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          height: imageHeight,
-                          child: image,
-                        ),
-                        Positioned.fill(
-                          child: SingleChildScrollView(
-                            padding: EdgeInsets.only(top: imageHeight - 28),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .scaffoldBackgroundColor,
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(28),
+                        SingleChildScrollView(
+                          child: Column(
+                            children: <Widget>[
+                              SizedBox(height: imageHeight, child: image),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .scaffoldBackgroundColor,
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(28),
+                                  ),
+                                ),
+                                child: _ProductPanel(
+                                  slug: slug,
+                                  product: product,
+                                  tenant: tenant,
                                 ),
                               ),
-                              child: _ProductPanel(
-                                slug: slug,
-                                product: product,
-                                tenant: tenant,
-                              ),
-                            ),
+                            ],
                           ),
                         ),
                         Positioned(
