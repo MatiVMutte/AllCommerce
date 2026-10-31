@@ -7,6 +7,7 @@ import 'package:all_commerce/core/constants/product_units.dart';
 import 'package:all_commerce/core/router/return_to.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/core/tenant/tenant_theme.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
@@ -216,281 +217,286 @@ class _CartViewState extends ConsumerState<CartView> {
         final bool wrongStore =
             cart.tenantId != null && cart.tenantId != tenant.id;
         final bool empty = cart.isEmpty || wrongStore;
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Tu pedido'),
-            leading: AppBackButton(fallback: '/s/${widget.slug}'),
-          ),
-          body: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: empty
-                  ? AppEmptyState(
-                      icon: Icons.shopping_cart_outlined,
-                      title: 'Tu carrito está vacío',
-                      subtitle: 'Agregá productos de ${tenant.name}',
-                      actionLabel: 'Ver catálogo',
-                      onAction: () => context.go('/s/${widget.slug}'),
-                    )
-                  : ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      children: <Widget>[
-                        if (!tenant.isOpen)
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: tokens.warning.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: tokens.warning.withValues(alpha: 0.35),
-                              ),
-                            ),
-                            child: Row(
-                              children: <Widget>[
-                                Icon(
-                                  Icons.schedule_rounded,
-                                  color: tokens.warning,
-                                  size: 20,
+        return TenantTheme(
+          brandColor: tenant.primaryColorValue,
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Tu pedido'),
+              leading: AppBackButton(fallback: '/s/${widget.slug}'),
+            ),
+            body: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: empty
+                    ? AppEmptyState(
+                        icon: Icons.shopping_cart_outlined,
+                        title: 'Tu carrito está vacío',
+                        subtitle: 'Agregá productos de ${tenant.name}',
+                        actionLabel: 'Ver catálogo',
+                        onAction: () => context.go('/s/${widget.slug}'),
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        children: <Widget>[
+                          if (!tenant.isOpen)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: tokens.warning.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: tokens.warning.withValues(alpha: 0.35),
                                 ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    tenant.openingHours != null &&
-                                            tenant.openingHours!
-                                                .trim()
-                                                .isNotEmpty
-                                        ? '${tenant.name} figura como cerrado ahora (${tenant.openingHours}). Podés enviar el pedido igual y lo verán cuando abran.'
-                                        : '${tenant.name} figura como cerrado ahora. Podés enviar el pedido igual y lo verán cuando abran.',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: tokens.textPrimary,
+                              ),
+                              child: Row(
+                                children: <Widget>[
+                                  Icon(
+                                    Icons.schedule_rounded,
+                                    color: tokens.warning,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      tenant.openingHours != null &&
+                                              tenant.openingHours!
+                                                  .trim()
+                                                  .isNotEmpty
+                                          ? '${tenant.name} figura como cerrado ahora (${tenant.openingHours}). Podés enviar el pedido igual y lo verán cuando abran.'
+                                          : '${tenant.name} figura como cerrado ahora. Podés enviar el pedido igual y lo verán cuando abran.',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: tokens.textPrimary,
+                                      ),
                                     ),
                                   ),
+                                ],
+                              ),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4, bottom: 8),
+                            child: Text(
+                              tenant.name,
+                              style: TextStyle(
+                                color: tokens.textSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          for (final CartItem item in cart.items)
+                            _CartTile(item: item),
+                          const SizedBox(height: 8),
+                          AppCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                TextField(
+                                  controller: _notes,
+                                  maxLines: 2,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Notas para el local (opcional)',
+                                  ),
+                                ),
+                                ExpansionTile(
+                                  title: const Text('¿Tenés un cupón?'),
+                                  tilePadding: EdgeInsets.zero,
+                                  children: <Widget>[
+                                    if (_appliedCode != null)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: tokens.success.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          border: Border.all(
+                                            color: tokens.success,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: <Widget>[
+                                            Icon(
+                                              Icons.local_offer_rounded,
+                                              color: tokens.success,
+                                              size: 18,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                '$_appliedCode · '
+                                                '${_appliedPreview!.label}',
+                                                style: TextStyle(
+                                                  color: tokens.success,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                            IconButton(
+                                              tooltip: 'Quitar cupón',
+                                              icon: const Icon(
+                                                Icons.close_rounded,
+                                                size: 18,
+                                              ),
+                                              onPressed: () => setState(() {
+                                                _appliedCode = null;
+                                                _appliedPreview = null;
+                                                _coupon.clear();
+                                              }),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    else
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: <Widget>[
+                                          TextField(
+                                            controller: _coupon,
+                                            textCapitalization:
+                                                TextCapitalization.characters,
+                                            onSubmitted: (_) =>
+                                                _applyCoupon(tenant),
+                                            decoration: InputDecoration(
+                                              labelText: 'Código de cupón',
+                                              errorText: _couponError,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          FilledButton.icon(
+                                            icon: _checkingCoupon
+                                                ? const SizedBox(
+                                                    width: 16,
+                                                    height: 16,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                        ),
+                                                  )
+                                                : const Icon(
+                                                    Icons.local_offer_rounded,
+                                                  ),
+                                            label: Text(
+                                              _checkingCoupon
+                                                  ? 'Validando…'
+                                                  : 'Aplicar cupón',
+                                            ),
+                                            onPressed: _checkingCoupon
+                                                ? null
+                                                : () => _applyCoupon(tenant),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
                                 ),
                               ],
                             ),
                           ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4, bottom: 8),
-                          child: Text(
-                            tenant.name,
-                            style: TextStyle(
-                              color: tokens.textSecondary,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                        for (final CartItem item in cart.items)
-                          _CartTile(item: item),
-                        const SizedBox(height: 8),
-                        AppCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: <Widget>[
-                              TextField(
-                                controller: _notes,
-                                maxLines: 2,
-                                decoration: const InputDecoration(
-                                  labelText: 'Notas para el local (opcional)',
-                                ),
-                              ),
-                              ExpansionTile(
-                                title: const Text('¿Tenés un cupón?'),
-                                tilePadding: EdgeInsets.zero,
-                                children: <Widget>[
-                                  if (_appliedCode != null)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: tokens.success.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: tokens.success,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: <Widget>[
-                                          Icon(
-                                            Icons.local_offer_rounded,
-                                            color: tokens.success,
-                                            size: 18,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              '$_appliedCode · '
-                                              '${_appliedPreview!.label}',
-                                              style: TextStyle(
-                                                color: tokens.success,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
-                                          ),
-                                          IconButton(
-                                            tooltip: 'Quitar cupón',
-                                            icon: const Icon(
-                                              Icons.close_rounded,
-                                              size: 18,
-                                            ),
-                                            onPressed: () => setState(() {
-                                              _appliedCode = null;
-                                              _appliedPreview = null;
-                                              _coupon.clear();
-                                            }),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  else
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: <Widget>[
-                                        TextField(
-                                          controller: _coupon,
-                                          textCapitalization:
-                                              TextCapitalization.characters,
-                                          onSubmitted: (_) =>
-                                              _applyCoupon(tenant),
-                                          decoration: InputDecoration(
-                                            labelText: 'Código de cupón',
-                                            errorText: _couponError,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        FilledButton.icon(
-                                          icon: _checkingCoupon
-                                              ? const SizedBox(
-                                                  width: 16,
-                                                  height: 16,
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                      ),
-                                                )
-                                              : const Icon(
-                                                  Icons.local_offer_rounded,
-                                                ),
-                                          label: Text(
-                                            _checkingCoupon
-                                                ? 'Validando…'
-                                                : 'Aplicar cupón',
-                                          ),
-                                          onPressed: _checkingCoupon
-                                              ? null
-                                              : () => _applyCoupon(tenant),
-                                        ),
-                                      ],
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _DeliverySection(tenant: tenant),
-                        const SizedBox(height: 16),
-                        _PaymentSection(tenant: tenant),
-                      ],
-                    ),
+                          const SizedBox(height: 16),
+                          _DeliverySection(tenant: tenant),
+                          const SizedBox(height: 16),
+                          _PaymentSection(tenant: tenant),
+                        ],
+                      ),
+              ),
             ),
-          ),
-          bottomNavigationBar: empty
-              ? null
-              : SafeArea(
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-                    decoration: BoxDecoration(
-                      color: tokens.surface,
-                      border: Border(top: BorderSide(color: tokens.border)),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            Text(
-                              'Subtotal',
-                              style: TextStyle(color: tokens.textSecondary),
-                            ),
-                            Text(Formatters.price(cart.subtotal)),
-                          ],
-                        ),
-                        if (_appliedPreview != null) ...<Widget>[
-                          const SizedBox(height: 6),
+            bottomNavigationBar: empty
+                ? null
+                : SafeArea(
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                      decoration: BoxDecoration(
+                        color: tokens.surface,
+                        border: Border(top: BorderSide(color: tokens.border)),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: <Widget>[
                               Text(
-                                'Descuento ($_appliedCode)',
-                                style: TextStyle(color: tokens.success),
+                                'Subtotal',
+                                style: TextStyle(color: tokens.textSecondary),
+                              ),
+                              Text(Formatters.price(cart.subtotal)),
+                            ],
+                          ),
+                          if (_appliedPreview != null) ...<Widget>[
+                            const SizedBox(height: 6),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: <Widget>[
+                                Text(
+                                  'Descuento ($_appliedCode)',
+                                  style: TextStyle(color: tokens.success),
+                                ),
+                                Text(
+                                  '−${Formatters.price(_appliedPreview!.discountFor(cart.subtotal))}',
+                                  style: TextStyle(
+                                    color: tokens.success,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: <Widget>[
+                              const Text(
+                                'Total',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                               Text(
-                                '−${Formatters.price(_appliedPreview!.discountFor(cart.subtotal))}',
-                                style: TextStyle(
-                                  color: tokens.success,
-                                  fontWeight: FontWeight.w600,
+                                Formatters.price(
+                                  cart.subtotal -
+                                      (_appliedPreview?.discountFor(
+                                            cart.subtotal,
+                                          ) ??
+                                          0),
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ],
                           ),
-                        ],
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            const Text(
-                              'Total',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              icon: const Icon(Icons.chat_bubble_rounded),
+                              label: const Text('Confirmar por WhatsApp'),
+                              onPressed:
+                                  ref.watch(checkoutControllerProvider).sending
+                                  ? null
+                                  : () => _confirm(tenant),
                             ),
-                            Text(
-                              Formatters.price(
-                                cart.subtotal -
-                                    (_appliedPreview?.discountFor(
-                                          cart.subtotal,
-                                        ) ??
-                                        0),
-                              ),
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton.icon(
-                            icon: const Icon(Icons.chat_bubble_rounded),
-                            label: const Text('Confirmar por WhatsApp'),
-                            onPressed:
-                                ref.watch(checkoutControllerProvider).sending
-                                ? null
-                                : () => _confirm(tenant),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Se guarda el pedido y se abre WhatsApp '
-                          'con el detalle para ${tenant.name}.',
-                          style: Theme.of(context).textTheme.bodySmall,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            'Se guarda el pedido y se abre WhatsApp '
+                            'con el detalle para ${tenant.name}.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+          ),
         );
       },
     );

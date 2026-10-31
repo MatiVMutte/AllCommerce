@@ -3,6 +3,7 @@ import 'package:all_commerce/core/constants/categories.dart';
 import 'package:all_commerce/core/constants/product_units.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/core/tenant/tenant_theme.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/utils/share_service.dart';
@@ -206,7 +207,7 @@ class _CatalogScaffold extends ConsumerWidget {
                             product: filtered[index],
                             tenant: tenant,
                           );
-                          if (!AppMotion.enabled(context)) {
+                          if (!AppMotion.enabled(context) || index >= 10) {
                             return card;
                           }
                           return FadeInUp(
@@ -253,20 +254,26 @@ class _CatalogScaffold extends ConsumerWidget {
       ),
     );
     if (AdaptiveNavShell.isWide(context)) {
-      return Scaffold(
-        body: Row(
-          children: <Widget>[
-            Expanded(child: catalogBody),
-            const VerticalDivider(width: 1, thickness: 1),
-            SizedBox(
-              width: 360,
-              child: _CartSidePanel(slug: slug, tenant: tenant),
-            ),
-          ],
+      return TenantTheme(
+        brandColor: brand,
+        child: Scaffold(
+          body: Row(
+            children: <Widget>[
+              Expanded(child: catalogBody),
+              const VerticalDivider(width: 1, thickness: 1),
+              SizedBox(
+                width: 360,
+                child: _CartSidePanel(slug: slug, tenant: tenant),
+              ),
+            ],
+          ),
         ),
       );
     }
-    return Scaffold(body: catalogBody);
+    return TenantTheme(
+      brandColor: brand,
+      child: Scaffold(body: catalogBody),
+    );
   }
 
   Future<void> _shareCatalog(BuildContext context) async {
@@ -738,24 +745,21 @@ class _ProductCard extends ConsumerWidget {
                       Positioned(
                         top: 8,
                         left: 8,
-                        child: ZoomIn(
-                          duration: const Duration(milliseconds: 280),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: tokens.success,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              '-${product.discountPercent}% OFF',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 11,
-                              ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: tokens.success,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            '-${product.discountPercent}% OFF',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
                             ),
                           ),
                         ),
@@ -888,8 +892,8 @@ class _ProductCard extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(top: 2, left: 2, right: 2),
             child: Text(
-              'Mayor. ${Formatters.price(product.wholesalePrice!)} c/u '
-              '(${product.wholesaleMinQty}+ u.)',
+              'Mayor. ${Formatters.price(product.wholesalePrice!)} '
+              '(${Formatters.qtyLabel(product.wholesaleMinQty!, product.unit)}+)',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

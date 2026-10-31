@@ -109,7 +109,7 @@ class OffersView extends ConsumerWidget {
                               itemCount: offers.length,
                               itemBuilder: (BuildContext context, int i) {
                                 final Widget card = _OfferCard(hit: offers[i]);
-                                if (!animate) return card;
+                                if (!animate || i >= 12) return card;
                                 return FadeInUp(
                                   duration: const Duration(milliseconds: 260),
                                   delay: Duration(milliseconds: (i % 8) * 40),

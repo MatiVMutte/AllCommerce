@@ -65,37 +65,52 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
   Widget build(BuildContext context) {
     final Widget loadingFallback =
         widget.placeholder ?? const SizedBox.expand();
-    if (kIsWeb) {
-      return Image.network(
-        _effectiveUrl,
-        key: ValueKey<String>(_effectiveUrl),
-        fit: widget.fit,
-        frameBuilder:
-            (
-              BuildContext context,
-              Widget child,
-              int? frame,
-              bool wasSynchronouslyLoaded,
-            ) {
-              if (wasSynchronouslyLoaded || frame != null) return child;
-              return loadingFallback;
+    // Decode at display size instead of full resolution — a 1600px upload
+    // shown in a ~300px card wastes decode time and memory (desktop scroll).
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double w = constraints.maxWidth;
+        final int? cacheWidth = w.isFinite && w > 0
+            ? (w * MediaQuery.devicePixelRatioOf(context)).round().clamp(
+                64,
+                4096,
+              )
+            : null;
+        if (kIsWeb) {
+          return Image.network(
+            _effectiveUrl,
+            key: ValueKey<String>(_effectiveUrl),
+            fit: widget.fit,
+            cacheWidth: cacheWidth,
+            frameBuilder:
+                (
+                  BuildContext context,
+                  Widget child,
+                  int? frame,
+                  bool wasSynchronouslyLoaded,
+                ) {
+                  if (wasSynchronouslyLoaded || frame != null) return child;
+                  return loadingFallback;
+                },
+            errorBuilder: (BuildContext context, Object error, StackTrace? st) {
+              _scheduleRetry();
+              return widget.errorBuilder(context);
             },
-        errorBuilder: (BuildContext context, Object error, StackTrace? st) {
-          _scheduleRetry();
-          return widget.errorBuilder(context);
-        },
-      );
-    }
-    return CachedNetworkImage(
-      key: ValueKey<String>(_effectiveUrl),
-      imageUrl: _effectiveUrl,
-      fit: widget.fit,
-      placeholder: widget.placeholder != null
-          ? (_, _) => loadingFallback
-          : null,
-      errorWidget: (BuildContext context, String url, Object error) {
-        _scheduleRetry();
-        return widget.errorBuilder(context);
+          );
+        }
+        return CachedNetworkImage(
+          key: ValueKey<String>(_effectiveUrl),
+          imageUrl: _effectiveUrl,
+          fit: widget.fit,
+          memCacheWidth: cacheWidth,
+          placeholder: widget.placeholder != null
+              ? (_, _) => loadingFallback
+              : null,
+          errorWidget: (BuildContext context, String url, Object error) {
+            _scheduleRetry();
+            return widget.errorBuilder(context);
+          },
+        );
       },
     );
   }

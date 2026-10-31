@@ -446,7 +446,7 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                     ),
                                     for (final (int i, GlobalProductHit hit)
                                         in productHits.indexed)
-                                      animate
+                                      animate && i < 8
                                           ? FadeInUp(
                                               duration: const Duration(
                                                 milliseconds: 240,
@@ -498,7 +498,7 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                                 )
                                               : null,
                                         );
-                                        return animate
+                                        return animate && index < 8
                                             ? card
                                                   .animate()
                                                   .fadeIn(
@@ -553,7 +553,7 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                         )
                                       : null,
                                 );
-                                return animate
+                                return animate && index < 8
                                     ? card
                                           .animate()
                                           .fadeIn(

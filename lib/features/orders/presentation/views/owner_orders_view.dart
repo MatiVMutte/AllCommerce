@@ -194,7 +194,7 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                         ),
                       ),
                       for (int i = 0; i < group.orders.length; i++) ...<Widget>[
-                        AppMotion.enabled(context)
+                        AppMotion.enabled(context) && i < 8
                             ? FadeInUp(
                                 duration: const Duration(milliseconds: 240),
                                 delay: Duration(milliseconds: (i % 8) * 40),

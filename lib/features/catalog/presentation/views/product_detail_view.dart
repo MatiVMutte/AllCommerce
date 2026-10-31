@@ -1,6 +1,7 @@
 import 'package:all_commerce/core/constants/app_strings.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/core/tenant/tenant_theme.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
@@ -90,132 +91,139 @@ class _ProductDetailScaffold extends ConsumerWidget {
     final AsyncValue<ProductModel?> productAsync = ref.watch(
       productByIdProvider((tenantId: tenant.id, productId: productId)),
     );
-    return Scaffold(
-      body: productAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace stack) => AppErrorState(
-          onRetry: () => ref.invalidate(
-            productByIdProvider((tenantId: tenant.id, productId: productId)),
-          ),
-        ),
-        data: (ProductModel? product) {
-          if (product == null) {
-            return AppEmptyState(
-              icon: Icons.inventory_2_outlined,
-              title: AppStrings.productNotFound,
-              actionLabel: AppStrings.backToCatalog,
-              onAction: () => context.go('/s/$slug'),
-            );
-          }
-          final Widget image = _ProductImage(product: product, tokens: tokens);
-          final Widget overlayButtons = SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  _CircleButton(
-                    icon: Icons.arrow_back,
-                    tooltip: 'Volver',
-                    onTap: () => context.canPop()
-                        ? context.pop()
-                        : context.go('/s/$slug'),
-                  ),
-                  _CircleButton(
-                    icon: Icons.share_outlined,
-                    tooltip: 'Compartir producto',
-                    onTap: () => _share(context, product),
-                  ),
-                ],
-              ),
+    return TenantTheme(
+      brandColor: tenant.primaryColorValue,
+      child: Scaffold(
+        body: productAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (Object error, StackTrace stack) => AppErrorState(
+            onRetry: () => ref.invalidate(
+              productByIdProvider((tenantId: tenant.id, productId: productId)),
             ),
-          );
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1100),
-              child: LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints constraints) {
-                  final bool wide = constraints.maxWidth >= 800;
-                  if (wide) {
-                    return Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(24),
-                              child: AspectRatio(
-                                aspectRatio: 1,
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: <Widget>[
-                                    image,
-                                    Positioned(
-                                      top: 0,
-                                      left: 0,
-                                      right: 0,
-                                      child: overlayButtons,
-                                    ),
-                                  ],
+          ),
+          data: (ProductModel? product) {
+            if (product == null) {
+              return AppEmptyState(
+                icon: Icons.inventory_2_outlined,
+                title: AppStrings.productNotFound,
+                actionLabel: AppStrings.backToCatalog,
+                onAction: () => context.go('/s/$slug'),
+              );
+            }
+            final Widget image = _ProductImage(
+              product: product,
+              tokens: tokens,
+            );
+            final Widget overlayButtons = SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    _CircleButton(
+                      icon: Icons.arrow_back,
+                      tooltip: 'Volver',
+                      onTap: () => context.canPop()
+                          ? context.pop()
+                          : context.go('/s/$slug'),
+                    ),
+                    _CircleButton(
+                      icon: Icons.share_outlined,
+                      tooltip: 'Compartir producto',
+                      onTap: () => _share(context, product),
+                    ),
+                  ],
+                ),
+              ),
+            );
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1100),
+                child: LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    final bool wide = constraints.maxWidth >= 800;
+                    if (wide) {
+                      return Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(24),
+                                child: AspectRatio(
+                                  aspectRatio: 1,
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: <Widget>[
+                                      image,
+                                      Positioned(
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        child: overlayButtons,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 32),
-                          Expanded(
-                            child: _ProductPanel(
-                              slug: slug,
-                              product: product,
-                              tenant: tenant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  final double imageHeight =
-                      MediaQuery.of(context).size.height * 0.45;
-                  return Stack(
-                    children: <Widget>[
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: imageHeight,
-                        child: image,
-                      ),
-                      Positioned.fill(
-                        child: SingleChildScrollView(
-                          padding: EdgeInsets.only(top: imageHeight - 28),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).scaffoldBackgroundColor,
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(28),
+                            const SizedBox(width: 32),
+                            Expanded(
+                              child: _ProductPanel(
+                                slug: slug,
+                                product: product,
+                                tenant: tenant,
                               ),
                             ),
-                            child: _ProductPanel(
-                              slug: slug,
-                              product: product,
-                              tenant: tenant,
+                          ],
+                        ),
+                      );
+                    }
+                    final double imageHeight =
+                        MediaQuery.of(context).size.height * 0.45;
+                    return Stack(
+                      children: <Widget>[
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: imageHeight,
+                          child: image,
+                        ),
+                        Positioned.fill(
+                          child: SingleChildScrollView(
+                            padding: EdgeInsets.only(top: imageHeight - 28),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .scaffoldBackgroundColor,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(28),
+                                ),
+                              ),
+                              child: _ProductPanel(
+                                slug: slug,
+                                product: product,
+                                tenant: tenant,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        child: overlayButtons,
-                      ),
-                    ],
-                  );
-                },
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: overlayButtons,
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
