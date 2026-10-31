@@ -14,6 +14,7 @@ import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -262,7 +263,38 @@ class _ProductImage extends StatefulWidget {
 }
 
 class _ProductImageState extends State<_ProductImage> {
+  final PageController _controller = PageController();
   int _page = 0;
+  bool _hovering = false;
+  DateTime _lastWheel = DateTime.fromMillisecondsSinceEpoch(0);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _goTo(int page) {
+    _controller.animateToPage(
+      page.clamp(0, widget.product.gallery.length - 1),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  /// Mouse wheel / trackpad scroll turns a page (horizontal PageViews get
+  /// no wheel support by default). Throttled so one wheel flick = one page.
+  void _onPointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) return;
+    final DateTime now = DateTime.now();
+    if (now.difference(_lastWheel).inMilliseconds < 280) return;
+    final double dy = event.scrollDelta.dy.abs() >= event.scrollDelta.dx.abs()
+        ? event.scrollDelta.dy
+        : event.scrollDelta.dx;
+    if (dy.abs() < 8) return;
+    _lastWheel = now;
+    _goTo(_page + (dy > 0 ? 1 : -1));
+  }
 
   Widget _fallback() {
     return Container(
@@ -291,67 +323,107 @@ class _ProductImageState extends State<_ProductImage> {
         ),
       );
     }
-    return Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        PageView.builder(
-          itemCount: urls.length,
-          onPageChanged: (int i) => setState(() => _page = i),
-          itemBuilder: (BuildContext context, int i) => AppNetworkImage(
-            imageUrl: urls[i],
-            placeholder: Container(color: widget.tokens.surfaceMuted),
-            errorBuilder: (_) => _fallback(),
-          ),
-        ),
-        Positioned(
-          bottom: 12,
-          left: 0,
-          right: 0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              for (int i = 0; i < urls.length; i++)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: _page == i ? 18 : 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: _page == i
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(999),
-                    boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
-        Positioned(
-          top: 64,
-          right: 12,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.45),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              '${_page + 1}/${urls.length}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: Listener(
+        onPointerSignal: _onPointerSignal,
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            PageView.builder(
+              controller: _controller,
+              itemCount: urls.length,
+              onPageChanged: (int i) => setState(() => _page = i),
+              itemBuilder: (BuildContext context, int i) => AppNetworkImage(
+                imageUrl: urls[i],
+                placeholder: Container(color: widget.tokens.surfaceMuted),
+                errorBuilder: (_) => _fallback(),
               ),
             ),
-          ),
+            if (_hovering && _page > 0)
+              Positioned(
+                left: 8,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _CircleButton(
+                    icon: Icons.chevron_left_rounded,
+                    tooltip: 'Foto anterior',
+                    onTap: () => _goTo(_page - 1),
+                  ),
+                ),
+              ),
+            if (_hovering && _page < urls.length - 1)
+              Positioned(
+                right: 8,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _CircleButton(
+                    icon: Icons.chevron_right_rounded,
+                    tooltip: 'Foto siguiente',
+                    onTap: () => _goTo(_page + 1),
+                  ),
+                ),
+              ),
+            Positioned(
+              bottom: 12,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  for (int i = 0; i < urls.length; i++)
+                    GestureDetector(
+                      onTap: () => _goTo(i),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: _page == i ? 18 : 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: _page == i
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: <BoxShadow>[
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Positioned(
+              top: 64,
+              right: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${_page + 1}/${urls.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
