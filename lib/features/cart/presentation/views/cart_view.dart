@@ -462,25 +462,52 @@ class _CartViewState extends ConsumerState<CartView> {
                               Text(Formatters.price(cart.subtotal)),
                             ],
                           ),
-                          if (_appliedPreview != null) ...<Widget>[
-                            const SizedBox(height: 6),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: <Widget>[
-                                Text(
-                                  'Descuento ($_appliedCode)',
-                                  style: TextStyle(color: tokens.success),
-                                ),
-                                Text(
+                          if (_appliedPreview != null)
+                            _TotalRow(
+                              label: 'Descuento ($_appliedCode)',
+                              amount:
                                   '−${Formatters.price(_appliedPreview!.discountFor(cart.subtotal))}',
-                                  style: TextStyle(
-                                    color: tokens.success,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                              color: tokens.success,
                             ),
-                          ],
+                          if (tenant.bulkDiscountFor(cart.subtotal) > 0)
+                            _TotalRow(
+                              label:
+                                  'Descuento por volumen '
+                                  '(${tenant.bulkDiscountPct.round()}%)',
+                              amount:
+                                  '−${Formatters.price(tenant.bulkDiscountFor(cart.subtotal))}',
+                              color: tokens.success,
+                            )
+                          else if (tenant.bulkDiscountPct > 0 &&
+                              tenant.bulkDiscountMin > cart.subtotal)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                'Te faltan '
+                                '${Formatters.price(tenant.bulkDiscountMin - cart.subtotal)} '
+                                'para el ${tenant.bulkDiscountPct.round()}% de descuento',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: tokens.textTertiary,
+                                ),
+                              ),
+                            ),
+                          if (tenant.paymentDiscountFor(
+                                cart.subtotal,
+                                ref
+                                    .watch(checkoutControllerProvider)
+                                    .paymentMethod
+                                    .id,
+                              ) >
+                              0)
+                            _TotalRow(
+                              label:
+                                  'Desc. por pago '
+                                  '(${tenant.paymentDiscountPct(ref.watch(checkoutControllerProvider).paymentMethod.id).round()}%)',
+                              amount:
+                                  '−${Formatters.price(tenant.paymentDiscountFor(cart.subtotal, ref.watch(checkoutControllerProvider).paymentMethod.id))}',
+                              color: tokens.success,
+                            ),
                           const SizedBox(height: 6),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -495,10 +522,23 @@ class _CartViewState extends ConsumerState<CartView> {
                               Text(
                                 Formatters.price(
                                   cart.subtotal -
-                                      (_appliedPreview?.discountFor(
-                                            cart.subtotal,
-                                          ) ??
-                                          0),
+                                      ((_appliedPreview?.discountFor(
+                                                    cart.subtotal,
+                                                  ) ??
+                                                  0) +
+                                              tenant.bulkDiscountFor(
+                                                cart.subtotal,
+                                              ) +
+                                              tenant.paymentDiscountFor(
+                                                cart.subtotal,
+                                                ref
+                                                    .watch(
+                                                      checkoutControllerProvider,
+                                                    )
+                                                    .paymentMethod
+                                                    .id,
+                                              ))
+                                          .clamp(0, cart.subtotal),
                                 ),
                                 style: const TextStyle(
                                   fontSize: 18,
@@ -533,6 +573,44 @@ class _CartViewState extends ConsumerState<CartView> {
           ),
         );
       },
+    );
+  }
+}
+
+/// A single line in the order summary ("Descuento X ... −$500").
+class _TotalRow extends StatelessWidget {
+  const _TotalRow({
+    required this.label,
+    required this.amount,
+    required this.color,
+  });
+
+  final String label;
+  final String amount;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: color, fontSize: 13),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            amount,
+            style: TextStyle(color: color, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -660,13 +738,15 @@ class _PaymentSection extends ConsumerWidget {
   }
 
   String _paymentHint(TenantModel tenant, PaymentMethod method) {
+    final double pct = tenant.paymentDiscountPct(method.id);
+    final String disc = pct > 0 ? ' ${pct.round()}% de descuento.' : '';
     switch (method) {
       case PaymentMethod.cash:
-        return 'Pagás al retirar o cuando te lo entreguen.';
+        return 'Pagás al retirar o cuando te lo entreguen.$disc';
       case PaymentMethod.transfer:
-        return 'Alias/CBU: ${tenant.transferAlias}. Envianos el comprobante por WhatsApp.';
+        return 'Alias/CBU: ${tenant.transferAlias}. Envianos el comprobante por WhatsApp.$disc';
       case PaymentMethod.mercadoPago:
-        return 'Te vamos a mandar el link de pago por WhatsApp.';
+        return 'Te vamos a mandar el link de pago por WhatsApp.$disc';
     }
   }
 }

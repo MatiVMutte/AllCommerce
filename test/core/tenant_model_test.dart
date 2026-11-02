@@ -50,6 +50,30 @@ void main() {
       expect(TenantModel.fromJson(json).primaryColorValue, AppColors.primary);
     });
 
+    test('discounts and visibility parse and compute', () {
+      final Map<String, dynamic> json = _tenantJson();
+      json['is_public'] = false;
+      json['cash_discount_pct'] = 10;
+      json['transfer_discount_pct'] = 5;
+      json['bulk_discount_pct'] = 15;
+      json['bulk_discount_min'] = 100000;
+      final TenantModel tenant = TenantModel.fromJson(json);
+
+      expect(tenant.isPublic, isFalse);
+      expect(tenant.paymentDiscountPct('cash'), 10);
+      expect(tenant.paymentDiscountPct('transfer'), 5);
+      expect(tenant.paymentDiscountPct('mercado_pago'), 0);
+      expect(tenant.paymentDiscountFor(1000, 'cash'), 100);
+      expect(tenant.bulkDiscountFor(99999), 0);
+      expect(tenant.bulkDiscountFor(100000), 15000);
+
+      // Defaults: public, no discounts.
+      final TenantModel base = TenantModel.fromJson(_tenantJson());
+      expect(base.isPublic, isTrue);
+      expect(base.cashDiscountPct, 0);
+      expect(base.bulkDiscountFor(999999999), 0);
+    });
+
     test('canPublish false when plan expired or inactive', () {
       final TenantModel expired = TenantModel.fromJson(
         _tenantJson(

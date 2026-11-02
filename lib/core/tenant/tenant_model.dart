@@ -22,6 +22,12 @@ class TenantModel {
     this.acceptsCash = true,
     this.isOpen = true,
     this.openingHours,
+    this.isPublic = true,
+    this.cashDiscountPct = 0,
+    this.transferDiscountPct = 0,
+    this.mpDiscountPct = 0,
+    this.bulkDiscountPct = 0,
+    this.bulkDiscountMin = 0,
     required this.plan,
     required this.trialStartedAt,
     required this.planExpiresAt,
@@ -54,6 +60,44 @@ class TenantModel {
   final bool acceptsCash;
   final bool isOpen;
   final String? openingHours;
+
+  /// Whether the store is listed in the public directory. Direct links and
+  /// QR codes keep working either way.
+  final bool isPublic;
+
+  /// Optional % discount the store gives for each payment method.
+  final double cashDiscountPct;
+  final double transferDiscountPct;
+  final double mpDiscountPct;
+
+  /// % discount applied when the subtotal reaches [bulkDiscountMin].
+  final double bulkDiscountPct;
+  final double bulkDiscountMin;
+
+  /// Discount % for a given payment method id ('cash'|'transfer'|'mercado_pago').
+  double paymentDiscountPct(String paymentMethodId) {
+    switch (paymentMethodId) {
+      case 'cash':
+        return cashDiscountPct;
+      case 'transfer':
+        return transferDiscountPct;
+      default:
+        return mpDiscountPct;
+    }
+  }
+
+  /// Volume discount amount for a given subtotal (0 when not reached).
+  double bulkDiscountFor(double subtotal) =>
+      bulkDiscountPct > 0 && subtotal >= bulkDiscountMin
+      ? subtotal * bulkDiscountPct.clamp(0, 100) / 100
+      : 0;
+
+  /// Payment-method discount amount for a given subtotal.
+  double paymentDiscountFor(double subtotal, String paymentMethodId) {
+    final double pct = paymentDiscountPct(paymentMethodId);
+    return pct > 0 ? subtotal * pct.clamp(0, 100) / 100 : 0;
+  }
+
   final PlanType plan;
   final DateTime trialStartedAt;
   final DateTime planExpiresAt;
@@ -81,6 +125,13 @@ class TenantModel {
       acceptsCash: json['accepts_cash'] as bool? ?? true,
       isOpen: json['is_open'] as bool? ?? true,
       openingHours: json['opening_hours'] as String?,
+      isPublic: json['is_public'] as bool? ?? true,
+      cashDiscountPct: (json['cash_discount_pct'] as num?)?.toDouble() ?? 0,
+      transferDiscountPct:
+          (json['transfer_discount_pct'] as num?)?.toDouble() ?? 0,
+      mpDiscountPct: (json['mp_discount_pct'] as num?)?.toDouble() ?? 0,
+      bulkDiscountPct: (json['bulk_discount_pct'] as num?)?.toDouble() ?? 0,
+      bulkDiscountMin: (json['bulk_discount_min'] as num?)?.toDouble() ?? 0,
       plan: PlanType.fromId(json['plan'] as String),
       trialStartedAt: json['trial_started_at'] == null
           ? DateTime.parse(json['created_at'] as String)
@@ -112,6 +163,12 @@ class TenantModel {
       'accepts_cash': acceptsCash,
       'is_open': isOpen,
       'opening_hours': openingHours,
+      'is_public': isPublic,
+      'cash_discount_pct': cashDiscountPct,
+      'transfer_discount_pct': transferDiscountPct,
+      'mp_discount_pct': mpDiscountPct,
+      'bulk_discount_pct': bulkDiscountPct,
+      'bulk_discount_min': bulkDiscountMin,
       'plan': plan.id,
       'trial_started_at': trialStartedAt.toIso8601String(),
       'plan_expires_at': planExpiresAt.toIso8601String(),

@@ -11,6 +11,7 @@ import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
 import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
+import 'package:all_commerce/core/widgets/section_card.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
@@ -51,9 +52,15 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
   final TextEditingController _transferAlias = TextEditingController();
   final TextEditingController _mercadoPagoLink = TextEditingController();
   final TextEditingController _openingHours = TextEditingController();
+  final TextEditingController _cashDisc = TextEditingController();
+  final TextEditingController _transferDisc = TextEditingController();
+  final TextEditingController _mpDisc = TextEditingController();
+  final TextEditingController _bulkMin = TextEditingController();
+  final TextEditingController _bulkPct = TextEditingController();
   bool _acceptsCash = true;
   bool _acceptsCard = false;
   bool _isOpen = true;
+  bool _isPublic = true;
   String _color = '#0052FF';
   double? _lat;
   double? _lng;
@@ -69,6 +76,11 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     _transferAlias.dispose();
     _mercadoPagoLink.dispose();
     _openingHours.dispose();
+    _cashDisc.dispose();
+    _transferDisc.dispose();
+    _mpDisc.dispose();
+    _bulkMin.dispose();
+    _bulkPct.dispose();
     super.dispose();
   }
 
@@ -85,6 +97,12 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     _acceptsCash = tenant.acceptsCash;
     _acceptsCard = tenant.acceptsCard;
     _isOpen = tenant.isOpen;
+    _isPublic = tenant.isPublic;
+    _cashDisc.text = _numText(tenant.cashDiscountPct);
+    _transferDisc.text = _numText(tenant.transferDiscountPct);
+    _mpDisc.text = _numText(tenant.mpDiscountPct);
+    _bulkMin.text = _numText(tenant.bulkDiscountMin);
+    _bulkPct.text = _numText(tenant.bulkDiscountPct);
     _color = tenant.primaryColor;
     _lat = tenant.lat;
     _lng = tenant.lng;
@@ -96,7 +114,18 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
     _transferAlias.addListener(_onChange);
     _mercadoPagoLink.addListener(_onChange);
     _openingHours.addListener(_onChange);
+    _cashDisc.addListener(_onChange);
+    _transferDisc.addListener(_onChange);
+    _mpDisc.addListener(_onChange);
+    _bulkMin.addListener(_onChange);
+    _bulkPct.addListener(_onChange);
   }
+
+  /// '' for 0 so empty fields stay empty (not "0").
+  static String _numText(double v) => v == 0 ? '' : v.toStringAsFixed(0);
+
+  static double _numVal(TextEditingController c) =>
+      double.tryParse(c.text.trim().replaceAll(',', '.')) ?? 0;
 
   void _onChange() => setState(() {});
 
@@ -112,6 +141,12 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
         _mercadoPagoLink.text.trim() != (tenant.mercadoPagoLink ?? '') ||
         _openingHours.text.trim() != (tenant.openingHours ?? '') ||
         _isOpen != tenant.isOpen ||
+        _isPublic != tenant.isPublic ||
+        _numVal(_cashDisc) != tenant.cashDiscountPct ||
+        _numVal(_transferDisc) != tenant.transferDiscountPct ||
+        _numVal(_mpDisc) != tenant.mpDiscountPct ||
+        _numVal(_bulkMin) != tenant.bulkDiscountMin ||
+        _numVal(_bulkPct) != tenant.bulkDiscountPct ||
         _lat != tenant.lat ||
         _lng != tenant.lng ||
         _color != tenant.primaryColor;
@@ -210,6 +245,12 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
           openingHours: _openingHours.text.trim().isEmpty
               ? null
               : _openingHours.text.trim(),
+          isPublic: _isPublic,
+          cashDiscountPct: _numVal(_cashDisc),
+          transferDiscountPct: _numVal(_transferDisc),
+          mpDiscountPct: _numVal(_mpDisc),
+          bulkDiscountPct: _numVal(_bulkPct),
+          bulkDiscountMin: _numVal(_bulkMin),
         );
     if (!mounted) return;
     if (updated == null) {
@@ -300,378 +341,521 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      Center(
-                        child: Column(
-                          children: <Widget>[
-                            Stack(
+                      AppSectionCard(
+                        icon: Icons.storefront_outlined,
+                        title: 'Identidad',
+                        subtitle: 'Logo, portada, nombre y descripción',
+                        children: <Widget>[
+                          Center(
+                            child: Column(
                               children: <Widget>[
-                                _SettingsAvatar(
-                                  tenant: tenant,
-                                  pendingLogo: state.pendingLogo,
-                                ),
-                                Positioned(
-                                  right: 0,
-                                  bottom: 0,
-                                  child: Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Theme.of(context)
-                                            .scaffoldBackgroundColor,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: IconButton(
-                                      padding: EdgeInsets.zero,
-                                      tooltip: 'Cambiar logo',
-                                      iconSize: 16,
-                                      icon: const Icon(
-                                        Icons.photo_camera_outlined,
-                                        color: Colors.white,
-                                      ),
-                                      onPressed: state.saving
-                                          ? null
-                                          : () => ref
-                                                .read(
-                                                  tenantSettingsControllerProvider
-                                                      .notifier,
-                                                )
-                                                .pickLogo(),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _name.text.trim().isEmpty
-                                  ? tenant.name
-                                  : _name.text.trim(),
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: tokens.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      _CoverPicker(
-                        tenant: tenant,
-                        pendingCover: state.pendingCover,
-                        enabled: !state.saving,
-                        onPick: () => ref
-                            .read(tenantSettingsControllerProvider.notifier)
-                            .pickCover(),
-                      ),
-                      const SizedBox(height: 24),
-                      const _Section('DATOS'),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _name,
-                        decoration: const InputDecoration(
-                          labelText: 'Nombre del local',
-                        ),
-                        validator: Validators.storeName,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _description,
-                        decoration: const InputDecoration(
-                          labelText: 'Descripción (opcional)',
-                        ),
-                        maxLines: 3,
-                        maxLength: 200,
-                      ),
-                      const SizedBox(height: 4),
-                      const _Section('CONTACTO'),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _address,
-                        decoration: const InputDecoration(
-                          labelText: 'Dirección (opcional)',
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: state.saving ? null : _pickLocation,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: tokens.border),
-                          ),
-                          child: Row(
-                            children: <Widget>[
-                              Icon(
-                                Icons.pin_drop_outlined,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                Stack(
                                   children: <Widget>[
-                                    const Text(
-                                      'Ubicación en el mapa',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                    _SettingsAvatar(
+                                      tenant: tenant,
+                                      pendingLogo: state.pendingLogo,
                                     ),
-                                    Text(
-                                      _lat != null && _lng != null
-                                          ? 'Marcada · tocá para cambiarla'
-                                          : 'Sin marcar · tu local no aparece en el mapa del directorio',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: tokens.textSecondary,
+                                    Positioned(
+                                      right: 0,
+                                      bottom: 0,
+                                      child: Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Theme.of(context)
+                                                .scaffoldBackgroundColor,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: IconButton(
+                                          padding: EdgeInsets.zero,
+                                          tooltip: 'Cambiar logo',
+                                          iconSize: 16,
+                                          icon: const Icon(
+                                            Icons.photo_camera_outlined,
+                                            color: Colors.white,
+                                          ),
+                                          onPressed: state.saving
+                                              ? null
+                                              : () => ref
+                                                    .read(
+                                                      tenantSettingsControllerProvider
+                                                          .notifier,
+                                                    )
+                                                    .pickLogo(),
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _name.text.trim().isEmpty
+                                      ? tenant.name
+                                      : _name.text.trim(),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: tokens.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _CoverPicker(
+                            tenant: tenant,
+                            pendingCover: state.pendingCover,
+                            enabled: !state.saving,
+                            onPick: () => ref
+                                .read(tenantSettingsControllerProvider.notifier)
+                                .pickCover(),
+                          ),
+                          const SizedBox(height: 20),
+                          TextFormField(
+                            controller: _name,
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre del local',
+                            ),
+                            validator: Validators.storeName,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _description,
+                            decoration: const InputDecoration(
+                              labelText: 'Descripción (opcional)',
+                            ),
+                            maxLines: 3,
+                            maxLength: 200,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      AppSectionCard(
+                        icon: Icons.visibility_outlined,
+                        title: 'Visibilidad',
+                        subtitle: 'Quién encuentra tu catálogo',
+                        children: <Widget>[
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            value: _isPublic,
+                            onChanged: (bool value) =>
+                                setState(() => _isPublic = value),
+                            title: const Text('Aparecer en el directorio'),
+                            subtitle: const Text(
+                              'Apagado: solo entran con tu link o QR',
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: Text(
+                                  '${ShareService.linkBase}/s/${tenant.slug}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: tokens.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                color: tokens.textTertiary,
+                              IconButton(
+                                icon: Icon(
+                                  Icons.copy_outlined,
+                                  size: 18,
+                                  color: tokens.textSecondary,
+                                ),
+                                tooltip: 'Copiar link',
+                                onPressed: () async {
+                                  await Clipboard.setData(
+                                    ClipboardData(
+                                      text:
+                                          'https://${ShareService.linkBase}/s/${tenant.slug}',
+                                    ),
+                                  );
+                                  if (context.mounted) {
+                                    showAppSnackBar(context, 'Link copiado');
+                                  }
+                                },
                               ),
                             ],
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _whatsapp,
-                        decoration: const InputDecoration(
-                          labelText: 'WhatsApp',
-                          hintText: '11 2233 4455',
-                        ),
-                        keyboardType: TextInputType.phone,
-                        validator: Validators.phone,
-                      ),
-                      const SizedBox(height: 16),
-                      const _Section('ATENCIÓN Y HORARIOS'),
-                      const SizedBox(height: 8),
-                      SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        value: _isOpen,
-                        onChanged: (bool value) =>
-                            setState(() => _isOpen = value),
-                        title: const Text('Local abierto ahora'),
-                        subtitle: const Text(
-                          'Se muestra como Abierto o Cerrado en el directorio y en tu catálogo',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _openingHours,
-                        decoration: const InputDecoration(
-                          labelText: 'Horarios de atención (opcional)',
-                          hintText: 'Ej: Lun a Vie 9 a 19 hs · Sáb 9 a 13 hs',
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const _Section('COBRO'),
-                      const SizedBox(height: 12),
-                      Row(
+                      const SizedBox(height: 14),
+                      AppSectionCard(
+                        icon: Icons.place_outlined,
+                        title: 'Contacto',
                         children: <Widget>[
-                          Expanded(
-                            child: TextFormField(
-                              controller: _transferAlias,
-                              decoration: const InputDecoration(
-                                labelText: 'Alias/CBU para transferencias',
-                                hintText: 'Ej: mateo.dietetica.mp',
+                          TextFormField(
+                            controller: _address,
+                            decoration: const InputDecoration(
+                              labelText: 'Dirección (opcional)',
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: state.saving ? null : _pickLocation,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            tooltip: 'Info',
-                            icon: const Icon(Icons.help_outline, size: 20),
-                            onPressed: () => showDialog<void>(
-                              context: context,
-                              builder: (BuildContext context) => AlertDialog(
-                                title: const Text('Pagos'),
-                                content: const Text(
-                                  'Escribí tu alias de Mercado Pago, CVU o CBU. '
-                                  'Los clientes lo verán al elegir "Transferencia".',
-                                ),
-                                actions: <Widget>[
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(),
-                                    child: const Text('Entendido'),
-                                  ),
-                                ],
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: tokens.border),
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _mercadoPagoLink,
-                        decoration: const InputDecoration(
-                          labelText: 'Link de pago Mercado Pago (opcional)',
-                          hintText: 'https://mpago.la/...',
-                        ),
-                        keyboardType: TextInputType.url,
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              'Aceptar pago en efectivo',
-                              style: TextStyle(color: tokens.textSecondary),
-                            ),
-                          ),
-                          Switch(
-                            value: _acceptsCash,
-                            onChanged: (bool value) {
-                              setState(() => _acceptsCash = value);
-                              _savePaymentFlags(tenant);
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              'Aceptar tarjetas (crédito/débito)',
-                              style: TextStyle(color: tokens.textSecondary),
-                            ),
-                          ),
-                          Switch(
-                            value: _acceptsCard,
-                            onChanged: (bool value) {
-                              setState(() => _acceptsCard = value);
-                              _savePaymentFlags(tenant);
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      const _Section('PROMOCIONES'),
-                      ListTile(
-                        leading: const Icon(Icons.local_offer_outlined),
-                        title: const Text('Cupones de descuento'),
-                        subtitle: const Text(
-                          'Creá códigos como PROMO10 para tus clientes',
-                        ),
-                        trailing: const Icon(Icons.chevron_right_rounded),
-                        onTap: () => context.push('/owner/coupons'),
-                      ),
-                      const SizedBox(height: 12),
-                      const _Section('APARIENCIA'),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 14,
-                        runSpacing: 14,
-                        children: <Widget>[
-                          for (final String hex in colors)
-                            _ColorDot(
-                              hex: hex,
-                              selected: hex == _color,
-                              onTap: () => setState(() => _color = hex),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Live preview of the catalog header.
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: tokens.border),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            Container(height: 64, color: preview),
-                            Transform.translate(
-                              offset: const Offset(0, -20),
-                              child: Column(
+                              child: Row(
                                 children: <Widget>[
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Theme.of(context)
-                                            .scaffoldBackgroundColor,
-                                        width: 3,
-                                      ),
-                                    ),
-                                    child: CircleAvatar(
-                                      radius: 24,
-                                      backgroundColor: preview,
-                                      child: Text(
-                                        (_name.text.trim().isEmpty
-                                                ? tenant.name
-                                                : _name.text.trim())
-                                            .characters
-                                            .first
-                                            .toUpperCase(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
+                                  Icon(
+                                    Icons.pin_drop_outlined,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        const Text(
+                                          'Ubicación en el mapa',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
-                                      ),
+                                        Text(
+                                          _lat != null && _lng != null
+                                              ? 'Marcada · tocá para cambiarla'
+                                              : 'Sin marcar · tu local no aparece en el mapa del directorio',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: tokens.textSecondary,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _name.text.trim().isEmpty
-                                        ? tenant.name
-                                        : _name.text.trim(),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      color: tokens.textPrimary,
-                                    ),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: tokens.textTertiary,
                                   ),
                                 ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _whatsapp,
+                            decoration: const InputDecoration(
+                              labelText: 'WhatsApp',
+                              hintText: '11 2233 4455',
+                            ),
+                            keyboardType: TextInputType.phone,
+                            validator: Validators.phone,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      Row(
+                      const SizedBox(height: 14),
+                      AppSectionCard(
+                        icon: Icons.schedule_outlined,
+                        title: 'Atención',
                         children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              '${ShareService.linkBase}/s/${tenant.slug}',
-                              style: TextStyle(color: tokens.textSecondary),
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            value: _isOpen,
+                            onChanged: (bool value) =>
+                                setState(() => _isOpen = value),
+                            title: const Text('Local abierto ahora'),
+                            subtitle: const Text(
+                              'Se muestra como Abierto o Cerrado en el directorio y en tu catálogo',
                             ),
                           ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.copy_outlined,
-                              size: 18,
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _openingHours,
+                            decoration: const InputDecoration(
+                              labelText: 'Horarios de atención (opcional)',
+                              hintText:
+                                  'Ej: Lun a Vie 9 a 19 hs · Sáb 9 a 13 hs',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      AppSectionCard(
+                        icon: Icons.payments_outlined,
+                        title: 'Cobro',
+                        subtitle: 'Cómo te pagan',
+                        children: <Widget>[
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _transferAlias,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Alias/CBU para transferencias',
+                                    hintText: 'Ej: mateo.dietetica.mp',
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                tooltip: 'Info',
+                                icon: const Icon(Icons.help_outline, size: 20),
+                                onPressed: () => showDialog<void>(
+                                  context: context,
+                                  builder: (BuildContext context) =>
+                                      AlertDialog(
+                                        title: const Text('Pagos'),
+                                        content: const Text(
+                                          'Escribí tu alias de Mercado Pago, CVU o CBU. '
+                                          'Los clientes lo verán al elegir "Transferencia".',
+                                        ),
+                                        actions: <Widget>[
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.of(context).pop(),
+                                            child: const Text('Entendido'),
+                                          ),
+                                        ],
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _mercadoPagoLink,
+                            decoration: const InputDecoration(
+                              labelText: 'Link de pago Mercado Pago (opcional)',
+                              hintText: 'https://mpago.la/...',
+                            ),
+                            keyboardType: TextInputType.url,
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: Text(
+                                  'Aceptar pago en efectivo',
+                                  style: TextStyle(color: tokens.textSecondary),
+                                ),
+                              ),
+                              Switch(
+                                value: _acceptsCash,
+                                onChanged: (bool value) {
+                                  setState(() => _acceptsCash = value);
+                                  _savePaymentFlags(tenant);
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: Text(
+                                  'Aceptar tarjetas (crédito/débito)',
+                                  style: TextStyle(color: tokens.textSecondary),
+                                ),
+                              ),
+                              Switch(
+                                value: _acceptsCard,
+                                onChanged: (bool value) {
+                                  setState(() => _acceptsCard = value);
+                                  _savePaymentFlags(tenant);
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      AppSectionCard(
+                        icon: Icons.percent_rounded,
+                        title: 'Descuentos',
+                        subtitle: 'Se aplican solos al confirmar el pedido',
+                        children: <Widget>[
+                          Text(
+                            'Por forma de pago',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
                               color: tokens.textSecondary,
                             ),
-                            tooltip: 'Copiar link',
-                            onPressed: () async {
-                              await Clipboard.setData(
-                                ClipboardData(
-                                  text:
-                                      'https://${ShareService.linkBase}/s/${tenant.slug}',
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _cashDisc,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Efectivo %',
+                                  ),
+                                  keyboardType: TextInputType.number,
                                 ),
-                              );
-                              if (context.mounted) {
-                                showAppSnackBar(context, 'Link copiado');
-                              }
-                            },
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _transferDisc,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Transf. %',
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _mpDisc,
+                                  decoration: const InputDecoration(
+                                    labelText: 'M. Pago %',
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Por total del pedido',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: tokens.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _bulkMin,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Si el pedido supera \$',
+                                    hintText: '100000',
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _bulkPct,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Descuento %',
+                                    hintText: '10',
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Vacío o 0 = sin descuento',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: tokens.textTertiary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Divider(height: 24),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.local_offer_outlined),
+                            title: const Text('Cupones de descuento'),
+                            subtitle: const Text(
+                              'Creá códigos como PROMO10 para tus clientes',
+                            ),
+                            trailing: const Icon(Icons.chevron_right_rounded),
+                            onTap: () => context.push('/owner/coupons'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      AppSectionCard(
+                        icon: Icons.palette_outlined,
+                        title: 'Apariencia',
+                        subtitle: 'El color de tu catálogo',
+                        children: <Widget>[
+                          Wrap(
+                            spacing: 14,
+                            runSpacing: 14,
+                            children: <Widget>[
+                              for (final String hex in colors)
+                                _ColorDot(
+                                  hex: hex,
+                                  selected: hex == _color,
+                                  onTap: () => setState(() => _color = hex),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Live preview of the catalog header.
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: tokens.border),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Container(height: 64, color: preview),
+                                Transform.translate(
+                                  offset: const Offset(0, -20),
+                                  child: Column(
+                                    children: <Widget>[
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Theme.of(context)
+                                                .scaffoldBackgroundColor,
+                                            width: 3,
+                                          ),
+                                        ),
+                                        child: CircleAvatar(
+                                          radius: 24,
+                                          backgroundColor: preview,
+                                          child: Text(
+                                            (_name.text.trim().isEmpty
+                                                    ? tenant.name
+                                                    : _name.text.trim())
+                                                .characters
+                                                .first
+                                                .toUpperCase(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _name.text.trim().isEmpty
+                                            ? tenant.name
+                                            : _name.text.trim(),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          color: tokens.textPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -714,25 +898,6 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
 Color _hexColor(String hex) {
   final String digits = hex.replaceFirst('#', '');
   return Color(0xFF000000 | (int.tryParse(digits, radix: 16) ?? 0));
-}
-
-class _Section extends StatelessWidget {
-  const _Section(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.6,
-        color: context.tokens.textTertiary,
-      ),
-    );
-  }
 }
 
 /// Wide cover-image picker shown under the store logo.

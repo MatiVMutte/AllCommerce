@@ -31,6 +31,7 @@ class TenantRepository {
         .from('tenants')
         .select()
         .eq('is_active', true)
+        .eq('is_public', true)
         .order('name');
     return rows.map(TenantModel.fromJson).toList();
   }
@@ -39,7 +40,8 @@ class TenantRepository {
     final PostgrestFilterBuilder<List<Map<String, dynamic>>> query = _client
         .from('tenants')
         .select()
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('is_public', true);
     final PostgrestTransformBuilder<List<Map<String, dynamic>>> ordered =
         zone == null || zone.isEmpty
         ? query.order('name')

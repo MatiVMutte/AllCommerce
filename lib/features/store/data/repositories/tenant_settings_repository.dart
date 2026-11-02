@@ -30,6 +30,12 @@ class TenantSettingsRepository {
     bool acceptsCash = true,
     bool isOpen = true,
     String? openingHours,
+    bool isPublic = true,
+    double cashDiscountPct = 0,
+    double transferDiscountPct = 0,
+    double mpDiscountPct = 0,
+    double bulkDiscountPct = 0,
+    double bulkDiscountMin = 0,
   }) async {
     final Map<String, dynamic> row = await _client
         .from('tenants')
@@ -47,6 +53,12 @@ class TenantSettingsRepository {
           'accepts_cash': acceptsCash,
           'is_open': isOpen,
           'opening_hours': openingHours,
+          'is_public': isPublic,
+          'cash_discount_pct': cashDiscountPct,
+          'transfer_discount_pct': transferDiscountPct,
+          'mp_discount_pct': mpDiscountPct,
+          'bulk_discount_pct': bulkDiscountPct,
+          'bulk_discount_min': bulkDiscountMin,
         })
         .eq('id', tenantId)
         .select()

@@ -84,6 +84,12 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
     bool acceptsCash = true,
     bool isOpen = true,
     String? openingHours,
+    bool isPublic = true,
+    double cashDiscountPct = 0,
+    double transferDiscountPct = 0,
+    double mpDiscountPct = 0,
+    double bulkDiscountPct = 0,
+    double bulkDiscountMin = 0,
   }) async {
     final keepAlive = ref.keepAlive();
     final TenantSettingsRepository repo = ref.read(
@@ -110,6 +116,12 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
         acceptsCash: acceptsCash,
         isOpen: isOpen,
         openingHours: openingHours,
+        isPublic: isPublic,
+        cashDiscountPct: cashDiscountPct,
+        transferDiscountPct: transferDiscountPct,
+        mpDiscountPct: mpDiscountPct,
+        bulkDiscountPct: bulkDiscountPct,
+        bulkDiscountMin: bulkDiscountMin,
       );
       final Uint8List? logo = state.pendingLogo;
       if (logo != null) {

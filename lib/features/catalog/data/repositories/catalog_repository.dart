@@ -40,6 +40,7 @@ class CatalogRepository {
         )
         .eq('is_active', true)
         .eq('tenants.is_active', true)
+        .eq('tenants.is_public', true)
         .gt('compare_at_price', 0)
         .order('updated_at', ascending: false)
         .limit(limit);

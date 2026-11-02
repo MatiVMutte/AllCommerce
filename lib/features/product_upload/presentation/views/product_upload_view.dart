@@ -21,6 +21,7 @@ import 'package:all_commerce/features/product_upload/data/models/product_input.d
 import 'package:all_commerce/features/product_upload/presentation/view_models/product_upload_controller.dart';
 import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
 import 'package:all_commerce/core/widgets/app_network_image.dart';
+import 'package:all_commerce/core/widgets/section_card.dart';
 import 'package:all_commerce/features/product_upload/presentation/widgets/plan_blocked_card.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/foundation.dart';
@@ -422,341 +423,375 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      const _Section('FOTO'),
-                      const SizedBox(height: 8),
-                      _ImageSection(
-                        state: state,
-                        onPick: (ImageSource source) {
-                          final AiUsage? usage = ref
-                              .read(aiUsageProvider)
-                              .value;
-                          if (usage != null && usage.reached) {
-                            _showAiLimit(context);
-                            return;
-                          }
-                          ref
-                              .read(productUploadControllerProvider.notifier)
-                              .pickAndAnalyze(source);
-                        },
-                        onPickExtra: (ImageSource source) => ref
-                            .read(productUploadControllerProvider.notifier)
-                            .pickExtra(source),
-                        onRemoveExtra: (int i) => ref
-                            .read(productUploadControllerProvider.notifier)
-                            .removeExtra(i),
-                        onRemoveKept: (String url) => ref
-                            .read(productUploadControllerProvider.notifier)
-                            .removeKept(url),
+                      AppSectionCard(
+                        icon: Icons.photo_library_outlined,
+                        title: 'Fotos',
+                        subtitle: 'La primera es la principal',
+                        children: <Widget>[
+                          _ImageSection(
+                            state: state,
+                            onPick: (ImageSource source) {
+                              final AiUsage? usage = ref
+                                  .read(aiUsageProvider)
+                                  .value;
+                              if (usage != null && usage.reached) {
+                                _showAiLimit(context);
+                                return;
+                              }
+                              ref
+                                  .read(
+                                    productUploadControllerProvider.notifier,
+                                  )
+                                  .pickAndAnalyze(source);
+                            },
+                            onPickExtra: (ImageSource source) => ref
+                                .read(productUploadControllerProvider.notifier)
+                                .pickExtra(source),
+                            onRemoveExtra: (int i) => ref
+                                .read(productUploadControllerProvider.notifier)
+                                .removeExtra(i),
+                            onRemoveKept: (String url) => ref
+                                .read(productUploadControllerProvider.notifier)
+                                .removeKept(url),
+                          ),
+                          if (state.photoCount > 0 ||
+                              state.keptImageUrls.isNotEmpty)
+                            _GalleryStrip(
+                              state: state,
+                              onPickExtra: (ImageSource source) => ref
+                                  .read(
+                                    productUploadControllerProvider.notifier,
+                                  )
+                                  .pickExtra(source),
+                              onRemoveExtra: (int i) => ref
+                                  .read(
+                                    productUploadControllerProvider.notifier,
+                                  )
+                                  .removeExtra(i),
+                              onRemoveKept: (String url) => ref
+                                  .read(
+                                    productUploadControllerProvider.notifier,
+                                  )
+                                  .removeKept(url),
+                            ),
+                          const _AiUsageLine(),
+                        ],
                       ),
-                      if (state.photoCount > 0 ||
-                          state.keptImageUrls.isNotEmpty)
-                        _GalleryStrip(
-                          state: state,
-                          onPickExtra: (ImageSource source) => ref
-                              .read(productUploadControllerProvider.notifier)
-                              .pickExtra(source),
-                          onRemoveExtra: (int i) => ref
-                              .read(productUploadControllerProvider.notifier)
-                              .removeExtra(i),
-                          onRemoveKept: (String url) => ref
-                              .read(productUploadControllerProvider.notifier)
-                              .removeKept(url),
-                        ),
-                      const _AiUsageLine(),
-                      const SizedBox(height: 20),
-                      const _Section('DATOS'),
-                      const SizedBox(height: 8),
-                      if (analyzing)
-                        const _FieldsSkeleton()
-                      else ...<Widget>[
-                        TextFormField(
-                          controller: _title,
-                          decoration: InputDecoration(
-                            labelText: AppStrings.productTitle,
-                            suffixIcon: _aiBadge(_title),
-                          ),
-                          validator: (String? value) {
-                            final int len = (value ?? '').trim().length;
-                            if (len < 2 || len > 80) {
-                              return 'Ingresá un título '
-                                  '(2 a 80 caracteres)';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _description,
-                          maxLines: 3,
-                          decoration: const InputDecoration(
-                            labelText: AppStrings.productDescription,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 20),
-                      const _Section('PRECIO Y STOCK'),
-                      const SizedBox(height: 8),
-                      if (analyzing)
-                        const _FieldsSkeleton()
-                      else ...<Widget>[
-                        TextFormField(
-                          controller: _price,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: InputDecoration(
-                            labelText: AppStrings.productPrice,
-                            suffixIcon: _aiBadge(_price),
-                          ),
-                          validator: (String? value) {
-                            final double? parsed = double.tryParse(
-                              (value ?? '').trim().replaceAll(',', '.'),
-                            );
-                            if (parsed == null || parsed <= 0) {
-                              return 'Ingresá un precio válido';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _compareAtPrice,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: AppStrings.productCompareAtPrice,
-                            helperText: 'Si es mayor al precio actual, se muestra tachado con el % de descuento',
-                          ),
-                          validator: (String? value) {
-                            final String raw = (value ?? '').trim().replaceAll(
-                              ',',
-                              '.',
-                            );
-                            if (raw.isEmpty) return null;
-                            final double? parsed = double.tryParse(raw);
-                            if (parsed == null || parsed <= 0) {
-                              return 'Ingresá un precio anterior válido';
-                            }
-                            final double? currentPrice = double.tryParse(
-                              _price.text.trim().replaceAll(',', '.'),
-                            );
-                            if (currentPrice != null &&
-                                parsed <= currentPrice) {
-                              return 'El precio anterior debe ser mayor al precio actual';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          initialValue: _unit,
-                          decoration: const InputDecoration(
-                            labelText: 'Se vende por',
-                            helperText:
-                                'En kg, litros, metros, etc. el cliente '
-                                'puede pedir cantidades con decimales',
-                          ),
-                          items: <DropdownMenuItem<String>>[
-                            for (final String id in ProductUnit.ids)
-                              DropdownMenuItem<String>(
-                                value: id,
-                                child: Text(ProductUnit.nameOf(id)),
+                      const SizedBox(height: 14),
+                      AppSectionCard(
+                        icon: Icons.notes_rounded,
+                        title: 'Datos',
+                        children: <Widget>[
+                          if (analyzing)
+                            const _FieldsSkeleton()
+                          else ...<Widget>[
+                            TextFormField(
+                              controller: _title,
+                              decoration: InputDecoration(
+                                labelText: AppStrings.productTitle,
+                                suffixIcon: _aiBadge(_title),
                               ),
-                          ],
-                          onChanged: (String? value) => setState(
-                            () => _unit = value ?? ProductUnit.unidad,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Precio mayorista (opcional)',
-                          style: Theme.of(context).textTheme.labelLarge,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Si el cliente lleva la cantidad mínima o más, '
-                          'se cobra el precio mayorista por unidad.',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Expanded(
-                              flex: 3,
-                              child: TextFormField(
-                                controller: _wholesalePrice,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
-                                decoration: const InputDecoration(
-                                  labelText: 'Precio mayorista',
-                                  prefixText: '\$ ',
-                                ),
-                                validator: (String? value) {
-                                  final String raw = (value ?? '')
-                                      .trim()
-                                      .replaceAll(',', '.');
-                                  final bool hasQty = _wholesaleMinQty.text
-                                      .trim()
-                                      .isNotEmpty;
-                                  if (raw.isEmpty) {
-                                    return hasQty
-                                        ? 'Ingresá el precio mayorista'
-                                        : null;
-                                  }
-                                  final double? parsed = double.tryParse(raw);
-                                  if (parsed == null || parsed <= 0) {
-                                    return 'Precio inválido';
-                                  }
-                                  return null;
-                                },
+                              validator: (String? value) {
+                                final int len = (value ?? '').trim().length;
+                                if (len < 2 || len > 80) {
+                                  return 'Ingresá un título '
+                                      '(2 a 80 caracteres)';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _description,
+                              maxLines: 3,
+                              decoration: const InputDecoration(
+                                labelText: AppStrings.productDescription,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              flex: 2,
-                              child: TextFormField(
-                                controller: _wholesaleMinQty,
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      AppSectionCard(
+                        icon: Icons.sell_outlined,
+                        title: 'Precio y stock',
+                        children: <Widget>[
+                          if (analyzing)
+                            const _FieldsSkeleton()
+                          else ...<Widget>[
+                            TextFormField(
+                              controller: _price,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              decoration: InputDecoration(
+                                labelText: AppStrings.productPrice,
+                                suffixIcon: _aiBadge(_price),
+                              ),
+                              validator: (String? value) {
+                                final double? parsed = double.tryParse(
+                                  (value ?? '').trim().replaceAll(',', '.'),
+                                );
+                                if (parsed == null || parsed <= 0) {
+                                  return 'Ingresá un precio válido';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _compareAtPrice,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              decoration: const InputDecoration(
+                                labelText: AppStrings.productCompareAtPrice,
+                                helperText: 'Si es mayor al precio actual, se muestra tachado con el % de descuento',
+                              ),
+                              validator: (String? value) {
+                                final String raw = (value ?? '')
+                                    .trim()
+                                    .replaceAll(',', '.');
+                                if (raw.isEmpty) return null;
+                                final double? parsed = double.tryParse(raw);
+                                if (parsed == null || parsed <= 0) {
+                                  return 'Ingresá un precio anterior válido';
+                                }
+                                final double? currentPrice = double.tryParse(
+                                  _price.text.trim().replaceAll(',', '.'),
+                                );
+                                if (currentPrice != null &&
+                                    parsed <= currentPrice) {
+                                  return 'El precio anterior debe ser mayor al precio actual';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              initialValue: _unit,
+                              decoration: const InputDecoration(
+                                labelText: 'Se vende por',
+                                helperText:
+                                    'En kg, litros, metros, etc. el cliente '
+                                    'puede pedir cantidades con decimales',
+                              ),
+                              items: <DropdownMenuItem<String>>[
+                                for (final String id in ProductUnit.ids)
+                                  DropdownMenuItem<String>(
+                                    value: id,
+                                    child: Text(ProductUnit.nameOf(id)),
+                                  ),
+                              ],
+                              onChanged: (String? value) => setState(
+                                () => _unit = value ?? ProductUnit.unidad,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Precio mayorista (opcional)',
+                              style: Theme.of(context).textTheme.labelLarge,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Si el cliente lleva la cantidad mínima o más, '
+                              'se cobra el precio mayorista por unidad.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Expanded(
+                                  flex: 3,
+                                  child: TextFormField(
+                                    controller: _wholesalePrice,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Precio mayorista',
+                                      prefixText: '\$ ',
+                                    ),
+                                    validator: (String? value) {
+                                      final String raw = (value ?? '')
+                                          .trim()
+                                          .replaceAll(',', '.');
+                                      final bool hasQty = _wholesaleMinQty.text
+                                          .trim()
+                                          .isNotEmpty;
+                                      if (raw.isEmpty) {
+                                        return hasQty
+                                            ? 'Ingresá el precio mayorista'
+                                            : null;
+                                      }
+                                      final double? parsed = double.tryParse(
+                                        raw,
+                                      );
+                                      if (parsed == null || parsed <= 0) {
+                                        return 'Precio inválido';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  flex: 2,
+                                  child: TextFormField(
+                                    controller: _wholesaleMinQty,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    decoration: InputDecoration(
+                                      labelText:
+                                          'Desde (${ProductUnit.labelOf(_unit)})',
+                                      hintText: 'Ej: 3',
+                                    ),
+                                    validator: (String? value) {
+                                      final String raw = (value ?? '')
+                                          .trim()
+                                          .replaceAll(',', '.');
+                                      final bool hasPrice = _wholesalePrice.text
+                                          .trim()
+                                          .isNotEmpty;
+                                      if (raw.isEmpty) {
+                                        return hasPrice
+                                            ? 'Falta el mínimo'
+                                            : null;
+                                      }
+                                      final double? parsed = double.tryParse(
+                                        raw,
+                                      );
+                                      if (parsed == null || parsed <= 0) {
+                                        return 'Mínimo inválido';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              value: _trackStock,
+                              onChanged: (bool value) {
+                                setState(() {
+                                  _trackStock = value;
+                                  if (value &&
+                                      (double.tryParse(
+                                                _stock.text.trim().replaceAll(
+                                                  ',',
+                                                  '.',
+                                                ),
+                                              ) ??
+                                              0) <=
+                                          0) {
+                                    _stock.text = '1';
+                                  }
+                                });
+                              },
+                              title: const Text('Controlar stock disponible'),
+                              subtitle: const Text(
+                                'Descuenta automáticamente con cada pedido y avisa cuando quedan pocas unidades',
+                              ),
+                            ),
+                            if (_trackStock) ...<Widget>[
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _stock,
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
                                       decimal: true,
                                     ),
                                 decoration: InputDecoration(
                                   labelText:
-                                      'Desde (${ProductUnit.labelOf(_unit)})',
-                                  hintText: 'Ej: 3',
+                                      '${AppStrings.productStock} (${ProductUnit.labelOf(_unit)})',
                                 ),
                                 validator: (String? value) {
-                                  final String raw = (value ?? '')
-                                      .trim()
-                                      .replaceAll(',', '.');
-                                  final bool hasPrice = _wholesalePrice.text
-                                      .trim()
-                                      .isNotEmpty;
-                                  if (raw.isEmpty) {
-                                    return hasPrice ? 'Falta el mínimo' : null;
-                                  }
-                                  final double? parsed = double.tryParse(raw);
-                                  if (parsed == null || parsed <= 0) {
-                                    return 'Mínimo inválido';
+                                  final double? parsed = double.tryParse(
+                                    (value ?? '').trim().replaceAll(',', '.'),
+                                  );
+                                  if (parsed == null || parsed < 0) {
+                                    return 'Ingresá un número mayor o igual a 0';
                                   }
                                   return null;
                                 },
                               ),
-                            ),
+                            ],
                           ],
-                        ),
-                        const SizedBox(height: 16),
-                        SwitchListTile.adaptive(
-                          contentPadding: EdgeInsets.zero,
-                          value: _trackStock,
-                          onChanged: (bool value) {
-                            setState(() {
-                              _trackStock = value;
-                              if (value &&
-                                  (double.tryParse(
-                                            _stock.text.trim().replaceAll(
-                                              ',',
-                                              '.',
-                                            ),
-                                          ) ??
-                                          0) <=
-                                      0) {
-                                _stock.text = '1';
-                              }
-                            });
-                          },
-                          title: const Text('Controlar stock disponible'),
-                          subtitle: const Text(
-                            'Descuenta automáticamente con cada pedido y avisa cuando quedan pocas unidades',
-                          ),
-                        ),
-                        if (_trackStock) ...<Widget>[
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _stock,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: InputDecoration(
-                              labelText:
-                                  '${AppStrings.productStock} (${ProductUnit.labelOf(_unit)})',
-                            ),
-                            validator: (String? value) {
-                              final double? parsed = double.tryParse(
-                                (value ?? '').trim().replaceAll(',', '.'),
-                              );
-                              if (parsed == null || parsed < 0) {
-                                return 'Ingresá un número mayor o igual a 0';
-                              }
-                              return null;
-                            },
-                          ),
                         ],
-                      ],
-                      const SizedBox(height: 20),
-                      const _Section('CATEGORÍA Y ETIQUETAS'),
-                      const SizedBox(height: 8),
-                      if (analyzing)
-                        const _FieldsSkeleton()
-                      else ...<Widget>[
-                        TextFormField(
-                          controller: _category,
-                          onChanged: (_) =>
-                              setState(() => _categoryTouched = true),
-                          decoration: const InputDecoration(
-                            labelText: AppStrings.productCategory,
-                            hintText: 'Ej: Bebidas, Limpieza, Kiosco',
-                            helperText: 'Escribila o elegí una existente abajo',
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: <Widget>[
-                            for (final String suggestion
-                                in _categorySuggestions(tenant))
-                              ActionChip(
-                                label: Text(suggestion),
-                                visualDensity: VisualDensity.compact,
-                                onPressed: () => setState(() {
-                                  _category.text = suggestion;
-                                  _categoryTouched = true;
-                                }),
+                      ),
+                      const SizedBox(height: 14),
+                      AppSectionCard(
+                        icon: Icons.local_offer_outlined,
+                        title: 'Categoría y etiquetas',
+                        children: <Widget>[
+                          if (analyzing)
+                            const _FieldsSkeleton()
+                          else ...<Widget>[
+                            TextFormField(
+                              controller: _category,
+                              onChanged: (_) =>
+                                  setState(() => _categoryTouched = true),
+                              decoration: const InputDecoration(
+                                labelText: AppStrings.productCategory,
+                                hintText: 'Ej: Bebidas, Limpieza, Kiosco',
+                                helperText:
+                                    'Escribila o elegí una existente abajo',
                               ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: <Widget>[
+                                for (final String suggestion
+                                    in _categorySuggestions(tenant))
+                                  ActionChip(
+                                    label: Text(suggestion),
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: () => setState(() {
+                                      _category.text = suggestion;
+                                      _categoryTouched = true;
+                                    }),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _tags,
+                              decoration: InputDecoration(
+                                labelText: AppStrings.productTags,
+                                helperText: 'Separá con comas',
+                                suffixIcon: _aiBadge(_tags),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _sku,
+                              decoration: InputDecoration(
+                                labelText: AppStrings.productSku,
+                                suffixIcon: _aiBadge(_sku),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _variants,
+                              decoration: const InputDecoration(
+                                labelText: 'Variantes (opcional)',
+                                hintText: 'S, M, L, XL o Rojo, Negro',
+                                helperText: 'Separá con comas — el cliente elige una al comprar',
+                              ),
+                            ),
                           ],
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _tags,
-                          decoration: InputDecoration(
-                            labelText: AppStrings.productTags,
-                            helperText: 'Separá con comas',
-                            suffixIcon: _aiBadge(_tags),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _sku,
-                          decoration: InputDecoration(
-                            labelText: AppStrings.productSku,
-                            suffixIcon: _aiBadge(_sku),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _variants,
-                          decoration: const InputDecoration(
-                            labelText: 'Variantes (opcional)',
-                            hintText: 'S, M, L, XL o Rojo, Negro',
-                            helperText: 'Separá con comas — el cliente elige una al comprar',
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -807,25 +842,6 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       action: SnackBarAction(
         label: 'Ver planes',
         onPressed: () => context.push('/owner/plans'),
-      ),
-    );
-  }
-}
-
-class _Section extends StatelessWidget {
-  const _Section(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.6,
-        color: context.tokens.textTertiary,
       ),
     );
   }
