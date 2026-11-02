@@ -418,9 +418,21 @@ class _OrderDetail extends ConsumerWidget {
                             Expanded(
                               child: Text(
                                 '${Formatters.qtyLabel(item.quantity, item.unit)} x ${item.titleSnapshot}'
-                                '${item.variant == null ? '' : ' (${item.variant})'}',
+                                '${item.variant == null ? '' : ' (${item.variant})'}'
+                                '${item.isWholesale ? ' · mayor.' : ''}',
                               ),
                             ),
+                            if (item.isWholesale) ...<Widget>[
+                              Text(
+                                Formatters.price(item.listLineTotal),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: tokens.textTertiary,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                            ],
                             Text(Formatters.price(item.lineTotal)),
                           ],
                         ),

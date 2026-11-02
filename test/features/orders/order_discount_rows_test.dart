@@ -97,7 +97,16 @@ void main() {
         discount: 180,
         deliveryCost: 50,
       ),
-      items: const <OrderItemModel>[],
+      items: const <OrderItemModel>[
+        OrderItemModel(
+          id: 'i1',
+          orderId: 'o1',
+          titleSnapshot: 'Yerba 1kg',
+          unitPrice: 800,
+          listPrice: 1000,
+          quantity: 5,
+        ),
+      ],
       tenantName: 'Almacén Don Pepe',
       primaryColorHex: '#16A34A',
     );

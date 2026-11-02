@@ -21,7 +21,8 @@ String buildOrderMessage({
     buffer.writeln(
       '• ${Formatters.qtyLabel(item.quantity, item.unit)} x ${item.title}'
       '${item.variant != null ? ' (${item.variant})' : ''}'
-      ' — ${Formatters.price(item.lineTotal)}',
+      ' — ${Formatters.price(item.lineTotal)}'
+      '${item.isWholesaleApplied ? ' (precio mayorista)' : ''}',
     );
   }
   buffer.writeln('Subtotal: ${Formatters.price(order.subtotal)}');

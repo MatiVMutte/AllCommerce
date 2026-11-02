@@ -178,7 +178,7 @@ Future<Uint8List> buildOrderTicketPdf({
                             ? item.titleSnapshot
                             : '${item.titleSnapshot} (${item.variant})',
                       ),
-                      _cell(Formatters.price(item.unitPrice), alignEnd: true),
+                      _cellPrice(item, success),
                       _cell(Formatters.price(item.lineTotal), alignEnd: true),
                     ],
                   ),
@@ -372,6 +372,43 @@ pw.Widget _cellHeader(String text, PdfColor brand, {bool alignEnd = false}) {
           letterSpacing: 0.5,
         ),
       ),
+    ),
+  );
+}
+
+/// Price cell: unit price, and "mayor." + struck list price when the line
+/// was charged the wholesale price.
+pw.Widget _cellPrice(OrderItemModel item, PdfColor success) {
+  if (!item.isWholesale) {
+    return _cell(Formatters.price(item.unitPrice), alignEnd: true);
+  }
+  return pw.Padding(
+    padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.end,
+      children: <pw.Widget>[
+        pw.Text(
+          Formatters.price(item.unitPrice),
+          style: const pw.TextStyle(fontSize: 11, color: _ink),
+        ),
+        pw.Row(
+          mainAxisSize: pw.MainAxisSize.min,
+          children: <pw.Widget>[
+            pw.Text(
+              'mayor. ',
+              style: pw.TextStyle(fontSize: 8, color: success),
+            ),
+            pw.Text(
+              Formatters.price(item.listPrice),
+              style: const pw.TextStyle(
+                fontSize: 8,
+                color: PdfColor.fromInt(0xFF6B7280),
+                decoration: pw.TextDecoration.lineThrough,
+              ),
+            ),
+          ],
+        ),
+      ],
     ),
   );
 }

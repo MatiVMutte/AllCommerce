@@ -321,12 +321,37 @@ class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      Text(
-                                        Formatters.price(item.unitPrice),
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: tokens.textTertiary,
-                                        ),
+                                      Row(
+                                        children: <Widget>[
+                                          Text(
+                                            Formatters.price(item.unitPrice),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: tokens.textTertiary,
+                                            ),
+                                          ),
+                                          if (item.isWholesale) ...<Widget>[
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              Formatters.price(item.listPrice),
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: tokens.textTertiary,
+                                                decoration:
+                                                    TextDecoration.lineThrough,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'mayor.',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: tokens.success,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ],
                                   ),
