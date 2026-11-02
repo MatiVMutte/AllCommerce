@@ -25,7 +25,29 @@ String buildOrderMessage({
     );
   }
   buffer.writeln('Subtotal: ${Formatters.price(order.subtotal)}');
-  if (order.discount > 0) {
+  if (order.couponDiscount > 0) {
+    buffer.writeln(
+      'Cupón (${order.couponCode ?? couponCode ?? ''}): '
+      '-${Formatters.price(order.couponDiscount)}',
+    );
+  }
+  if (order.bulkDiscount > 0) {
+    buffer.writeln(
+      'Descuento por volumen (${order.bulkDiscountPct.round()}%): '
+      '-${Formatters.price(order.bulkDiscount)}',
+    );
+  }
+  if (order.paymentDiscount > 0) {
+    buffer.writeln(
+      'Descuento por pago (${order.paymentMethod.label} · '
+      '${order.paymentDiscountPct.round()}%): '
+      '-${Formatters.price(order.paymentDiscount)}',
+    );
+  }
+  if (order.discount > 0 &&
+      order.couponDiscount <= 0 &&
+      order.bulkDiscount <= 0 &&
+      order.paymentDiscount <= 0) {
     buffer.writeln(
       'Descuento (${couponCode ?? ''}): -${Formatters.price(order.discount)}',
     );

@@ -18,6 +18,7 @@ import 'package:all_commerce/features/orders/data/models/order_model.dart';
 import 'package:all_commerce/features/orders/data/services/order_ticket_pdf.dart';
 import 'package:all_commerce/features/orders/data/services/whatsapp_message_builder.dart';
 import 'package:all_commerce/features/orders/presentation/view_models/owner_orders_providers.dart';
+import 'package:all_commerce/features/orders/presentation/widgets/order_discount_rows.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
@@ -63,14 +64,15 @@ class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
         orderItemsProvider(order.id).future,
       );
       final String? tenantId = ref.read(currentProfileProvider).value?.tenantId;
-      final String tenantName = tenantId == null
-          ? ''
-          : ref.read(tenantByIdProvider(tenantId)).value?.name ?? '';
+      final TenantModel? tenant = tenantId == null
+          ? null
+          : ref.read(tenantByIdProvider(tenantId)).value;
       if (!mounted) return;
       final bytes = await buildOrderTicketPdf(
         order: order,
         items: items,
-        tenantName: tenantName,
+        tenantName: tenant?.name ?? '',
+        primaryColorHex: tenant?.primaryColor,
       );
       await Printing.sharePdf(
         bytes: bytes,
@@ -357,11 +359,7 @@ class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
                     label: 'Subtotal',
                     value: Formatters.price(order.subtotal),
                   ),
-                  if (order.discount > 0)
-                    _SummaryRow(
-                      label: 'Descuento',
-                      value: '-${Formatters.price(order.discount)}',
-                    ),
+                  OrderCostRows(order: order),
                   const SizedBox(height: 4),
                   Row(
                     children: <Widget>[

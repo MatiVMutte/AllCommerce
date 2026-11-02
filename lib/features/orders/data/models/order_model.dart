@@ -15,6 +15,12 @@ class OrderModel {
     required this.discount,
     required this.total,
     this.couponId,
+    this.couponCode,
+    this.couponDiscount = 0,
+    this.bulkDiscount = 0,
+    this.bulkDiscountPct = 0,
+    this.paymentDiscount = 0,
+    this.paymentDiscountPct = 0,
     this.notes,
     this.deliveryMethod = DeliveryMethod.pickup,
     this.deliveryAddress,
@@ -35,6 +41,12 @@ class OrderModel {
   final double discount;
   final double total;
   final String? couponId;
+  final String? couponCode;
+  final double couponDiscount;
+  final double bulkDiscount;
+  final double bulkDiscountPct;
+  final double paymentDiscount;
+  final double paymentDiscountPct;
   final String? notes;
   final DeliveryMethod deliveryMethod;
   final String? deliveryAddress;
@@ -56,6 +68,12 @@ class OrderModel {
       discount: num.parse(json['discount'].toString()).toDouble(),
       total: num.parse(json['total'].toString()).toDouble(),
       couponId: json['coupon_id'] as String?,
+      couponCode: json['coupon_code'] as String?,
+      couponDiscount: _num(json['coupon_discount']),
+      bulkDiscount: _num(json['bulk_discount']),
+      bulkDiscountPct: _num(json['bulk_discount_pct']),
+      paymentDiscount: _num(json['payment_discount']),
+      paymentDiscountPct: _num(json['payment_discount_pct']),
       notes: json['notes'] as String?,
       deliveryMethod: DeliveryMethod.fromId(
         json['delivery_method'] as String? ?? 'pickup',
@@ -72,6 +90,9 @@ class OrderModel {
     );
   }
 
+  static double _num(Object? v) =>
+      num.tryParse(v?.toString() ?? '0')?.toDouble() ?? 0;
+
   OrderModel copyWith({
     String? id,
     int? orderNumber,
@@ -84,6 +105,12 @@ class OrderModel {
     double? discount,
     double? total,
     String? Function()? couponId,
+    String? Function()? couponCode,
+    double? couponDiscount,
+    double? bulkDiscount,
+    double? bulkDiscountPct,
+    double? paymentDiscount,
+    double? paymentDiscountPct,
     String? Function()? notes,
     DeliveryMethod? deliveryMethod,
     String? Function()? deliveryAddress,
@@ -105,6 +132,12 @@ class OrderModel {
       discount: discount ?? this.discount,
       total: total ?? this.total,
       couponId: couponId != null ? couponId() : this.couponId,
+      couponCode: couponCode != null ? couponCode() : this.couponCode,
+      couponDiscount: couponDiscount ?? this.couponDiscount,
+      bulkDiscount: bulkDiscount ?? this.bulkDiscount,
+      bulkDiscountPct: bulkDiscountPct ?? this.bulkDiscountPct,
+      paymentDiscount: paymentDiscount ?? this.paymentDiscount,
+      paymentDiscountPct: paymentDiscountPct ?? this.paymentDiscountPct,
       notes: notes != null ? notes() : this.notes,
       deliveryMethod: deliveryMethod ?? this.deliveryMethod,
       deliveryAddress: deliveryAddress != null

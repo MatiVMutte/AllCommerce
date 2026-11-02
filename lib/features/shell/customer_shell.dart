@@ -8,10 +8,9 @@ import 'package:go_router/go_router.dart';
 /// Bottom-bar shell for the public/customer side:
 /// [Inicio] [Buscar] (● Carrito) [Pedidos] [Perfil]
 class CustomerShell extends ConsumerWidget {
-  const CustomerShell({required this.state, required this.child, super.key});
+  const CustomerShell({required this.navigationShell, super.key});
 
-  final GoRouterState state;
-  final Widget child;
+  final StatefulNavigationShell navigationShell;
 
   void _openCart(BuildContext context, WidgetRef ref) {
     final cart = ref.read(cartProvider);
@@ -56,9 +55,16 @@ class CustomerShell extends ConsumerWidget {
     context.push('/s/$slug/cart');
   }
 
+  void _goBranch(int index) {
+    navigationShell.goBranch(
+      index,
+      // Re-tocar la pestaña actual vuelve a su raíz (como Instagram).
+      initialLocation: index == navigationShell.currentIndex,
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final String loc = state.matchedLocation;
     final int cartCount = ref.watch(cartProvider).itemCount.ceil();
     return AdaptiveNavShell(
       centerIcon: Icons.shopping_cart_rounded,
@@ -70,32 +76,32 @@ class CustomerShell extends ConsumerWidget {
           icon: Icons.home_outlined,
           activeIcon: Icons.home_rounded,
           label: 'Inicio',
-          selected: loc == '/' || loc.startsWith('/s/'),
-          onTap: () => context.go('/'),
+          selected: navigationShell.currentIndex == 0,
+          onTap: () => _goBranch(0),
         ),
         FloatingNavItem(
           icon: Icons.local_offer_outlined,
           activeIcon: Icons.local_offer_rounded,
           label: 'Ofertas',
-          selected: loc.startsWith('/ofertas'),
-          onTap: () => context.go('/ofertas'),
+          selected: navigationShell.currentIndex == 1,
+          onTap: () => _goBranch(1),
         ),
         FloatingNavItem(
           icon: Icons.receipt_long_outlined,
           activeIcon: Icons.receipt_long_rounded,
           label: 'Pedidos',
-          selected: loc.startsWith('/my-orders'),
-          onTap: () => context.go('/my-orders'),
+          selected: navigationShell.currentIndex == 2,
+          onTap: () => _goBranch(2),
         ),
         FloatingNavItem(
           icon: Icons.person_outline_rounded,
           activeIcon: Icons.person_rounded,
           label: 'Perfil',
-          selected: loc.startsWith('/profile'),
-          onTap: () => context.go('/profile'),
+          selected: navigationShell.currentIndex == 3,
+          onTap: () => _goBranch(3),
         ),
       ],
-      child: child,
+      child: navigationShell,
     );
   }
 }

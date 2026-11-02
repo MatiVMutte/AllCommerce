@@ -14,10 +14,9 @@ import 'package:go_router/go_router.dart';
 /// Bottom-bar shell for the owner side:
 /// [Panel] [Productos] (● Subir) [Pedidos] [Local]
 class OwnerShell extends ConsumerWidget {
-  const OwnerShell({required this.state, required this.child, super.key});
+  const OwnerShell({required this.navigationShell, super.key});
 
-  final GoRouterState state;
-  final Widget child;
+  final StatefulNavigationShell navigationShell;
 
   void _upload(BuildContext context, TenantModel? tenant) {
     if (tenant == null || !tenant.canPublish) {
@@ -27,9 +26,15 @@ class OwnerShell extends ConsumerWidget {
     context.push('/owner/products/new');
   }
 
+  void _goBranch(int index) {
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final String loc = state.matchedLocation;
     final UserModel? profile = ref.watch(currentProfileProvider).value;
     final String? tenantId = profile?.tenantId;
     final TenantModel? tenant = tenantId == null
@@ -49,34 +54,34 @@ class OwnerShell extends ConsumerWidget {
           icon: Icons.dashboard_outlined,
           activeIcon: Icons.dashboard_rounded,
           label: 'Panel',
-          selected: loc == '/owner',
-          onTap: () => context.go('/owner'),
+          selected: navigationShell.currentIndex == 0,
+          onTap: () => _goBranch(0),
         ),
         FloatingNavItem(
           icon: Icons.inventory_2_outlined,
           activeIcon: Icons.inventory_2_rounded,
           label: 'Productos',
           badgeCount: 0,
-          selected: loc.startsWith('/owner/products'),
-          onTap: () => context.go('/owner/products'),
+          selected: navigationShell.currentIndex == 1,
+          onTap: () => _goBranch(1),
         ),
         FloatingNavItem(
           icon: Icons.receipt_long_outlined,
           activeIcon: Icons.receipt_long_rounded,
           label: 'Pedidos',
           badgeCount: pending,
-          selected: loc.startsWith('/owner/orders'),
-          onTap: () => context.go('/owner/orders'),
+          selected: navigationShell.currentIndex == 2,
+          onTap: () => _goBranch(2),
         ),
         FloatingNavItem(
           icon: Icons.storefront_outlined,
           activeIcon: Icons.storefront_rounded,
           label: 'Local',
-          selected: loc.startsWith('/owner/settings'),
-          onTap: () => context.go('/owner/settings'),
+          selected: navigationShell.currentIndex == 3,
+          onTap: () => _goBranch(3),
         ),
       ],
-      child: child,
+      child: navigationShell,
     );
   }
 }

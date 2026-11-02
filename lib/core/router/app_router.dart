@@ -62,36 +62,58 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
   return GoRouter(
     refreshListenable: refreshNotifier,
     routes: <RouteBase>[
-      ShellRoute(
-        builder: (BuildContext context, GoRouterState state, Widget child) =>
-            CustomerShell(state: state, child: child),
-        routes: <RouteBase>[
-          GoRoute(
-            path: '/',
-            builder: (BuildContext context, GoRouterState state) =>
-                StoreDirectoryView(
-                  focusSearch: state.uri.queryParameters['focus'] == 'search',
-                ),
+      StatefulShellRoute.indexedStack(
+        builder: (
+          BuildContext context,
+          GoRouterState state,
+          StatefulNavigationShell navigationShell,
+        ) => CustomerShell(navigationShell: navigationShell),
+        branches: <StatefulShellBranch>[
+          // Inicio: directorio + catálogos. Se mantienen vivos al cambiar de
+          // pestaña (no re-fetchean ni pierden el scroll).
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: '/',
+                builder: (BuildContext context, GoRouterState state) =>
+                    StoreDirectoryView(
+                      focusSearch:
+                          state.uri.queryParameters['focus'] == 'search',
+                    ),
+              ),
+              GoRoute(
+                path: '/s/:slug',
+                builder: (BuildContext context, GoRouterState state) =>
+                    CatalogView(slug: state.pathParameters['slug'] ?? ''),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/s/:slug',
-            builder: (BuildContext context, GoRouterState state) =>
-                CatalogView(slug: state.pathParameters['slug'] ?? ''),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: '/ofertas',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const OffersView(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/ofertas',
-            builder: (BuildContext context, GoRouterState state) =>
-                const OffersView(),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: '/my-orders',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const MyOrdersView(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/my-orders',
-            builder: (BuildContext context, GoRouterState state) =>
-                const MyOrdersView(),
-          ),
-          GoRoute(
-            path: '/profile',
-            builder: (BuildContext context, GoRouterState state) =>
-                const ProfileView(),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: '/profile',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const ProfileView(),
+              ),
+            ],
           ),
         ],
       ),
@@ -168,34 +190,53 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) =>
             const BusinessOnboardingView(),
       ),
-      ShellRoute(
-        builder: (BuildContext context, GoRouterState state, Widget child) =>
-            OwnerShell(state: state, child: child),
-        routes: <RouteBase>[
-          GoRoute(
-            path: '/owner',
-            builder: (BuildContext context, GoRouterState state) =>
-                const OwnerHomeView(),
+      StatefulShellRoute.indexedStack(
+        builder: (
+          BuildContext context,
+          GoRouterState state,
+          StatefulNavigationShell navigationShell,
+        ) => OwnerShell(navigationShell: navigationShell),
+        branches: <StatefulShellBranch>[
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: '/owner',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const OwnerHomeView(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/owner/products',
-            builder: (BuildContext context, GoRouterState state) =>
-                const OwnerProductsView(),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: '/owner/products',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const OwnerProductsView(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/owner/orders',
-            builder: (BuildContext context, GoRouterState state) =>
-                const OwnerOrdersView(),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: '/owner/orders',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const OwnerOrdersView(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/owner/settings',
-            builder: (BuildContext context, GoRouterState state) =>
-                const TenantSettingsView(),
-          ),
-          GoRoute(
-            path: '/owner/coupons',
-            builder: (BuildContext context, GoRouterState state) =>
-                const CouponsView(),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: '/owner/settings',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const TenantSettingsView(),
+              ),
+              GoRoute(
+                path: '/owner/coupons',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const CouponsView(),
+              ),
+            ],
           ),
         ],
       ),

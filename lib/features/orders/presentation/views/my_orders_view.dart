@@ -13,6 +13,7 @@ import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
 import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/features/cart/data/models/cart_state.dart';
+import 'package:all_commerce/features/orders/presentation/widgets/order_discount_rows.dart';
 import 'package:all_commerce/features/cart/presentation/view_models/cart_controller.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
@@ -425,6 +426,14 @@ class _OrderDetail extends ConsumerWidget {
                         ),
                       ),
                     const Divider(height: 16),
+                    Row(
+                      children: <Widget>[
+                        const Expanded(child: Text('Subtotal')),
+                        Text(Formatters.price(order.subtotal)),
+                      ],
+                    ),
+                    OrderCostRows(order: order, dense: true),
+                    const SizedBox(height: 4),
                     Row(
                       children: <Widget>[
                         const Expanded(
