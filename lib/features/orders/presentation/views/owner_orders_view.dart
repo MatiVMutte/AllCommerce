@@ -3,6 +3,7 @@ import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_motion.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
+import 'package:all_commerce/core/widgets/app_card.dart';
 import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
@@ -84,15 +85,17 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
+                    color: OrderStatus.requested.color(
+                      Theme.of(context).colorScheme,
+                    ),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     '$pending nuevos',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -182,29 +185,48 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                   children: <Widget>[
                     for (final OrderDayGroup group in groups) ...<Widget>[
                       Padding(
-                        padding: const EdgeInsets.only(top: 12, bottom: 4),
+                        padding: const EdgeInsets.only(top: 12, bottom: 8),
                         child: Text(
                           group.label.toUpperCase(),
                           style: TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: 0.6,
                             color: tokens.textTertiary,
                           ),
                         ),
                       ),
-                      for (int i = 0; i < group.orders.length; i++) ...<Widget>[
-                        AppMotion.enabled(context) && i < 8
-                            ? FadeInUp(
-                                duration: const Duration(milliseconds: 240),
-                                delay: Duration(milliseconds: (i % 8) * 40),
-                                from: 12,
-                                child: _OrderRow(order: group.orders[i]),
-                              )
-                            : _OrderRow(order: group.orders[i]),
-                        if (i < group.orders.length - 1)
-                          Divider(height: 1, color: tokens.border),
-                      ],
+                      AppCard(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Column(
+                          children: <Widget>[
+                            for (
+                              int i = 0;
+                              i < group.orders.length;
+                              i++
+                            ) ...<Widget>[
+                              AppMotion.enabled(context) && i < 8
+                                  ? FadeInUp(
+                                      duration: const Duration(
+                                        milliseconds: 240,
+                                      ),
+                                      delay: Duration(
+                                        milliseconds: (i % 8) * 40,
+                                      ),
+                                      from: 12,
+                                      child: _OrderRow(order: group.orders[i]),
+                                    )
+                                  : _OrderRow(order: group.orders[i]),
+                              if (i < group.orders.length - 1)
+                                Divider(
+                                  height: 1,
+                                  indent: 64,
+                                  color: tokens.border,
+                                ),
+                            ],
+                          ],
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -281,7 +303,9 @@ class _StatusChip extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
           decoration: BoxDecoration(
-            color: selected ? tokens.textPrimary : tokens.surfaceMuted,
+            color: selected
+                ? Theme.of(context).colorScheme.primary
+                : tokens.surfaceMuted,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
@@ -290,7 +314,7 @@ class _StatusChip extends StatelessWidget {
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: selected
-                  ? Theme.of(context).scaffoldBackgroundColor
+                  ? Theme.of(context).colorScheme.onPrimary
                   : tokens.textPrimary,
             ),
           ),
@@ -330,9 +354,24 @@ class _OrderRow extends ConsumerWidget {
           }
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
           child: Row(
             children: <Widget>[
+              CircleAvatar(
+                radius: 19,
+                backgroundColor: order.status
+                    .color(Theme.of(context).colorScheme)
+                    .withValues(alpha: 0.14),
+                child: Text(
+                  order.customerNameSnapshot.characters.first.toUpperCase(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: order.status.color(Theme.of(context).colorScheme),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,7 +390,8 @@ class _OrderRow extends ConsumerWidget {
                           child: Text(
                             order.customerNameSnapshot,
                             style: TextStyle(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
                               color: tokens.textPrimary,
                             ),
                             maxLines: 1,
@@ -371,13 +411,15 @@ class _OrderRow extends ConsumerWidget {
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: <Widget>[
                   Text(
                     Formatters.price(order.total),
                     style: TextStyle(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
                       color: tokens.textPrimary,
                     ),
                   ),

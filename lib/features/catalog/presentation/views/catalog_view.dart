@@ -20,6 +20,7 @@ import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/features/cart/data/models/cart_state.dart';
 import 'package:all_commerce/features/cart/presentation/view_models/cart_controller.dart';
 import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart';
+import 'package:all_commerce/features/cart/presentation/widgets/quick_add_sheet.dart';
 import 'package:all_commerce/features/catalog/data/models/product_model.dart';
 import 'package:all_commerce/features/catalog/data/repositories/catalog_repository.dart';
 import 'package:all_commerce/features/catalog/data/repositories/catalog_visits_repository.dart';
@@ -680,11 +681,13 @@ class _ProductCard extends ConsumerWidget {
     final AppTokens tokens = context.tokens;
     final CartState cart = ref.watch(cartProvider);
     double inCart = 0;
+    double inCartTotal = 0;
     String? inCartLineKey;
     for (final item in cart.items) {
       if (cart.tenantId == tenant.id && item.productId == product.id) {
         inCart = item.quantity;
         inCartLineKey = item.lineKey;
+        inCartTotal += item.quantity;
       }
     }
     return Column(
@@ -820,43 +823,57 @@ class _ProductCard extends ConsumerWidget {
                     ),
                     if (!product.isOutOfStock)
                       Positioned(
-                        right: 8,
-                        bottom: 8,
+                        right: 2,
+                        bottom: 2,
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 200),
                           transitionBuilder: (
                             Widget child,
                             Animation<double> anim,
                           ) => ScaleTransition(scale: anim, child: child),
-                          child: inCart > 0
-                              ? Container(
+                          // Variant products always keep the (+): each tap
+                          // opens the quick-add sheet to pick an option, and
+                          // the badge shows the total across variants.
+                          child: inCart > 0 && !product.hasVariants
+                              ? GestureDetector(
                                   key: const ValueKey<String>('stepper'),
-                                  decoration: BoxDecoration(
-                                    color: tokens.surface,
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: QuantityStepper(
-                                    dense: true,
-                                    quantity: inCart,
-                                    maxQuantity: product.trackStock
-                                        ? product.stock
-                                        : null,
-                                    step: product.isFractional ? 0.25 : 1,
-                                    onChanged: (double qty) => ref
-                                        .read(cartProvider.notifier)
-                                        .setQuantity(
-                                          inCartLineKey ?? product.id,
-                                          qty,
-                                        ),
+                                  // Absorb taps between − and + so they never
+                                  // fall through and open the product page.
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () {},
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: tokens.surface,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: QuantityStepper(
+                                      dense: true,
+                                      quantity: inCart,
+                                      maxQuantity: product.trackStock
+                                          ? product.stock
+                                          : null,
+                                      step: product.isFractional ? 0.25 : 1,
+                                      onChanged: (double qty) => ref
+                                          .read(cartProvider.notifier)
+                                          .setQuantity(
+                                            inCartLineKey ?? product.id,
+                                            qty,
+                                          ),
+                                    ),
                                   ),
                                 )
                               : _AddButton(
                                   key: const ValueKey<String>('add'),
+                                  badgeCount: inCartTotal,
                                   onTap: () {
                                     AppHaptics.light();
                                     if (product.hasVariants ||
                                         product.isFractional) {
-                                      context.push('/s/$slug/p/${product.id}');
+                                      showQuickAddSheet(
+                                        context,
+                                        product,
+                                        tenant,
+                                      );
                                       return;
                                     }
                                     addToCartWithConfirm(
@@ -909,9 +926,12 @@ class _ProductCard extends ConsumerWidget {
 }
 
 class _AddButton extends StatefulWidget {
-  const _AddButton({required this.onTap, super.key});
+  const _AddButton({required this.onTap, this.badgeCount = 0, super.key});
 
   final VoidCallback onTap;
+
+  /// Units already in the cart (variant products keep showing the +).
+  final double badgeCount;
 
   @override
   State<_AddButton> createState() => _AddButtonState();
@@ -922,7 +942,10 @@ class _AddButtonState extends State<_AddButton> {
 
   @override
   Widget build(BuildContext context) {
+    // Opaque 50×50 hit area around the 38px circle: near-misses still hit
+    // the button instead of falling through to the card (product page).
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         setState(() => _pressed = true);
         widget.onTap();
@@ -933,25 +956,32 @@ class _AddButtonState extends State<_AddButton> {
       child: Semantics(
         button: true,
         label: 'Agregar al carrito',
-        child: AnimatedScale(
-          scale: _pressed ? 0.85 : 1,
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutBack,
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              shape: BoxShape.circle,
-              boxShadow: const <BoxShadow>[
-                BoxShadow(
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                  color: Color(0x33000000),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: AnimatedScale(
+            scale: _pressed ? 0.85 : 1,
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutBack,
+            child: Badge(
+              isLabelVisible: widget.badgeCount > 0,
+              label: Text(Formatters.qty(widget.badgeCount)),
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: const <BoxShadow>[
+                    BoxShadow(
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                      color: Color(0x33000000),
+                    ),
+                  ],
                 ),
-              ],
+                child: const Icon(Icons.add, color: Colors.white, size: 21),
+              ),
             ),
-            child: const Icon(Icons.add, color: Colors.white, size: 20),
           ),
         ),
       ),

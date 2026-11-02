@@ -6,6 +6,7 @@ import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/core/widgets/app_card.dart';
 import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
@@ -180,222 +181,272 @@ class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
               Formatters.dateTime(order.createdAt),
               style: TextStyle(fontSize: 13, color: tokens.textTertiary),
             ),
-            const SizedBox(height: 20),
-            const _Section('CLIENTE'),
-            const SizedBox(height: 8),
-            Row(
-              children: <Widget>[
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: tokens.surfaceMuted,
-                  child: Text(
-                    order.customerNameSnapshot.characters.first.toUpperCase(),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: tokens.textPrimary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 16),
+            AppCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const _Section('CLIENTE'),
+                  const SizedBox(height: 12),
+                  Row(
                     children: <Widget>[
-                      Text(
-                        order.customerNameSnapshot,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: tokens.textPrimary,
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: order.status
+                            .color(Theme.of(context).colorScheme)
+                            .withValues(alpha: 0.14),
+                        child: Text(
+                          order.customerNameSnapshot.characters.first
+                              .toUpperCase(),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: order.status.color(
+                              Theme.of(context).colorScheme,
+                            ),
+                          ),
                         ),
                       ),
-                      Text(
-                        order.customerPhoneSnapshot,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: tokens.textSecondary,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              order.customerNameSnapshot,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                                color: tokens.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              order.customerPhoneSnapshot,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: tokens.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            tenantAsync.when(
-              loading: () => const SizedBox.shrink(),
-              error: (Object e, StackTrace s) => const SizedBox.shrink(),
-              data: (TenantModel? tenant) => tenant == null
-                  ? const SizedBox.shrink()
-                  : SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        icon: const Icon(
-                          Icons.chat_bubble_outline_rounded,
-                          size: 18,
-                        ),
-                        label: const Text('Escribir por WhatsApp'),
-                        onPressed: () => launchUrl(
-                          buildWhatsAppUri(
-                            order.customerPhoneSnapshot,
-                            'Hola ${order.customerNameSnapshot}! '
-                            'Te escribo de ${tenant.name} por tu '
-                            'pedido #${order.orderNumber}.',
-                          ),
-                          mode: LaunchMode.externalApplication,
-                        ),
-                      ),
-                    ),
-            ),
-            const SizedBox(height: 24),
-            const _Section('ÍTEMS'),
-            const SizedBox(height: 8),
-            itemsAsync.when(
-              loading: () => const AppSkeleton(height: 80),
-              error: (Object e, StackTrace s) =>
-                  const Text('No se pudieron cargar los items.'),
-              data: (List<OrderItemModel> items) => Column(
-                children: <Widget>[
-                  for (final OrderItemModel item in items)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Row(
-                        children: <Widget>[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: tokens.surfaceMuted,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              Formatters.qtyLabel(item.quantity, item.unit),
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: tokens.textSecondary,
+                  const SizedBox(height: 12),
+                  tenantAsync.when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (Object e, StackTrace s) => const SizedBox.shrink(),
+                    data: (TenantModel? tenant) => tenant == null
+                        ? const SizedBox.shrink()
+                        : SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              icon: const Icon(
+                                Icons.chat_bubble_outline_rounded,
+                                size: 18,
+                              ),
+                              label: const Text('Escribir por WhatsApp'),
+                              onPressed: () => launchUrl(
+                                buildWhatsAppUri(
+                                  order.customerPhoneSnapshot,
+                                  'Hola ${order.customerNameSnapshot}! '
+                                  'Te escribo de ${tenant.name} por tu '
+                                  'pedido #${order.orderNumber}.',
+                                ),
+                                mode: LaunchMode.externalApplication,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            AppCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const _Section('ÍTEMS'),
+                  const SizedBox(height: 8),
+                  itemsAsync.when(
+                    loading: () => const AppSkeleton(height: 80),
+                    error: (Object e, StackTrace s) =>
+                        const Text('No se pudieron cargar los items.'),
+                    data: (List<OrderItemModel> items) => Column(
+                      children: <Widget>[
+                        for (final OrderItemModel item in items)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
                               children: <Widget>[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: tokens.surfaceMuted,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    Formatters.qtyLabel(
+                                      item.quantity,
+                                      item.unit,
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: tokens.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Text(
+                                        item.variant == null
+                                            ? item.titleSnapshot
+                                            : '${item.titleSnapshot} '
+                                                  '(${item.variant})',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: tokens.textPrimary,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        Formatters.price(item.unitPrice),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: tokens.textTertiary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 Text(
-                                  item.variant == null
-                                      ? item.titleSnapshot
-                                      : '${item.titleSnapshot} '
-                                            '(${item.variant})',
+                                  Formatters.price(item.lineTotal),
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     color: tokens.textPrimary,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text(
-                                  Formatters.price(item.unitPrice),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: tokens.textTertiary,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          Text(
-                            Formatters.price(item.lineTotal),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: tokens.textPrimary,
-                            ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            AppCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const _Section('RESUMEN'),
+                  const SizedBox(height: 8),
+                  _SummaryRow(
+                    label: 'Subtotal',
+                    value: Formatters.price(order.subtotal),
+                  ),
+                  if (order.discount > 0)
+                    _SummaryRow(
+                      label: 'Descuento',
+                      value: '-${Formatters.price(order.discount)}',
+                    ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          'Total',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: tokens.textPrimary,
                           ),
-                        ],
+                        ),
+                      ),
+                      Text(
+                        Formatters.price(order.total),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: tokens.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            AppCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const _Section('ENTREGA Y PAGO'),
+                  const SizedBox(height: 8),
+                  _SummaryRow(
+                    label: 'Entrega',
+                    value:
+                        order.deliveryMethod.label +
+                        (order.deliveryAddress != null &&
+                                order.deliveryAddress!.trim().isNotEmpty
+                            ? ' · ${order.deliveryAddress!.trim()}'
+                            : ''),
+                  ),
+                  _SummaryRow(label: 'Pago', value: order.paymentMethod.label),
+                  if (order.paymentNotes != null &&
+                      order.paymentNotes!.trim().isNotEmpty)
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: tokens.surfaceMuted,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(
+                        order.paymentNotes!,
+                        style: TextStyle(color: tokens.textSecondary),
                       ),
                     ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            const _Section('RESUMEN'),
-            const SizedBox(height: 8),
-            _SummaryRow(
-              label: 'Subtotal',
-              value: Formatters.price(order.subtotal),
-            ),
-            if (order.discount > 0)
-              _SummaryRow(
-                label: 'Descuento',
-                value: '-${Formatters.price(order.discount)}',
-              ),
-            const SizedBox(height: 4),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    'Total',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: tokens.textPrimary,
-                    ),
-                  ),
-                ),
-                Text(
-                  Formatters.price(order.total),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: tokens.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            const _Section('ENTREGA Y PAGO'),
-            const SizedBox(height: 8),
-            _SummaryRow(
-              label: 'Entrega',
-              value:
-                  order.deliveryMethod.label +
-                  (order.deliveryAddress != null &&
-                          order.deliveryAddress!.trim().isNotEmpty
-                      ? ' · ${order.deliveryAddress!.trim()}'
-                      : ''),
-            ),
-            _SummaryRow(label: 'Pago', value: order.paymentMethod.label),
-            if (order.paymentNotes != null &&
-                order.paymentNotes!.trim().isNotEmpty)
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: tokens.surfaceMuted,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(
-                  order.paymentNotes!,
-                  style: TextStyle(color: tokens.textSecondary),
-                ),
-              ),
             if (order.notes != null &&
                 order.notes!.trim().isNotEmpty) ...<Widget>[
-              const SizedBox(height: 24),
-              const _Section('NOTAS'),
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: tokens.surfaceMuted,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(
-                  order.notes!,
-                  style: TextStyle(color: tokens.textSecondary),
+              const SizedBox(height: 16),
+              AppCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const _Section('NOTAS'),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: tokens.surfaceMuted,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(
+                        order.notes!,
+                        style: TextStyle(color: tokens.textSecondary),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

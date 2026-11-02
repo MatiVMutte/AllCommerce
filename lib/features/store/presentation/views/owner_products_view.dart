@@ -6,6 +6,7 @@ import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
+import 'package:all_commerce/core/widgets/app_card.dart';
 import 'package:all_commerce/core/widgets/app_confirm_sheet.dart';
 import 'package:all_commerce/core/widgets/app_refresh_button.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
@@ -296,18 +297,27 @@ class _ProductList extends ConsumerWidget {
         return RefreshIndicator(
           onRefresh: () async =>
               ref.invalidate(ownerProductsProvider(tenantId)),
-          child: ListView.separated(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              4,
-              16,
-              AdaptiveNavShell.isWide(context) ? 24 : FloatingNavBar.height,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: AppCard(
+              padding: EdgeInsets.zero,
+              child: ListView.separated(
+                padding: EdgeInsets.fromLTRB(
+                  0,
+                  6,
+                  0,
+                  AdaptiveNavShell.isWide(context) ? 24 : FloatingNavBar.height,
+                ),
+                itemCount: filtered.length,
+                separatorBuilder: (BuildContext context, int index) => Divider(
+                  height: 1,
+                  indent: 76,
+                  color: context.tokens.border,
+                ),
+                itemBuilder: (BuildContext context, int index) =>
+                    _OwnerProductRow(product: filtered[index]),
+              ),
             ),
-            itemCount: filtered.length,
-            separatorBuilder: (BuildContext context, int index) =>
-                Divider(height: 1, color: context.tokens.border),
-            itemBuilder: (BuildContext context, int index) =>
-                _OwnerProductRow(product: filtered[index]),
           ),
         );
       },
@@ -458,7 +468,7 @@ class _OwnerProductRow extends ConsumerWidget {
         }
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
         child: Row(
           children: <Widget>[
             Opacity(
@@ -506,39 +516,65 @@ class _OwnerProductRow extends ConsumerWidget {
                       color: paused ? tokens.textTertiary : tokens.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text.rich(
-                    TextSpan(
-                      children: <InlineSpan>[
-                        if (product.sku != null &&
-                            product.sku!.trim().isNotEmpty)
-                          TextSpan(
-                            text: '${product.sku} · ',
-                            style: TextStyle(color: tokens.textTertiary),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: <Widget>[
+                      if (paused)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
                           ),
-                        TextSpan(
-                          text: product.trackStock
-                              ? (product.stock <= 0
-                                    ? 'Agotado (0)'
-                                    : 'Stock ${Formatters.qtyLabel(product.stock, product.unit)}')
-                              : 'Stock ilimitado',
-                          style: TextStyle(
-                            fontWeight:
-                                product.isOutOfStock || product.isLowStock
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            color: product.isOutOfStock
-                                ? tokens.danger
-                                : product.isLowStock
-                                ? tokens.warning
-                                : tokens.textTertiary,
+                          decoration: BoxDecoration(
+                            color: tokens.surfaceMuted,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'Pausado',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: tokens.textSecondary,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12),
+                      Expanded(
+                        child: Text.rich(
+                          TextSpan(
+                            children: <InlineSpan>[
+                              if (product.sku != null &&
+                                  product.sku!.trim().isNotEmpty)
+                                TextSpan(
+                                  text: '${product.sku} · ',
+                                  style: TextStyle(color: tokens.textTertiary),
+                                ),
+                              TextSpan(
+                                text: product.trackStock
+                                    ? (product.stock <= 0
+                                          ? 'Agotado (0)'
+                                          : 'Stock ${Formatters.qtyLabel(product.stock, product.unit)}')
+                                    : 'Stock ilimitado',
+                                style: TextStyle(
+                                  fontWeight:
+                                      product.isOutOfStock || product.isLowStock
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                  color: product.isOutOfStock
+                                      ? tokens.danger
+                                      : product.isLowStock
+                                      ? tokens.warning
+                                      : tokens.textTertiary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -566,7 +602,7 @@ class _OwnerProductRow extends ConsumerWidget {
                 if (product.hasWholesale)
                   Text(
                     'Mayor. ${Formatters.price(product.wholesalePrice!)} '
-                    '(${product.wholesaleMinQty}+ u.)',
+                    '(${Formatters.qtyLabel(product.wholesaleMinQty!, product.unit)}+)',
                     style: TextStyle(
                       fontSize: 11,
                       color: Theme.of(context).colorScheme.primary,

@@ -286,30 +286,44 @@ class _CouponTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens tokens = context.tokens;
     final String? tenantId = ref.watch(currentProfileProvider).value?.tenantId;
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return AppCard(
       padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
       child: Row(
         children: <Widget>[
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: tokens.surfaceMuted,
+              color: scheme.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: scheme.primary.withValues(alpha: 0.25)),
             ),
-            child: Text(
-              coupon.code,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1,
-                color: tokens.textPrimary,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  Icons.confirmation_num_outlined,
+                  size: 16,
+                  color: scheme.primary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  coupon.code,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                    color: scheme.primary,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 12),
           Text(
             coupon.discountLabel,
             style: TextStyle(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
               color: tokens.success,
             ),
           ),
@@ -319,6 +333,7 @@ class _CouponTile extends ConsumerWidget {
               coupon.isActive ? 'Activo' : 'Pausado',
               style: TextStyle(
                 fontSize: 12,
+                fontWeight: FontWeight.w600,
                 color: coupon.isActive ? tokens.success : tokens.textTertiary,
               ),
             ),

@@ -54,8 +54,10 @@ void main() {
     await tester.pumpWidget(buildView(orders: <OrderModel>[order]));
     await tester.pumpAndSettle();
 
-    expect(find.text('#42 · Demo Store'), findsOneWidget);
-    expect(find.text('Solicitado'), findsOneWidget);
+    expect(find.text('Demo Store'), findsOneWidget);
+    expect(find.textContaining('Pedido #42'), findsOneWidget);
+    // Status chip + highlighted step in the progress bar.
+    expect(find.text('Solicitado'), findsNWidgets(2));
   });
 
   testWidgets('empty list shows empty state', (WidgetTester tester) async {
