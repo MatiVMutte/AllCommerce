@@ -19,6 +19,7 @@ Future<void> showQuickAddSheet(
 ) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     builder: (BuildContext context) => TenantTheme(

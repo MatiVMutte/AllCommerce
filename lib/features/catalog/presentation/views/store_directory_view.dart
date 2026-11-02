@@ -227,256 +227,314 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1240),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 16, 0),
-                    child: Row(
-                      children: <Widget>[
-                        if (!AdaptiveNavShell.isWide(
-                          context,
-                        )) ...const <Widget>[
-                          BrandLogo(size: 34, showWordmark: false),
-                          SizedBox(width: 12),
-                        ],
-                        Expanded(
-                          child: Text(
-                            profile == null
-                                ? 'Hola'
-                                : 'Hola, ${profile.fullName.split(' ').first}',
-                            style: Theme.of(context).textTheme.headlineMedium,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (profile?.isOwner ?? false) ...<Widget>[
-                          Flexible(
-                            child: FilledButton.tonalIcon(
-                              icon: const Icon(
-                                Icons.storefront_rounded,
-                                size: 18,
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints box) {
+                  return RefreshIndicator(
+                    onRefresh: () async => _refresh(ref),
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: <Widget>[
+                        SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  20,
+                                  16,
+                                  0,
+                                ),
+                                child: Row(
+                                  children: <Widget>[
+                                    if (!AdaptiveNavShell.isWide(
+                                      context,
+                                    )) ...const <Widget>[
+                                      BrandLogo(size: 34, showWordmark: false),
+                                      SizedBox(width: 12),
+                                    ],
+                                    Expanded(
+                                      child: Text(
+                                        profile == null
+                                            ? 'Hola'
+                                            : 'Hola, ${profile.fullName.split(' ').first}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineMedium,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (profile?.isOwner ?? false) ...<Widget>[
+                                      Flexible(
+                                        child: FilledButton.tonalIcon(
+                                          icon: const Icon(
+                                            Icons.storefront_rounded,
+                                            size: 18,
+                                          ),
+                                          label: const Text(
+                                            'Mi negocio',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          onPressed: () {
+                                            ref
+                                                .read(
+                                                  customerModeProvider.notifier,
+                                                )
+                                                .exitCustomerMode();
+                                            context.go('/owner');
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+                                    AppRefreshButton(
+                                      onRefresh: () => _refresh(ref),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              label: const Text(
-                                'Mi negocio',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  4,
+                                  24,
+                                  16,
+                                ),
+                                child: Text(
+                                  '¿Qué vas a pedir hoy?',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: tokens.textSecondary,
+                                  ),
+                                ),
                               ),
-                              onPressed: () {
-                                ref
-                                    .read(customerModeProvider.notifier)
-                                    .exitCustomerMode();
-                                context.go('/owner');
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        AppRefreshButton(onRefresh: () => _refresh(ref)),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
-                    child: Text(
-                      '¿Qué vas a pedir hoy?',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: tokens.textSecondary,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: const <BoxShadow>[
-                          BoxShadow(
-                            color: Color(0x0F0B0F19),
-                            blurRadius: 24,
-                            offset: Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        focusNode: _searchFocus,
-                        decoration: InputDecoration(
-                          hintText: AppStrings.searchStores,
-                          fillColor: tokens.surface,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 17,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search_rounded,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: tokens.border),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(
-                              color: Theme.of(context).colorScheme.primary,
-                              width: 1.6,
-                            ),
-                          ),
-                        ),
-                        onChanged: (String value) => ref
-                            .read(storeSearchProvider.notifier)
-                            .setQuery(value),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _ZoneChips(
-                    zonesAsync: zonesAsync,
-                    selected: _zone,
-                    onSelected: (String? zone) {
-                      setState(() => _zone = zone);
-                      ref.invalidate(activeTenantsProvider(_zone));
-                    },
-                  ),
-                  const SizedBox(height: 4),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: SegmentedButton<_DirectoryView>(
-                            selected: <_DirectoryView>{_view},
-                            onSelectionChanged: (Set<_DirectoryView> value) {
-                              setState(() => _view = value.first);
-                            },
-                            segments: const <ButtonSegment<_DirectoryView>>[
-                              ButtonSegment<_DirectoryView>(
-                                value: _DirectoryView.list,
-                                label: Text('Lista'),
-                                icon: Icon(Icons.list_rounded),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: const <BoxShadow>[
+                                      BoxShadow(
+                                        color: Color(0x0F0B0F19),
+                                        blurRadius: 24,
+                                        offset: Offset(0, 8),
+                                      ),
+                                    ],
+                                  ),
+                                  child: TextField(
+                                    focusNode: _searchFocus,
+                                    decoration: InputDecoration(
+                                      hintText: AppStrings.searchStores,
+                                      fillColor: tokens.surface,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 17,
+                                          ),
+                                      prefixIcon: Icon(
+                                        Icons.search_rounded,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        borderSide: BorderSide(
+                                          color: tokens.border,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        borderSide: BorderSide(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          width: 1.6,
+                                        ),
+                                      ),
+                                    ),
+                                    onChanged: (String value) => ref
+                                        .read(storeSearchProvider.notifier)
+                                        .setQuery(value),
+                                  ),
+                                ),
                               ),
-                              ButtonSegment<_DirectoryView>(
-                                value: _DirectoryView.map,
-                                label: Text('Mapa'),
-                                icon: Icon(Icons.map_rounded),
+                              const SizedBox(height: 12),
+                              _ZoneChips(
+                                zonesAsync: zonesAsync,
+                                selected: _zone,
+                                onSelected: (String? zone) {
+                                  setState(() => _zone = zone);
+                                  ref.invalidate(activeTenantsProvider(_zone));
+                                },
                               ),
+                              const SizedBox(height: 4),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Row(
+                                  children: <Widget>[
+                                    Expanded(
+                                      child: SegmentedButton<_DirectoryView>(
+                                        selected: <_DirectoryView>{_view},
+                                        onSelectionChanged:
+                                            (Set<_DirectoryView> value) {
+                                              setState(
+                                                () => _view = value.first,
+                                              );
+                                            },
+                                        segments:
+                                            const <
+                                              ButtonSegment<_DirectoryView>
+                                            >[
+                                              ButtonSegment<_DirectoryView>(
+                                                value: _DirectoryView.list,
+                                                label: Text('Lista'),
+                                                icon: Icon(Icons.list_rounded),
+                                              ),
+                                              ButtonSegment<_DirectoryView>(
+                                                value: _DirectoryView.map,
+                                                label: Text('Mapa'),
+                                                icon: Icon(Icons.map_rounded),
+                                              ),
+                                            ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    _FiltersPill(
+                                      activeCount: _activeFilterCount,
+                                      onTap: _openFilters,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              const InstallAppCard(),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton.icon(
+                                    onPressed: () =>
+                                        context.push('/para-locales'),
+                                    icon: const Icon(
+                                      Icons.storefront_outlined,
+                                      size: 16,
+                                    ),
+                                    label: const Text(
+                                      '¿Tenés un local? Sumalo gratis',
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      textStyle: const TextStyle(fontSize: 13),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        _FiltersPill(
-                          activeCount: _activeFilterCount,
-                          onTap: _openFilters,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const InstallAppCard(),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        onPressed: () => context.push('/para-locales'),
-                        icon: const Icon(Icons.storefront_outlined, size: 16),
-                        label: const Text('¿Tenés un local? Sumalo gratis'),
-                        style: TextButton.styleFrom(
-                          textStyle: const TextStyle(fontSize: 13),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Expanded(
-                    child: tenants.when(
-                      loading: () =>
-                          const AppSkeletonList(itemCount: 4, itemHeight: 132),
-                      error: (Object error, StackTrace stack) =>
-                          AppErrorState(onRetry: () => _refresh(ref)),
-                      data: (List<TenantModel> list) {
-                        List<TenantModel> filtered = filterTenants(
-                          list,
-                          search,
-                        );
-                        if (_cardOnly) {
-                          filtered = filtered
-                              .where((TenantModel t) => t.acceptsCard)
-                              .toList();
-                        }
-                        final Set<String> favs = ref.watch(
-                          favoriteStoresProvider,
-                        );
-                        filtered.sort((TenantModel a, TenantModel b) {
-                          final int fav =
-                              (favs.contains(a.id) ? 0 : 1) -
-                              (favs.contains(b.id) ? 0 : 1);
-                          if (fav != 0) return fav;
-                          if (_nearby && _userPos != null) {
-                            final double? da = UserLocationService.distanceTo(
-                              a,
-                              _userPos,
+                        tenants.when(
+                          loading: () => const SliverFillRemaining(
+                            child: AppSkeletonList(
+                              itemCount: 4,
+                              itemHeight: 132,
+                            ),
+                          ),
+                          error: (Object error, StackTrace stack) =>
+                              SliverFillRemaining(
+                                child: AppErrorState(
+                                  onRetry: () => _refresh(ref),
+                                ),
+                              ),
+                          data: (List<TenantModel> list) {
+                            List<TenantModel> filtered = filterTenants(
+                              list,
+                              search,
                             );
-                            final double? db = UserLocationService.distanceTo(
-                              b,
-                              _userPos,
+                            if (_cardOnly) {
+                              filtered = filtered
+                                  .where((TenantModel t) => t.acceptsCard)
+                                  .toList();
+                            }
+                            final Set<String> favs = ref.watch(
+                              favoriteStoresProvider,
                             );
-                            if (da == null && db == null) return 0;
-                            if (da == null) return 1;
-                            if (db == null) return -1;
-                            return da.compareTo(db);
-                          }
-                          return 0;
-                        });
-                        final bool searchingProducts =
-                            search.trim().length >= 2;
-                        final List<GlobalProductHit> productHits =
-                            searchingProducts
-                            ? (ref
-                                      .watch(
-                                        globalProductSearchProvider(
-                                          search.trim(),
-                                        ),
-                                      )
-                                      .value ??
-                                  const <GlobalProductHit>[])
-                            : const <GlobalProductHit>[];
-                        final bool productsLoading =
-                            searchingProducts &&
-                            ref
-                                .watch(
-                                  globalProductSearchProvider(search.trim()),
-                                )
-                                .isLoading;
-                        if (filtered.isEmpty &&
-                            productHits.isEmpty &&
-                            !productsLoading) {
-                          return const AppEmptyState(
-                            icon: Icons.storefront_outlined,
-                            title: AppStrings.noStoresFound,
-                          );
-                        }
-                        if (_view == _DirectoryView.map) {
-                          return _DirectoryMap(
-                            tenants: filtered,
-                            myTenantId: profile?.tenantId,
-                          );
-                        }
-                        return RefreshIndicator(
-                          onRefresh: () async => _refresh(ref),
-                          child: LayoutBuilder(
-                            builder: (BuildContext context, BoxConstraints box) {
-                              final bool multiColumn = box.maxWidth >= 680;
-                              if (!multiColumn || productHits.isNotEmpty) {
-                                return ListView(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    16,
-                                    4,
-                                    16,
-                                    FloatingNavBar.height,
-                                  ),
-                                  children: <Widget>[
+                            filtered.sort((TenantModel a, TenantModel b) {
+                              final int fav =
+                                  (favs.contains(a.id) ? 0 : 1) -
+                                  (favs.contains(b.id) ? 0 : 1);
+                              if (fav != 0) return fav;
+                              if (_nearby && _userPos != null) {
+                                final double? da =
+                                    UserLocationService.distanceTo(a, _userPos);
+                                final double? db =
+                                    UserLocationService.distanceTo(b, _userPos);
+                                if (da == null && db == null) return 0;
+                                if (da == null) return 1;
+                                if (db == null) return -1;
+                                return da.compareTo(db);
+                              }
+                              return 0;
+                            });
+                            final bool searchingProducts =
+                                search.trim().length >= 2;
+                            final List<GlobalProductHit> productHits =
+                                searchingProducts
+                                ? (ref
+                                          .watch(
+                                            globalProductSearchProvider(
+                                              search.trim(),
+                                            ),
+                                          )
+                                          .value ??
+                                      const <GlobalProductHit>[])
+                                : const <GlobalProductHit>[];
+                            final bool productsLoading =
+                                searchingProducts &&
+                                ref
+                                    .watch(
+                                      globalProductSearchProvider(
+                                        search.trim(),
+                                      ),
+                                    )
+                                    .isLoading;
+                            if (filtered.isEmpty &&
+                                productHits.isEmpty &&
+                                !productsLoading) {
+                              return const SliverFillRemaining(
+                                child: AppEmptyState(
+                                  icon: Icons.storefront_outlined,
+                                  title: AppStrings.noStoresFound,
+                                ),
+                              );
+                            }
+                            if (_view == _DirectoryView.map) {
+                              return SliverFillRemaining(
+                                child: _DirectoryMap(
+                                  tenants: filtered,
+                                  myTenantId: profile?.tenantId,
+                                ),
+                              );
+                            }
+                            final bool multiColumn = box.maxWidth >= 680;
+                            if (!multiColumn || productHits.isNotEmpty) {
+                              return SliverPadding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  4,
+                                  16,
+                                  FloatingNavBar.height,
+                                ),
+                                sliver: SliverList(
+                                  delegate: SliverChildListDelegate(<Widget>[
                                     if (productHits.isNotEmpty) ...<Widget>[
                                       Padding(
                                         padding: const EdgeInsets.fromLTRB(
@@ -568,23 +626,25 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                               : card;
                                         },
                                       ),
-                                  ],
-                                );
-                              }
-                              final int columns = box.maxWidth >= 1280
-                                  ? 4
-                                  : box.maxWidth >= 980
-                                  ? 3
-                                  : 2;
-                              return GridView.builder(
-                                padding: EdgeInsets.fromLTRB(
-                                  16,
-                                  4,
-                                  16,
-                                  AdaptiveNavShell.isWide(context)
-                                      ? 24
-                                      : FloatingNavBar.height,
+                                  ]),
                                 ),
+                              );
+                            }
+                            final int columns = box.maxWidth >= 1280
+                                ? 4
+                                : box.maxWidth >= 980
+                                ? 3
+                                : 2;
+                            return SliverPadding(
+                              padding: EdgeInsets.fromLTRB(
+                                16,
+                                4,
+                                16,
+                                AdaptiveNavShell.isWide(context)
+                                    ? 24
+                                    : FloatingNavBar.height,
+                              ),
+                              sliver: SliverGrid(
                                 gridDelegate:
                                     SliverGridDelegateWithFixedCrossAxisCount(
                                       crossAxisCount: columns,
@@ -592,8 +652,10 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                       mainAxisSpacing: 16,
                                       mainAxisExtent: 252,
                                     ),
-                                itemCount: filtered.length,
-                                itemBuilder: (BuildContext context, int index) {
+                                delegate: SliverChildBuilderDelegate((
+                                  BuildContext context,
+                                  int index,
+                                ) {
                                   final Widget card = _StoreCard(
                                     tenant: filtered[index],
                                     bottomMargin: 0,
@@ -621,15 +683,15 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                               curve: Curves.easeOutCubic,
                                             )
                                       : card;
-                                },
-                              );
-                            },
-                          ),
-                        );
-                      },
+                                }, childCount: filtered.length),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ),
