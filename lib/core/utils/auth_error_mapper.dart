@@ -76,6 +76,12 @@ abstract final class AuthErrorMapper {
       if (message.contains('INVALID_QUANTITY')) {
         return 'Cantidad inválida';
       }
+      if (message.contains('ADDRESS_REQUIRED')) {
+        return 'Ingresá la dirección de envío';
+      }
+      if (message.contains('CART_TOO_LARGE')) {
+        return 'El pedido tiene demasiados productos distintos';
+      }
       if (message.contains('AI_LIMIT_REACHED')) {
         return 'Llegaste al límite de análisis con IA de tu plan este '
             'mes. Podés cargar el producto a mano o mejorar tu plan.';
