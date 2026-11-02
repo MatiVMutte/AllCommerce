@@ -103,4 +103,34 @@ class TenantSettingsRepository {
         .update(<String, dynamic>{'logo_url': url})
         .eq('id', tenantId);
   }
+
+  /// Uploads a JPEG cover banner (compressed by ImageService).
+  /// Stored in the same `tenant-logos` bucket — its policies already
+  /// scope writes to the tenant's own folder.
+  /// Returns the public URL with a cache-busting `?v=` param.
+  Future<String> uploadCover({
+    required String tenantId,
+    required Uint8List bytes,
+  }) async {
+    final String path = '$tenantId/cover.jpg';
+    await _client.storage
+        .from('tenant-logos')
+        .uploadBinary(
+          path,
+          bytes,
+          fileOptions: const FileOptions(
+            contentType: 'image/jpeg',
+            upsert: true,
+          ),
+        );
+    final String url = _client.storage.from('tenant-logos').getPublicUrl(path);
+    return '$url?v=${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  Future<void> setCoverUrl(String tenantId, String url) async {
+    await _client
+        .from('tenants')
+        .update(<String, dynamic>{'cover_url': url})
+        .eq('id', tenantId);
+  }
 }

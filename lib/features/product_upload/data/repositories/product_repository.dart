@@ -118,6 +118,18 @@ class ProductRepository {
         .eq('tenant_id', tenantId);
   }
 
+  Future<void> setFeatured(
+    String productId,
+    String tenantId,
+    bool isFeatured,
+  ) async {
+    await _client
+        .from('products')
+        .update(<String, dynamic>{'is_featured': isFeatured})
+        .eq('id', productId)
+        .eq('tenant_id', tenantId);
+  }
+
   Future<void> setStock(
     String productId,
     String tenantId, {

@@ -14,6 +14,7 @@ class TenantModel {
     this.lng,
     required this.whatsapp,
     this.logoUrl,
+    this.coverUrl,
     required this.primaryColor,
     this.transferAlias,
     this.mercadoPagoLink,
@@ -39,6 +40,9 @@ class TenantModel {
   final double? lng;
   final String whatsapp;
   final String? logoUrl;
+
+  /// Optional wide banner shown on the catalog header and store card.
+  final String? coverUrl;
 
   /// Hex color string, e.g. '#0052FF'.
   final String primaryColor;
@@ -69,6 +73,7 @@ class TenantModel {
       lng: (json['lng'] as num?)?.toDouble(),
       whatsapp: json['whatsapp'] as String,
       logoUrl: json['logo_url'] as String?,
+      coverUrl: json['cover_url'] as String?,
       primaryColor: json['primary_color'] as String,
       transferAlias: json['transfer_alias'] as String?,
       mercadoPagoLink: json['mercado_pago_link'] as String?,
@@ -99,6 +104,7 @@ class TenantModel {
       'lng': lng,
       'whatsapp': whatsapp,
       'logo_url': logoUrl,
+      'cover_url': coverUrl,
       'primary_color': primaryColor,
       'transfer_alias': transferAlias,
       'mercado_pago_link': mercadoPagoLink,

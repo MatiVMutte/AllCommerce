@@ -21,6 +21,7 @@ class ProductModel {
     this.stock = 0,
     this.trackStock = false,
     required this.isActive,
+    this.isFeatured = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -56,6 +57,9 @@ class ProductModel {
   final double stock;
   final bool trackStock;
   final bool isActive;
+
+  /// Pinned by the store owner into the "Destacados" shelf on the catalog.
+  final bool isFeatured;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -143,6 +147,7 @@ class ProductModel {
       stock: (json['stock'] as num?)?.toDouble() ?? 0,
       trackStock: json['track_stock'] as bool? ?? false,
       isActive: json['is_active'] as bool,
+      isFeatured: json['is_featured'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -168,6 +173,7 @@ class ProductModel {
       'stock': stock,
       'track_stock': trackStock,
       'is_active': isActive,
+      'is_featured': isFeatured,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -194,6 +200,7 @@ class ProductModel {
     double? stock,
     bool? trackStock,
     bool? isActive,
+    bool? isFeatured,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -222,6 +229,7 @@ class ProductModel {
       stock: stock ?? this.stock,
       trackStock: trackStock ?? this.trackStock,
       isActive: isActive ?? this.isActive,
+      isFeatured: isFeatured ?? this.isFeatured,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

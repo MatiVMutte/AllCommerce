@@ -271,7 +271,10 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                 ? _palette
                 : <String>[..._palette, _color];
             final Color preview = _hexColor(_color);
-            final bool dirty = _isDirty(tenant, state.pendingLogo != null);
+            final bool dirty = _isDirty(
+              tenant,
+              state.pendingLogo != null || state.pendingCover != null,
+            );
             return Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 920),
@@ -356,6 +359,15 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 20),
+                      _CoverPicker(
+                        tenant: tenant,
+                        pendingCover: state.pendingCover,
+                        enabled: !state.saving,
+                        onPick: () => ref
+                            .read(tenantSettingsControllerProvider.notifier)
+                            .pickCover(),
                       ),
                       const SizedBox(height: 24),
                       const _Section('DATOS'),
@@ -719,6 +731,93 @@ class _Section extends StatelessWidget {
         letterSpacing: 0.6,
         color: context.tokens.textTertiary,
       ),
+    );
+  }
+}
+
+/// Wide cover-image picker shown under the store logo.
+class _CoverPicker extends StatelessWidget {
+  const _CoverPicker({
+    required this.tenant,
+    required this.pendingCover,
+    required this.enabled,
+    required this.onPick,
+  });
+
+  final TenantModel tenant;
+  final Uint8List? pendingCover;
+  final bool enabled;
+  final VoidCallback onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final bool hasCover = pendingCover != null || tenant.coverUrl != null;
+    final Widget image = pendingCover != null
+        ? Image.memory(pendingCover!, fit: BoxFit.cover)
+        : tenant.coverUrl != null
+        ? Image.network(tenant.coverUrl!, fit: BoxFit.cover)
+        : const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            height: 140,
+            width: double.infinity,
+            color: tokens.surfaceMuted,
+            child: Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                if (hasCover) image,
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Icon(
+                        hasCover
+                            ? Icons.photo_library_outlined
+                            : Icons.add_photo_alternate_outlined,
+                        size: 28,
+                        color: hasCover ? Colors.white : tokens.textTertiary,
+                        shadows: hasCover
+                            ? const <Shadow>[
+                                Shadow(blurRadius: 8, color: Colors.black45),
+                              ]
+                            : null,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        hasCover ? 'Cambiar portada' : 'Agregar portada',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: hasCover ? Colors.white : tokens.textTertiary,
+                          fontWeight: FontWeight.w600,
+                          shadows: hasCover
+                              ? const <Shadow>[
+                                  Shadow(blurRadius: 8, color: Colors.black45),
+                                ]
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(onTap: enabled ? onPick : null),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Se ve como banner en tu catálogo y en el directorio',
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: tokens.textTertiary),
+        ),
+      ],
     );
   }
 }

@@ -117,6 +117,14 @@ class OwnerInventoryController extends Notifier<OwnerInventoryState> {
     }, optimistic: product.copyWith(isActive: !product.isActive));
   }
 
+  Future<bool> toggleFeatured(ProductModel product) async {
+    return _run(product, (String id, String tenantId) {
+      return ref
+          .read(productRepositoryProvider)
+          .setFeatured(id, tenantId, !product.isFeatured);
+    }, optimistic: product.copyWith(isFeatured: !product.isFeatured));
+  }
+
   Future<bool> updateStock(
     ProductModel product, {
     required double stock,

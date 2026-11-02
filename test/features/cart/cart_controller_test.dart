@@ -160,6 +160,48 @@ void main() {
     expect(restored.items.single.variant, 'Rojo');
   });
 
+  test('coupon persists across containers sharing prefs', () async {
+    final ProviderContainer container = makeContainer();
+    final CartController cart = container.read(cartProvider.notifier);
+    cart.add(_product('p1'), _tenant());
+    cart.setCoupon('DESCUENTO10');
+    container.dispose();
+
+    await Future<void>.delayed(Duration.zero);
+
+    final ProviderContainer container2 = makeContainer();
+    addTearDown(container2.dispose);
+    final CartState restored = container2.read(cartProvider);
+    expect(restored.couponCode, 'DESCUENTO10');
+    expect(restored.items.single.productId, 'p1');
+  });
+
+  test('clear drops the persisted coupon', () {
+    final ProviderContainer container = makeContainer();
+    addTearDown(container.dispose);
+    final CartController cart = container.read(cartProvider.notifier);
+    cart.add(_product('p1'), _tenant());
+    cart.setCoupon('DESCUENTO10');
+
+    cart.clear();
+    expect(container.read(cartProvider).couponCode, isNull);
+  });
+
+  test('setCoupon(null) removes the persisted code', () async {
+    final ProviderContainer container = makeContainer();
+    final CartController cart = container.read(cartProvider.notifier);
+    cart.add(_product('p1'), _tenant());
+    cart.setCoupon('DESCUENTO10');
+    cart.setCoupon(null);
+    container.dispose();
+
+    await Future<void>.delayed(Duration.zero);
+
+    final ProviderContainer container2 = makeContainer();
+    addTearDown(container2.dispose);
+    expect(container2.read(cartProvider).couponCode, isNull);
+  });
+
   test('cart persists across containers sharing prefs', () async {
     final ProviderContainer container = makeContainer();
     container.read(cartProvider.notifier).add(_product('p1'), _tenant());

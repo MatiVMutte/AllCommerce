@@ -48,6 +48,30 @@ class _CartViewState extends ConsumerState<CartView> {
   CouponPreview? _appliedPreview;
   String? _couponError;
   bool _checkingCoupon = false;
+  bool _restoredCoupon = false;
+
+  /// Re-validates the persisted coupon once per visit so the applied chip
+  /// and the discount show up again when the user comes back to the cart.
+  Future<void> _restoreCoupon(TenantModel tenant) async {
+    final String? code = ref.read(cartProvider).couponCode;
+    if (code == null) return;
+    try {
+      final CouponPreview? preview = await ref
+          .read(orderRepositoryProvider)
+          .validateCoupon(tenant.id, code);
+      if (!mounted) return;
+      if (preview == null) {
+        ref.read(cartProvider.notifier).setCoupon(null);
+      } else {
+        setState(() {
+          _appliedCode = code.toUpperCase();
+          _appliedPreview = preview;
+        });
+      }
+    } catch (_) {
+      // Sin conexión: conservar el código para la próxima visita.
+    }
+  }
 
   @override
   void dispose() {
@@ -75,6 +99,7 @@ class _CartViewState extends ConsumerState<CartView> {
         } else {
           _appliedCode = code.toUpperCase();
           _appliedPreview = preview;
+          ref.read(cartProvider.notifier).setCoupon(_appliedCode);
         }
       });
     } catch (_) {
@@ -113,7 +138,8 @@ class _CartViewState extends ConsumerState<CartView> {
       ref.invalidate(currentProfileProvider);
       phone = entered;
     }
-    final String coupon = _appliedCode ?? _coupon.text.trim();
+    final String coupon =
+        _appliedCode ?? cart.couponCode ?? _coupon.text.trim();
     final OrderModel? order = await ref
         .read(checkoutControllerProvider.notifier)
         .placeOrder(
@@ -217,6 +243,15 @@ class _CartViewState extends ConsumerState<CartView> {
         final bool wrongStore =
             cart.tenantId != null && cart.tenantId != tenant.id;
         final bool empty = cart.isEmpty || wrongStore;
+        if (!empty &&
+            cart.couponCode != null &&
+            _appliedCode == null &&
+            !_restoredCoupon) {
+          _restoredCoupon = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _restoreCoupon(tenant);
+          });
+        }
         return TenantTheme(
           brandColor: tenant.primaryColorValue,
           child: Scaffold(
@@ -298,61 +333,60 @@ class _CartViewState extends ConsumerState<CartView> {
                                     labelText: 'Notas para el local (opcional)',
                                   ),
                                 ),
-                                ExpansionTile(
-                                  title: const Text('¿Tenés un cupón?'),
-                                  tilePadding: EdgeInsets.zero,
-                                  children: <Widget>[
-                                    if (_appliedCode != null)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 10,
+                                if (_appliedCode != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: tokens.success.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: tokens.success),
+                                    ),
+                                    child: Row(
+                                      children: <Widget>[
+                                        Icon(
+                                          Icons.local_offer_rounded,
+                                          color: tokens.success,
+                                          size: 18,
                                         ),
-                                        decoration: BoxDecoration(
-                                          color: tokens.success.withValues(
-                                            alpha: 0.1,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          border: Border.all(
-                                            color: tokens.success,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: <Widget>[
-                                            Icon(
-                                              Icons.local_offer_rounded,
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            '$_appliedCode · '
+                                            '${_appliedPreview!.label}',
+                                            style: TextStyle(
                                               color: tokens.success,
-                                              size: 18,
+                                              fontWeight: FontWeight.w700,
                                             ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                '$_appliedCode · '
-                                                '${_appliedPreview!.label}',
-                                                style: TextStyle(
-                                                  color: tokens.success,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                            ),
-                                            IconButton(
-                                              tooltip: 'Quitar cupón',
-                                              icon: const Icon(
-                                                Icons.close_rounded,
-                                                size: 18,
-                                              ),
-                                              onPressed: () => setState(() {
-                                                _appliedCode = null;
-                                                _appliedPreview = null;
-                                                _coupon.clear();
-                                              }),
-                                            ),
-                                          ],
+                                          ),
                                         ),
-                                      )
-                                    else
+                                        IconButton(
+                                          tooltip: 'Quitar cupón',
+                                          icon: const Icon(
+                                            Icons.close_rounded,
+                                            size: 18,
+                                          ),
+                                          onPressed: () => setState(() {
+                                            _appliedCode = null;
+                                            _appliedPreview = null;
+                                            _coupon.clear();
+                                            ref
+                                                .read(cartProvider.notifier)
+                                                .setCoupon(null);
+                                          }),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                else
+                                  ExpansionTile(
+                                    title: const Text('¿Tenés un cupón?'),
+                                    tilePadding: EdgeInsets.zero,
+                                    children: <Widget>[
                                       Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.stretch,
@@ -393,8 +427,8 @@ class _CartViewState extends ConsumerState<CartView> {
                                           ),
                                         ],
                                       ),
-                                  ],
-                                ),
+                                    ],
+                                  ),
                               ],
                             ),
                           ),

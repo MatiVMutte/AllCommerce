@@ -8,6 +8,7 @@ import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/widgets/app_avatar.dart';
+import 'package:all_commerce/core/widgets/app_card.dart';
 import 'package:all_commerce/core/widgets/app_skeleton.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
@@ -195,7 +196,24 @@ class _CatalogScaffold extends ConsumerWidget {
                       ),
                     ];
                   }
+                  final bool filterActive =
+                      filter.query.trim().isNotEmpty ||
+                      filter.category != null ||
+                      filter.onlyOnSale;
+                  final List<ProductModel> featured = filterActive
+                      ? const <ProductModel>[]
+                      : products
+                            .where((ProductModel p) => p.isFeatured)
+                            .toList();
                   return <Widget>[
+                    if (featured.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: _FeaturedShelf(
+                          slug: slug,
+                          products: featured,
+                          tenant: tenant,
+                        ),
+                      ),
                     SliverPadding(
                       padding: const EdgeInsets.all(16),
                       sliver: SliverGrid(
@@ -344,6 +362,8 @@ class _StoreBanner extends StatelessWidget {
     final Color darker = hsl
         .withLightness((hsl.lightness * 0.85).clamp(0, 1))
         .toColor();
+    final bool hasCover =
+        tenant.coverUrl != null && tenant.coverUrl!.isNotEmpty;
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -352,101 +372,290 @@ class _StoreBanner extends StatelessWidget {
           end: Alignment.bottomCenter,
         ),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 56, 24, 12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              AppAvatar(tenant: tenant, size: 64),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          (tenant.isOpen
-                                  ? Colors.green.shade700
-                                  : Colors.black54)
-                              .withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      tenant.isOpen ? 'Abierto' : 'Cerrado',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  if (tenant.openingHours != null &&
-                      tenant.openingHours!.trim().isNotEmpty) ...<Widget>[
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        tenant.openingHours!,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          if (hasCover) ...<Widget>[
+            Image.network(
+              tenant.coverUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: <Color>[
+                    Colors.black.withValues(alpha: 0.45),
+                    darker.withValues(alpha: 0.72),
                   ],
-                ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
               ),
-              const SizedBox(height: 6),
-              if (tenant.address != null || tenant.whatsapp.isNotEmpty)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    if (tenant.address != null) ...<Widget>[
-                      const Icon(
-                        Icons.location_on_outlined,
-                        size: 14,
-                        color: Colors.white70,
-                      ),
-                      const SizedBox(width: 2),
-                      Flexible(
+            ),
+          ],
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 56, 24, 12),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  AppAvatar(tenant: tenant, size: 64),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              (tenant.isOpen
+                                      ? Colors.green.shade700
+                                      : Colors.black54)
+                                  .withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                         child: Text(
-                          tenant.address!,
+                          tenant.isOpen ? 'Abierto' : 'Cerrado',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      if (tenant.openingHours != null &&
+                          tenant.openingHours!.trim().isNotEmpty) ...<Widget>[
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            tenant.openingHours!,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  if (tenant.address != null || tenant.whatsapp.isNotEmpty)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        if (tenant.address != null) ...<Widget>[
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 14,
+                            color: Colors.white70,
+                          ),
+                          const SizedBox(width: 2),
+                          Flexible(
+                            child: Text(
+                              tenant.address!,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        const Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          size: 14,
+                          color: Colors.white70,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          tenant.whatsapp,
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                    ],
-                    const Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      size: 14,
-                      color: Colors.white70,
+                      ],
                     ),
-                    const SizedBox(width: 2),
-                    Text(
-                      tenant.whatsapp,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Horizontal shelf of owner-pinned products shown on top of the grid.
+class _FeaturedShelf extends StatelessWidget {
+  const _FeaturedShelf({
+    required this.slug,
+    required this.products,
+    required this.tenant,
+  });
+
+  final String slug;
+  final List<ProductModel> products;
+  final TenantModel tenant;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            children: <Widget>[
+              Icon(
+                Icons.star_rounded,
+                size: 20,
+                color: tenant.primaryColorValue,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Destacados',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: tokens.textPrimary,
                 ),
+              ),
             ],
           ),
+        ),
+        SizedBox(
+          height: 220,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            itemCount: products.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            itemBuilder: (BuildContext context, int index) => _FeaturedCard(
+              slug: slug,
+              product: products[index],
+              tenant: tenant,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FeaturedCard extends StatelessWidget {
+  const _FeaturedCard({
+    required this.slug,
+    required this.product,
+    required this.tenant,
+  });
+
+  final String slug;
+  final ProductModel product;
+  final TenantModel tenant;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return SizedBox(
+      width: 168,
+      child: AppCard(
+        padding: EdgeInsets.zero,
+        onTap: () => context.push('/s/$slug/p/${product.id}'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: <Widget>[
+                  if (product.imageUrl == null)
+                    Container(
+                      color: tokens.surfaceMuted,
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        size: 32,
+                        color: tokens.textTertiary,
+                      ),
+                    )
+                  else
+                    AppNetworkImage(
+                      imageUrl: product.imageUrl!,
+                      placeholder: Container(color: tokens.surfaceMuted),
+                      errorBuilder: (_) => Container(
+                        color: tokens.surfaceMuted,
+                        child: Icon(
+                          Icons.image_not_supported_outlined,
+                          size: 32,
+                          color: tokens.textTertiary,
+                        ),
+                      ),
+                    ),
+                  if (product.isOnSale)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: tokens.success,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '-${product.discountPercent}% OFF',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    product.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    Formatters.price(product.price),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: tenant.primaryColorValue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

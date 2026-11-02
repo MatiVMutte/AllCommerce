@@ -12,6 +12,7 @@ class TenantSettingsState {
   const TenantSettingsState({
     this.saving = false,
     this.pendingLogo,
+    this.pendingCover,
     this.error,
   });
 
@@ -19,6 +20,9 @@ class TenantSettingsState {
 
   /// Picked + compressed logo waiting to be uploaded on save.
   final Uint8List? pendingLogo;
+
+  /// Picked + compressed cover banner waiting to be uploaded on save.
+  final Uint8List? pendingCover;
   final Object? error;
 }
 
@@ -36,7 +40,29 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
       final Uint8List jpeg = await ref
           .read(imageServiceProvider)
           .compressLogo(picked.bytes);
-      state = TenantSettingsState(pendingLogo: jpeg);
+      state = TenantSettingsState(
+        pendingLogo: jpeg,
+        pendingCover: state.pendingCover,
+      );
+    } finally {
+      keepAlive.close();
+    }
+  }
+
+  Future<void> pickCover() async {
+    final keepAlive = ref.keepAlive();
+    try {
+      final PickedImage? picked = await ref
+          .read(imageServiceProvider)
+          .pick(ImageSource.gallery);
+      if (picked == null) return;
+      final Uint8List jpeg = await ref
+          .read(imageServiceProvider)
+          .compress(picked.bytes);
+      state = TenantSettingsState(
+        pendingLogo: state.pendingLogo,
+        pendingCover: jpeg,
+      );
     } finally {
       keepAlive.close();
     }
@@ -63,7 +89,11 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
     final TenantSettingsRepository repo = ref.read(
       tenantSettingsRepositoryProvider,
     );
-    state = TenantSettingsState(saving: true, pendingLogo: state.pendingLogo);
+    state = TenantSettingsState(
+      saving: true,
+      pendingLogo: state.pendingLogo,
+      pendingCover: state.pendingCover,
+    );
     try {
       final TenantModel updated = await repo.update(
         current.id,
@@ -89,12 +119,24 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
         );
         await repo.setLogoUrl(current.id, url);
       }
+      final Uint8List? cover = state.pendingCover;
+      if (cover != null) {
+        final String url = await repo.uploadCover(
+          tenantId: current.id,
+          bytes: cover,
+        );
+        await repo.setCoverUrl(current.id, url);
+      }
       state = const TenantSettingsState();
       ref.invalidate(tenantByIdProvider(current.id));
       ref.invalidate(tenantBySlugProvider(current.slug));
       return updated;
     } catch (e) {
-      state = TenantSettingsState(pendingLogo: state.pendingLogo, error: e);
+      state = TenantSettingsState(
+        pendingLogo: state.pendingLogo,
+        pendingCover: state.pendingCover,
+        error: e,
+      );
       return null;
     } finally {
       keepAlive.close();
@@ -122,7 +164,11 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
       ref.invalidate(tenantBySlugProvider(current.slug));
       return true;
     } catch (e) {
-      state = TenantSettingsState(pendingLogo: state.pendingLogo, error: e);
+      state = TenantSettingsState(
+        pendingLogo: state.pendingLogo,
+        pendingCover: state.pendingCover,
+        error: e,
+      );
       return false;
     } finally {
       keepAlive.close();
@@ -143,7 +189,11 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
       ref.invalidate(tenantBySlugProvider(current.slug));
       return true;
     } catch (e) {
-      state = TenantSettingsState(pendingLogo: state.pendingLogo, error: e);
+      state = TenantSettingsState(
+        pendingLogo: state.pendingLogo,
+        pendingCover: state.pendingCover,
+        error: e,
+      );
       return false;
     } finally {
       keepAlive.close();

@@ -1097,10 +1097,10 @@ class _StoreCard extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: <Widget>[
                   Positioned.fill(
-                    child: tenant.logoUrl == null
+                    child: tenant.coverUrl == null
                         ? _BannerFill(color: tenant.primaryColorValue)
                         : AppNetworkImage(
-                            imageUrl: tenant.logoUrl!,
+                            imageUrl: tenant.coverUrl!,
                             placeholder: _BannerFill(
                               color: tenant.primaryColorValue,
                             ),

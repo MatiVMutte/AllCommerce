@@ -647,22 +647,36 @@ class _OwnerProductRow extends ConsumerWidget {
                   );
                 } else if (value == 'stock') {
                   _adjustStock(context, ref);
+                } else if (value == 'featured') {
+                  ref
+                      .read(ownerInventoryControllerProvider.notifier)
+                      .toggleFeatured(product);
                 } else if (value == 'delete') {
                   _confirmDelete(context, ref);
                 }
               },
-              itemBuilder: (BuildContext context) =>
-                  const <PopupMenuEntry<String>>[
-                    PopupMenuItem<String>(value: 'edit', child: Text('Editar')),
-                    PopupMenuItem<String>(
-                      value: 'stock',
-                      child: Text('Ajustar stock'),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'delete',
-                      child: Text('Eliminar'),
-                    ),
-                  ],
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'edit',
+                  child: Text('Editar'),
+                ),
+                PopupMenuItem<String>(
+                  value: 'featured',
+                  child: Text(
+                    product.isFeatured
+                        ? 'Quitar de destacados'
+                        : 'Destacar en el catálogo',
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'stock',
+                  child: Text('Ajustar stock'),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'delete',
+                  child: Text('Eliminar'),
+                ),
+              ],
             ),
           ],
         ),

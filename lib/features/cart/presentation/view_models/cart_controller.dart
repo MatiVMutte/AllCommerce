@@ -119,6 +119,13 @@ class CartController extends Notifier<CartState> {
     _persist();
   }
 
+  /// Remembers the applied coupon so it survives leaving the cart.
+  /// Clearing the cart or switching stores drops it automatically.
+  void setCoupon(String? code) {
+    state = state.copyWith(couponCode: () => code);
+    _persist();
+  }
+
   void clear() {
     state = const CartState();
     _persist();
