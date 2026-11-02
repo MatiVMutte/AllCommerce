@@ -1,3 +1,4 @@
+import 'package:all_commerce/core/theme/app_brand.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_motion.dart';
 import 'package:animate_do/animate_do.dart';
@@ -24,40 +25,63 @@ class AppEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
     final bool animate = AppMotion.enabled(context);
-    final Widget avatar = CircleAvatar(
-      radius: 40,
-      backgroundColor: tokens.surfaceMuted,
-      child: Icon(icon, size: 36, color: tokens.textTertiary),
+    final Color primary = Theme.of(context).colorScheme.primary;
+    // Brand-gradient badge with a soft halo ring, like the landing icons.
+    final Widget avatar = Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: AppBrand.softGradient(primary, alpha: 0.07),
+      ),
+      child: BrandIconBadge(icon: icon, size: 76),
     );
-    final Widget content = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        animate
-            ? ZoomIn(duration: const Duration(milliseconds: 320), child: avatar)
-            : avatar,
-        const SizedBox(height: 16),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: tokens.textPrimary,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        if (subtitle != null) ...<Widget>[
-          const SizedBox(height: 8),
+    final Widget content = ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 360),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          animate
+              ? ZoomIn(
+                  duration: const Duration(milliseconds: 320),
+                  child: avatar,
+                )
+              : avatar,
+          const SizedBox(height: 20),
           Text(
-            subtitle!,
-            style: TextStyle(color: tokens.textSecondary),
+            title,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
+              color: tokens.textPrimary,
+            ),
             textAlign: TextAlign.center,
           ),
+          if (subtitle != null) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(
+              subtitle!,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.45,
+                color: tokens.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          if (actionLabel != null) ...<Widget>[
+            const SizedBox(height: 24),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 50),
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+              ),
+              onPressed: onAction,
+              child: Text(actionLabel!),
+            ),
+          ],
         ],
-        if (actionLabel != null) ...<Widget>[
-          const SizedBox(height: 20),
-          FilledButton(onPressed: onAction, child: Text(actionLabel!)),
-        ],
-      ],
+      ),
     );
     return Center(
       child: Padding(

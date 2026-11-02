@@ -44,67 +44,56 @@ class _CustomerProfileViewState extends ConsumerState<CustomerProfileView> {
   @override
   Widget build(BuildContext context) {
     final bool loading = ref.watch(authControllerProvider).isLoading;
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    const AuthHeader(
-                      title: 'Tu perfil',
-                      subtitle: 'Solo necesitamos tu nombre para tus pedidos',
-                    ),
-                    const SizedBox(height: 32),
-                    LabeledField(
-                      label: 'Nombre completo',
-                      child: TextFormField(
-                        controller: _fullName,
-                        decoration: const InputDecoration(
-                          hintText: 'Ana López',
-                        ),
-                        validator: Validators.fullName,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    LabeledField(
-                      label: 'WhatsApp (opcional)',
-                      child: TextFormField(
-                        controller: _phone,
-                        keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(
-                          hintText: '11 2233 4455',
-                          helperText: 'Lo pedimos al confirmar un pedido',
-                        ),
-                        validator: (String? value) {
-                          if ((value ?? '').trim().isEmpty) {
-                            return null;
-                          }
-                          return Validators.phone(value);
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    FilledButton(
-                      onPressed: loading ? null : _submit,
-                      child: loading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Continuar'),
-                    ),
-                  ],
-                ),
+    return AuthScaffold(
+      showBack: false,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            const AuthHeader(
+              title: 'Tu perfil',
+              subtitle: 'Solo necesitamos tu nombre para tus pedidos',
+            ),
+            const SizedBox(height: 32),
+            LabeledField(
+              label: 'Nombre completo',
+              child: TextFormField(
+                controller: _fullName,
+                decoration: const InputDecoration(hintText: 'Ana López'),
+                validator: Validators.fullName,
               ),
             ),
-          ),
+            const SizedBox(height: 16),
+            LabeledField(
+              label: 'WhatsApp (opcional)',
+              child: TextFormField(
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  hintText: '11 2233 4455',
+                  helperText: 'Lo pedimos al confirmar un pedido',
+                ),
+                validator: (String? value) {
+                  if ((value ?? '').trim().isEmpty) {
+                    return null;
+                  }
+                  return Validators.phone(value);
+                },
+              ),
+            ),
+            const SizedBox(height: 28),
+            FilledButton(
+              onPressed: loading ? null : _submit,
+              child: loading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Continuar'),
+            ),
+          ],
         ),
       ),
     );

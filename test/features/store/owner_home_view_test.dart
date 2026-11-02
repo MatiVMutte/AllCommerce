@@ -111,4 +111,36 @@ void main() {
     expect(find.text('Pedidos nuevos'), findsOneWidget);
     expect(find.textContaining('Plan Prueba'), findsOneWidget);
   });
+
+  for (final (String name, Size size) in <(String, Size)>[
+    ('phone', const Size(360, 780)),
+    ('desktop', const Size(1280, 900)),
+  ]) {
+    testWidgets('owner hero lays out without overflow on $name', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentProfileProvider.overrideWith((Ref ref) async => owner),
+            tenantByIdProvider('t1').overrideWith((Ref ref) async => tenant),
+            ownerProductsProvider('t1')
+                .overrideWith(() => _FakeOwnerProducts(products)),
+            ownerOrdersProvider('t1').overrideWith((Ref ref) async => orders),
+            aiUsageProvider.overrideWith(
+              (Ref ref) async => const AiUsage(used: 12, limit: 60),
+            ),
+          ],
+          child: const MaterialApp(home: OwnerHomeView()),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.takeException(), isNull);
+      expect(find.text('Análisis IA'), findsOneWidget);
+    });
+  }
 }

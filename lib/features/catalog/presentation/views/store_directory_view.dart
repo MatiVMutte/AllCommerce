@@ -4,7 +4,9 @@ import 'package:all_commerce/core/router/customer_mode.dart';
 import 'package:all_commerce/core/services/user_location_service.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/core/theme/app_brand.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
+import 'package:all_commerce/core/widgets/brand_logo.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/widgets/app_avatar.dart';
@@ -218,258 +220,273 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
     final bool animate = !_animated && AppMotion.enabled(context);
     _animated = true;
     return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1240),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 16, 0),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          profile == null
-                              ? 'Hola'
-                              : 'Hola, ${profile.fullName.split(' ').first}',
-                          style: Theme.of(context).textTheme.headlineMedium,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (profile?.isOwner ?? false) ...<Widget>[
-                        Flexible(
-                          child: FilledButton.tonalIcon(
-                            icon: const Icon(
-                              Icons.storefront_rounded,
-                              size: 18,
-                            ),
-                            label: const Text(
-                              'Mi negocio',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            onPressed: () {
-                              ref
-                                  .read(customerModeProvider.notifier)
-                                  .exitCustomerMode();
-                              context.go('/owner');
-                            },
+      body: BrandBackground(
+        intensity: 0.7,
+        child: SafeArea(
+          bottom: false,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1240),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 16, 0),
+                    child: Row(
+                      children: <Widget>[
+                        if (!AdaptiveNavShell.isWide(
+                          context,
+                        )) ...const <Widget>[
+                          BrandLogo(size: 34, showWordmark: false),
+                          SizedBox(width: 12),
+                        ],
+                        Expanded(
+                          child: Text(
+                            profile == null
+                                ? 'Hola'
+                                : 'Hola, ${profile.fullName.split(' ').first}',
+                            style: Theme.of(context).textTheme.headlineMedium,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        if (profile?.isOwner ?? false) ...<Widget>[
+                          Flexible(
+                            child: FilledButton.tonalIcon(
+                              icon: const Icon(
+                                Icons.storefront_rounded,
+                                size: 18,
+                              ),
+                              label: const Text(
+                                'Mi negocio',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              onPressed: () {
+                                ref
+                                    .read(customerModeProvider.notifier)
+                                    .exitCustomerMode();
+                                context.go('/owner');
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        AppRefreshButton(onRefresh: () => _refresh(ref)),
                       ],
-                      AppRefreshButton(onRefresh: () => _refresh(ref)),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
-                  child: Text(
-                    '¿Qué vas a pedir hoy?',
-                    style: TextStyle(fontSize: 16, color: tokens.textSecondary),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: TextField(
-                    focusNode: _searchFocus,
-                    decoration: const InputDecoration(
-                      hintText: AppStrings.searchStores,
-                      prefixIcon: Icon(Icons.search),
                     ),
-                    onChanged: (String value) =>
-                        ref.read(storeSearchProvider.notifier).setQuery(value),
                   ),
-                ),
-                const SizedBox(height: 12),
-                _ZoneChips(
-                  zonesAsync: zonesAsync,
-                  selected: _zone,
-                  onSelected: (String? zone) {
-                    setState(() => _zone = zone);
-                    ref.invalidate(activeTenantsProvider(_zone));
-                  },
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: SegmentedButton<_DirectoryView>(
-                          selected: <_DirectoryView>{_view},
-                          onSelectionChanged: (Set<_DirectoryView> value) {
-                            setState(() => _view = value.first);
-                          },
-                          segments: const <ButtonSegment<_DirectoryView>>[
-                            ButtonSegment<_DirectoryView>(
-                              value: _DirectoryView.list,
-                              label: Text('Lista'),
-                              icon: Icon(Icons.list_rounded),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
+                    child: Text(
+                      '¿Qué vas a pedir hoy?',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: tokens.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const <BoxShadow>[
+                          BoxShadow(
+                            color: Color(0x0F0B0F19),
+                            blurRadius: 24,
+                            offset: Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        focusNode: _searchFocus,
+                        decoration: InputDecoration(
+                          hintText: AppStrings.searchStores,
+                          fillColor: tokens.surface,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 17,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: tokens.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 1.6,
                             ),
-                            ButtonSegment<_DirectoryView>(
-                              value: _DirectoryView.map,
-                              label: Text('Mapa'),
-                              icon: Icon(Icons.map_rounded),
-                            ),
-                          ],
+                          ),
+                        ),
+                        onChanged: (String value) => ref
+                            .read(storeSearchProvider.notifier)
+                            .setQuery(value),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _ZoneChips(
+                    zonesAsync: zonesAsync,
+                    selected: _zone,
+                    onSelected: (String? zone) {
+                      setState(() => _zone = zone);
+                      ref.invalidate(activeTenantsProvider(_zone));
+                    },
+                  ),
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: SegmentedButton<_DirectoryView>(
+                            selected: <_DirectoryView>{_view},
+                            onSelectionChanged: (Set<_DirectoryView> value) {
+                              setState(() => _view = value.first);
+                            },
+                            segments: const <ButtonSegment<_DirectoryView>>[
+                              ButtonSegment<_DirectoryView>(
+                                value: _DirectoryView.list,
+                                label: Text('Lista'),
+                                icon: Icon(Icons.list_rounded),
+                              ),
+                              ButtonSegment<_DirectoryView>(
+                                value: _DirectoryView.map,
+                                label: Text('Mapa'),
+                                icon: Icon(Icons.map_rounded),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        _FiltersPill(
+                          activeCount: _activeFilterCount,
+                          onTap: _openFilters,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const InstallAppCard(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () => context.push('/para-locales'),
+                        icon: const Icon(Icons.storefront_outlined, size: 16),
+                        label: const Text('¿Tenés un local? Sumalo gratis'),
+                        style: TextButton.styleFrom(
+                          textStyle: const TextStyle(fontSize: 13),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      _FiltersPill(
-                        activeCount: _activeFilterCount,
-                        onTap: _openFilters,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const InstallAppCard(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: () => context.push('/para-locales'),
-                      icon: const Icon(Icons.storefront_outlined, size: 16),
-                      label: const Text('¿Tenés un local? Sumalo gratis'),
-                      style: TextButton.styleFrom(
-                        textStyle: const TextStyle(fontSize: 13),
-                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Expanded(
-                  child: tenants.when(
-                    loading: () =>
-                        const AppSkeletonList(itemCount: 4, itemHeight: 132),
-                    error: (Object error, StackTrace stack) =>
-                        AppErrorState(onRetry: () => _refresh(ref)),
-                    data: (List<TenantModel> list) {
-                      List<TenantModel> filtered = filterTenants(list, search);
-                      if (_cardOnly) {
-                        filtered = filtered
-                            .where((TenantModel t) => t.acceptsCard)
-                            .toList();
-                      }
-                      final Set<String> favs = ref.watch(
-                        favoriteStoresProvider,
-                      );
-                      filtered.sort((TenantModel a, TenantModel b) {
-                        final int fav =
-                            (favs.contains(a.id) ? 0 : 1) -
-                            (favs.contains(b.id) ? 0 : 1);
-                        if (fav != 0) return fav;
-                        if (_nearby && _userPos != null) {
-                          final double? da = UserLocationService.distanceTo(
-                            a,
-                            _userPos,
-                          );
-                          final double? db = UserLocationService.distanceTo(
-                            b,
-                            _userPos,
-                          );
-                          if (da == null && db == null) return 0;
-                          if (da == null) return 1;
-                          if (db == null) return -1;
-                          return da.compareTo(db);
+                  const SizedBox(height: 2),
+                  Expanded(
+                    child: tenants.when(
+                      loading: () =>
+                          const AppSkeletonList(itemCount: 4, itemHeight: 132),
+                      error: (Object error, StackTrace stack) =>
+                          AppErrorState(onRetry: () => _refresh(ref)),
+                      data: (List<TenantModel> list) {
+                        List<TenantModel> filtered = filterTenants(
+                          list,
+                          search,
+                        );
+                        if (_cardOnly) {
+                          filtered = filtered
+                              .where((TenantModel t) => t.acceptsCard)
+                              .toList();
                         }
-                        return 0;
-                      });
-                      final bool searchingProducts = search.trim().length >= 2;
-                      final List<GlobalProductHit> productHits =
-                          searchingProducts
-                          ? (ref
-                                    .watch(
-                                      globalProductSearchProvider(
-                                        search.trim(),
-                                      ),
-                                    )
-                                    .value ??
-                                const <GlobalProductHit>[])
-                          : const <GlobalProductHit>[];
-                      final bool productsLoading =
-                          searchingProducts &&
-                          ref
-                              .watch(globalProductSearchProvider(search.trim()))
-                              .isLoading;
-                      if (filtered.isEmpty &&
-                          productHits.isEmpty &&
-                          !productsLoading) {
-                        return const AppEmptyState(
-                          icon: Icons.storefront_outlined,
-                          title: AppStrings.noStoresFound,
+                        final Set<String> favs = ref.watch(
+                          favoriteStoresProvider,
                         );
-                      }
-                      if (_view == _DirectoryView.map) {
-                        return _DirectoryMap(
-                          tenants: filtered,
-                          myTenantId: profile?.tenantId,
-                        );
-                      }
-                      return RefreshIndicator(
-                        onRefresh: () async => _refresh(ref),
-                        child: LayoutBuilder(
-                          builder: (BuildContext context, BoxConstraints box) {
-                            final bool multiColumn = box.maxWidth >= 680;
-                            if (!multiColumn || productHits.isNotEmpty) {
-                              return ListView(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  4,
-                                  16,
-                                  FloatingNavBar.height,
-                                ),
-                                children: <Widget>[
-                                  if (productHits.isNotEmpty) ...<Widget>[
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                        4,
-                                        4,
-                                        4,
-                                        8,
-                                      ),
-                                      child: Text(
-                                        'PRODUCTOS ENCONTRADOS (${productHits.length})',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.5,
-                                          color: context.tokens.textTertiary,
+                        filtered.sort((TenantModel a, TenantModel b) {
+                          final int fav =
+                              (favs.contains(a.id) ? 0 : 1) -
+                              (favs.contains(b.id) ? 0 : 1);
+                          if (fav != 0) return fav;
+                          if (_nearby && _userPos != null) {
+                            final double? da = UserLocationService.distanceTo(
+                              a,
+                              _userPos,
+                            );
+                            final double? db = UserLocationService.distanceTo(
+                              b,
+                              _userPos,
+                            );
+                            if (da == null && db == null) return 0;
+                            if (da == null) return 1;
+                            if (db == null) return -1;
+                            return da.compareTo(db);
+                          }
+                          return 0;
+                        });
+                        final bool searchingProducts =
+                            search.trim().length >= 2;
+                        final List<GlobalProductHit> productHits =
+                            searchingProducts
+                            ? (ref
+                                      .watch(
+                                        globalProductSearchProvider(
+                                          search.trim(),
                                         ),
-                                      ),
-                                    ),
-                                    for (final (int i, GlobalProductHit hit)
-                                        in productHits.indexed)
-                                      animate && i < 8
-                                          ? FadeInUp(
-                                              duration: const Duration(
-                                                milliseconds: 240,
-                                              ),
-                                              delay: Duration(
-                                                milliseconds: (i % 6) * 35,
-                                              ),
-                                              from: 14,
-                                              child: _GlobalProductHitCard(
-                                                hit: hit,
-                                              ),
-                                            )
-                                          : _GlobalProductHitCard(hit: hit),
-                                    if (filtered.isNotEmpty)
+                                      )
+                                      .value ??
+                                  const <GlobalProductHit>[])
+                            : const <GlobalProductHit>[];
+                        final bool productsLoading =
+                            searchingProducts &&
+                            ref
+                                .watch(
+                                  globalProductSearchProvider(search.trim()),
+                                )
+                                .isLoading;
+                        if (filtered.isEmpty &&
+                            productHits.isEmpty &&
+                            !productsLoading) {
+                          return const AppEmptyState(
+                            icon: Icons.storefront_outlined,
+                            title: AppStrings.noStoresFound,
+                          );
+                        }
+                        if (_view == _DirectoryView.map) {
+                          return _DirectoryMap(
+                            tenants: filtered,
+                            myTenantId: profile?.tenantId,
+                          );
+                        }
+                        return RefreshIndicator(
+                          onRefresh: () async => _refresh(ref),
+                          child: LayoutBuilder(
+                            builder: (BuildContext context, BoxConstraints box) {
+                              final bool multiColumn = box.maxWidth >= 680;
+                              if (!multiColumn || productHits.isNotEmpty) {
+                                return ListView(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    4,
+                                    16,
+                                    FloatingNavBar.height,
+                                  ),
+                                  children: <Widget>[
+                                    if (productHits.isNotEmpty) ...<Widget>[
                                       Padding(
                                         padding: const EdgeInsets.fromLTRB(
                                           4,
-                                          12,
+                                          4,
                                           4,
                                           8,
                                         ),
                                         child: Text(
-                                          'LOCALES (${filtered.length})',
+                                          'PRODUCTOS ENCONTRADOS (${productHits.length})',
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w700,
@@ -478,105 +495,142 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                                           ),
                                         ),
                                       ),
+                                      for (final (int i, GlobalProductHit hit)
+                                          in productHits.indexed)
+                                        animate && i < 8
+                                            ? FadeInUp(
+                                                duration: const Duration(
+                                                  milliseconds: 240,
+                                                ),
+                                                delay: Duration(
+                                                  milliseconds: (i % 6) * 35,
+                                                ),
+                                                from: 14,
+                                                child: _GlobalProductHitCard(
+                                                  hit: hit,
+                                                ),
+                                              )
+                                            : _GlobalProductHitCard(hit: hit),
+                                      if (filtered.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                            4,
+                                            12,
+                                            4,
+                                            8,
+                                          ),
+                                          child: Text(
+                                            'LOCALES (${filtered.length})',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 0.5,
+                                              color:
+                                                  context.tokens.textTertiary,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                    for (
+                                      int index = 0;
+                                      index < filtered.length;
+                                      index++
+                                    )
+                                      Builder(
+                                        builder: (BuildContext context) {
+                                          final Widget card = _StoreCard(
+                                            tenant: filtered[index],
+                                            isMine:
+                                                profile?.tenantId ==
+                                                filtered[index].id,
+                                            distanceMeters: _nearby
+                                                ? UserLocationService.distanceTo(
+                                                    filtered[index],
+                                                    _userPos,
+                                                  )
+                                                : null,
+                                          );
+                                          return animate && index < 8
+                                              ? card
+                                                    .animate()
+                                                    .fadeIn(
+                                                      duration: 300.ms,
+                                                      delay: (index * 40).ms,
+                                                    )
+                                                    .slideY(
+                                                      begin: 0.08,
+                                                      end: 0,
+                                                      duration: 300.ms,
+                                                      delay: (index * 40).ms,
+                                                      curve:
+                                                          Curves.easeOutCubic,
+                                                    )
+                                              : card;
+                                        },
+                                      ),
                                   ],
-                                  for (
-                                    int index = 0;
-                                    index < filtered.length;
-                                    index++
-                                  )
-                                    Builder(
-                                      builder: (BuildContext context) {
-                                        final Widget card = _StoreCard(
-                                          tenant: filtered[index],
-                                          isMine:
-                                              profile?.tenantId ==
-                                              filtered[index].id,
-                                          distanceMeters: _nearby
-                                              ? UserLocationService.distanceTo(
-                                                  filtered[index],
-                                                  _userPos,
-                                                )
-                                              : null,
-                                        );
-                                        return animate && index < 8
-                                            ? card
-                                                  .animate()
-                                                  .fadeIn(
-                                                    duration: 300.ms,
-                                                    delay: (index * 40).ms,
-                                                  )
-                                                  .slideY(
-                                                    begin: 0.08,
-                                                    end: 0,
-                                                    duration: 300.ms,
-                                                    delay: (index * 40).ms,
-                                                    curve: Curves.easeOutCubic,
-                                                  )
-                                            : card;
-                                      },
-                                    ),
-                                ],
-                              );
-                            }
-                            final int columns = box.maxWidth >= 1280
-                                ? 4
-                                : box.maxWidth >= 980
-                                ? 3
-                                : 2;
-                            return GridView.builder(
-                              padding: EdgeInsets.fromLTRB(
-                                16,
-                                4,
-                                16,
-                                AdaptiveNavShell.isWide(context)
-                                    ? 24
-                                    : FloatingNavBar.height,
-                              ),
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: columns,
-                                    crossAxisSpacing: 16,
-                                    mainAxisSpacing: 16,
-                                    mainAxisExtent: 252,
-                                  ),
-                              itemCount: filtered.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                final Widget card = _StoreCard(
-                                  tenant: filtered[index],
-                                  bottomMargin: 0,
-                                  isMine:
-                                      profile?.tenantId == filtered[index].id,
-                                  distanceMeters: _nearby
-                                      ? UserLocationService.distanceTo(
-                                          filtered[index],
-                                          _userPos,
-                                        )
-                                      : null,
                                 );
-                                return animate && index < 8
-                                    ? card
-                                          .animate()
-                                          .fadeIn(
-                                            duration: 300.ms,
-                                            delay: (index * 40).ms,
+                              }
+                              final int columns = box.maxWidth >= 1280
+                                  ? 4
+                                  : box.maxWidth >= 980
+                                  ? 3
+                                  : 2;
+                              return GridView.builder(
+                                padding: EdgeInsets.fromLTRB(
+                                  16,
+                                  4,
+                                  16,
+                                  AdaptiveNavShell.isWide(context)
+                                      ? 24
+                                      : FloatingNavBar.height,
+                                ),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: columns,
+                                      crossAxisSpacing: 16,
+                                      mainAxisSpacing: 16,
+                                      mainAxisExtent: 252,
+                                    ),
+                                itemCount: filtered.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  final Widget card = _StoreCard(
+                                    tenant: filtered[index],
+                                    bottomMargin: 0,
+                                    isMine:
+                                        profile?.tenantId == filtered[index].id,
+                                    distanceMeters: _nearby
+                                        ? UserLocationService.distanceTo(
+                                            filtered[index],
+                                            _userPos,
                                           )
-                                          .slideY(
-                                            begin: 0.08,
-                                            end: 0,
-                                            duration: 300.ms,
-                                            delay: (index * 40).ms,
-                                            curve: Curves.easeOutCubic,
-                                          )
-                                    : card;
-                              },
-                            );
-                          },
-                        ),
-                      );
-                    },
+                                        : null,
+                                  );
+                                  return animate && index < 8
+                                      ? card
+                                            .animate()
+                                            .fadeIn(
+                                              duration: 300.ms,
+                                              delay: (index * 40).ms,
+                                            )
+                                            .slideY(
+                                              begin: 0.08,
+                                              end: 0,
+                                              duration: 300.ms,
+                                              delay: (index * 40).ms,
+                                              curve: Curves.easeOutCubic,
+                                            )
+                                      : card;
+                                },
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -886,6 +940,53 @@ class _MapStoreSheet extends StatelessWidget {
   }
 }
 
+/// Store banner when there is no cover image: the store's color as a rich
+/// gradient with two soft decorative rings (cheap, no images).
+class _BannerFill extends StatelessWidget {
+  const _BannerFill({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(gradient: AppBrand.tenantGradient(color)),
+      child: Stack(
+        clipBehavior: Clip.hardEdge,
+        children: <Widget>[
+          Positioned(
+            right: -30,
+            top: -40,
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  width: 18,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 70,
+            bottom: -50,
+            child: Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StoreCard extends StatelessWidget {
   const _StoreCard({
     required this.tenant,
@@ -910,8 +1011,15 @@ class _StoreCard extends StatelessWidget {
       margin: EdgeInsets.only(bottom: bottomMargin),
       decoration: BoxDecoration(
         color: tokens.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: tokens.border),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x0A0B0F19),
+            blurRadius: 18,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -928,14 +1036,14 @@ class _StoreCard extends StatelessWidget {
                 children: <Widget>[
                   Positioned.fill(
                     child: tenant.logoUrl == null
-                        ? Container(color: tenant.primaryColorValue)
+                        ? _BannerFill(color: tenant.primaryColorValue)
                         : AppNetworkImage(
                             imageUrl: tenant.logoUrl!,
-                            placeholder: Container(
+                            placeholder: _BannerFill(
                               color: tenant.primaryColorValue,
                             ),
                             errorBuilder: (_) =>
-                                Container(color: tenant.primaryColorValue),
+                                _BannerFill(color: tenant.primaryColorValue),
                           ),
                   ),
                   if (tenant.isUnclaimedLead)

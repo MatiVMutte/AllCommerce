@@ -3,6 +3,7 @@ import 'package:all_commerce/core/constants/plans.dart';
 import 'package:all_commerce/core/router/customer_mode.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
+import 'package:all_commerce/core/theme/app_brand.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_motion.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
@@ -196,66 +197,125 @@ class _OwnerPanel extends ConsumerWidget {
               24 + (wide ? 0 : FloatingNavBar.height),
             ),
             children: <Widget>[
-              Row(
-                children: <Widget>[
-                  AppAvatar(tenant: tenant, size: 40),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          tenant.name,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        InkWell(
-                          onTap: () => context.push('/owner/plans'),
-                          child: Text(
-                            planLine,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: tenant.canPublish
-                                  ? (expiring
-                                        ? tokens.warning
-                                        : tokens.textSecondary)
-                                  : tokens.danger,
-                            ),
-                          ),
-                        ),
-                      ],
+              _FadeInStep(
+                step: 0,
+                child: _OwnerHero(
+                  tenant: tenant,
+                  planLine: planLine,
+                  planWarning: !tenant.canPublish || expiring,
+                  metrics: <({String value, String label, bool highlight})>[
+                    (
+                      value: '$pending',
+                      label: 'Pedidos nuevos',
+                      highlight: pending > 0,
                     ),
-                  ),
-                  AppRefreshButton(onRefresh: () => _refresh(ref)),
-                  const SizedBox(width: 6),
-                  _CircleIcon(
-                    icon: Icons.travel_explore_rounded,
-                    tooltip: 'Explorar locales (modo cliente)',
-                    onTap: () {
-                      ref
-                          .read(customerModeProvider.notifier)
-                          .enterCustomerMode();
-                      context.go('/');
-                    },
-                  ),
-                  if (ref.watch(currentProfileProvider).value?.isAdmin ??
-                      false) ...<Widget>[
-                    const SizedBox(width: 6),
-                    _CircleIcon(
-                      icon: Icons.admin_panel_settings_outlined,
-                      tooltip: 'Administración',
-                      onTap: () => context.push('/admin'),
+                    (
+                      value: products == null
+                          ? '—'
+                          : '${products.length}/${tenant.plan.maxProducts}',
+                      label: 'Productos',
+                      highlight: false,
+                    ),
+                    (
+                      value: tenant.plan == PlanType.free
+                          ? 'Gratis'
+                          : (tenant.canPublish
+                                ? '${tenant.daysLeft} días'
+                                : 'Vencido'),
+                      label: 'Plan',
+                      highlight: false,
+                    ),
+                    (
+                      value: aiUsage == null
+                          ? '—'
+                          : '${aiUsage.used}/${aiUsage.limit ?? '∞'}',
+                      label: 'Análisis IA',
+                      highlight: false,
                     ),
                   ],
-                  const SizedBox(width: 6),
-                  _CircleIcon(
-                    icon: Icons.logout_rounded,
-                    tooltip: 'Cerrar sesión',
-                    onTap: () => _signOut(context, ref),
-                  ),
-                ],
+                  onToggleOpen: () async {
+                    final bool ok = await ref
+                        .read(tenantSettingsControllerProvider.notifier)
+                        .toggleOpen(tenant);
+                    if (ok && context.mounted) {
+                      showAppSnackBar(
+                        context,
+                        !tenant.isOpen
+                            ? 'Tu local figura como Abierto'
+                            : 'Tu local figura como Cerrado',
+                      );
+                    }
+                  },
+                  actions: <Widget>[
+                    const SizedBox(width: 8),
+                    AppRefreshButton(
+                      onDark: true,
+                      onRefresh: () => _refresh(ref),
+                    ),
+                    const SizedBox(width: 6),
+                    _CircleIcon(
+                      onDark: true,
+                      icon: Icons.travel_explore_rounded,
+                      tooltip: 'Explorar locales (modo cliente)',
+                      onTap: () {
+                        ref
+                            .read(customerModeProvider.notifier)
+                            .enterCustomerMode();
+                        context.go('/');
+                      },
+                    ),
+                    const SizedBox(width: 6),
+                    PopupMenuButton<String>(
+                      tooltip: 'Más opciones',
+                      icon: const Icon(
+                        Icons.more_horiz_rounded,
+                        color: Colors.white,
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: 0.16),
+                        shape: const CircleBorder(),
+                        fixedSize: const Size(40, 40),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      onSelected: (String v) {
+                        switch (v) {
+                          case 'admin':
+                            context.push('/admin');
+                          case 'logout':
+                            _signOut(context, ref);
+                        }
+                      },
+                      itemBuilder: (BuildContext context) =>
+                          <PopupMenuEntry<String>>[
+                            if (ref
+                                    .read(currentProfileProvider)
+                                    .value
+                                    ?.isAdmin ??
+                                false)
+                              const PopupMenuItem<String>(
+                                value: 'admin',
+                                child: ListTile(
+                                  leading: Icon(
+                                    Icons.admin_panel_settings_outlined,
+                                  ),
+                                  title: Text('Administración'),
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                              ),
+                            const PopupMenuItem<String>(
+                              value: 'logout',
+                              child: ListTile(
+                                leading: Icon(Icons.logout_rounded),
+                                title: Text('Cerrar sesión'),
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ],
+                    ),
+                  ],
+                ),
               ),
               if (!tenant.canPublish) ...<Widget>[
                 const SizedBox(height: 16),
@@ -264,148 +324,6 @@ class _OwnerPanel extends ConsumerWidget {
               const SizedBox(height: 16),
               twoCols(
                 <Widget>[
-                  _FadeInStep(
-                    step: 0,
-                    child: AppCard(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 250),
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: tenant.isOpen
-                                  ? tokens.success
-                                  : tokens.textTertiary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  tenant.isOpen
-                                      ? 'Local abierto'
-                                      : 'Local cerrado',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: tokens.textPrimary,
-                                  ),
-                                ),
-                                if (tenant.openingHours != null &&
-                                    tenant.openingHours!.trim().isNotEmpty)
-                                  Text(
-                                    tenant.openingHours!,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: tokens.textSecondary,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          Switch.adaptive(
-                            value: tenant.isOpen,
-                            onChanged: (_) async {
-                              final bool ok = await ref
-                                  .read(
-                                    tenantSettingsControllerProvider.notifier,
-                                  )
-                                  .toggleOpen(tenant);
-                              if (ok && context.mounted) {
-                                showAppSnackBar(
-                                  context,
-                                  !tenant.isOpen
-                                      ? 'Tu local figura como Abierto'
-                                      : 'Tu local figura como Cerrado',
-                                );
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _FadeInStep(
-                    step: 1,
-                    child: LayoutBuilder(
-                      builder: (BuildContext context, BoxConstraints c) {
-                        final List<Widget> cells = <Widget>[
-                          _MetricCell(
-                            value: products == null
-                                ? '—'
-                                : '${products.length}/'
-                                      '${tenant.plan.maxProducts}',
-                            label: 'Productos',
-                          ),
-                          _MetricCell(
-                            value: '$pending',
-                            label: 'Pedidos nuevos',
-                            highlight: pending > 0,
-                          ),
-                          _MetricCell(
-                            value: tenant.canPublish
-                                ? '${tenant.daysLeft} días'
-                                : 'Vencido',
-                            label: 'Plan',
-                          ),
-                          _MetricCell(
-                            value: aiUsage == null
-                                ? '—'
-                                : '${aiUsage.used}/${aiUsage.limit ?? '∞'}',
-                            label: 'IA',
-                          ),
-                        ];
-                        return AppCard(
-                          padding: EdgeInsets.zero,
-                          child: c.maxWidth < 420
-                              ? Column(
-                                  children: <Widget>[
-                                    IntrinsicHeight(
-                                      child: Row(
-                                        children: <Widget>[
-                                          cells[0],
-                                          _Divider(tokens: tokens),
-                                          cells[1],
-                                        ],
-                                      ),
-                                    ),
-                                    Container(height: 1, color: tokens.border),
-                                    IntrinsicHeight(
-                                      child: Row(
-                                        children: <Widget>[
-                                          cells[2],
-                                          _Divider(tokens: tokens),
-                                          cells[3],
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : IntrinsicHeight(
-                                  child: Row(
-                                    children: <Widget>[
-                                      cells[0],
-                                      _Divider(tokens: tokens),
-                                      cells[1],
-                                      _Divider(tokens: tokens),
-                                      cells[2],
-                                      _Divider(tokens: tokens),
-                                      cells[3],
-                                    ],
-                                  ),
-                                ),
-                        );
-                      },
-                    ),
-                  ),
                   if (products != null)
                     _FadeInStep(
                       step: 2,
@@ -619,11 +537,17 @@ class _OwnerPanel extends ConsumerWidget {
 }
 
 class _CircleIcon extends StatelessWidget {
-  const _CircleIcon({required this.icon, required this.onTap, this.tooltip});
+  const _CircleIcon({
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+    this.onDark = false,
+  });
 
   final IconData icon;
   final VoidCallback onTap;
   final String? tooltip;
+  final bool onDark;
 
   @override
   Widget build(BuildContext context) {
@@ -632,24 +556,249 @@ class _CircleIcon extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: tokens.surfaceMuted,
+        color: onDark ? Colors.white.withValues(alpha: 0.16) : tokens.surface,
+        border: onDark ? null : Border.all(color: tokens.border),
         shape: BoxShape.circle,
       ),
       child: IconButton(
         padding: EdgeInsets.zero,
         tooltip: tooltip,
-        icon: Icon(icon, size: 18, color: tokens.textPrimary),
+        icon: Icon(
+          icon,
+          size: 18,
+          color: onDark ? Colors.white : tokens.textPrimary,
+        ),
         onPressed: onTap,
       ),
     );
   }
 }
 
-class _MetricCell extends StatelessWidget {
-  const _MetricCell({
+/// Dashboard hero: the store's own brand gradient with name, plan, the
+/// open/closed toggle and the four key numbers, all in one glance.
+class _OwnerHero extends StatelessWidget {
+  const _OwnerHero({
+    required this.tenant,
+    required this.planLine,
+    required this.planWarning,
+    required this.metrics,
+    required this.actions,
+    required this.onToggleOpen,
+  });
+
+  final TenantModel tenant;
+  final String planLine;
+  final bool planWarning;
+  final List<({String value, String label, bool highlight})> metrics;
+  final List<Widget> actions;
+  final VoidCallback onToggleOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color brand = tenant.primaryColorValue;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: AppBrand.tenantGradient(brand),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: brand.withValues(alpha: 0.28),
+            blurRadius: 30,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: <Widget>[
+          Positioned(
+            right: -50,
+            top: -70,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  width: 28,
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: AppAvatar(tenant: tenant, size: 44),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            tenant.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.4,
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () => context.push('/owner/plans'),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                if (planWarning) ...const <Widget>[
+                                  Icon(
+                                    Icons.warning_amber_rounded,
+                                    size: 14,
+                                    color: Color(0xFFFDE68A),
+                                  ),
+                                  SizedBox(width: 4),
+                                ],
+                                Flexible(
+                                  child: Text(
+                                    planLine,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: planWarning
+                                          ? const Color(0xFFFDE68A)
+                                          : Colors.white.withValues(
+                                              alpha: 0.85,
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 16,
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ...actions,
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Material(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: onToggleOpen,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+                      child: Row(
+                        children: <Widget>[
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: tenant.isOpen
+                                  ? const Color(0xFF4ADE80)
+                                  : Colors.white54,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              tenant.openingHours != null &&
+                                      tenant.openingHours!.trim().isNotEmpty
+                                  ? '${tenant.isOpen ? 'Abierto' : 'Cerrado'}'
+                                        ' · ${tenant.openingHours}'
+                                  : (tenant.isOpen
+                                        ? 'Local abierto'
+                                        : 'Local cerrado'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Switch.adaptive(
+                            value: tenant.isOpen,
+                            activeTrackColor: const Color(0xFF22C55E),
+                            onChanged: (_) => onToggleOpen(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints c) {
+                    final int perRow = c.maxWidth < 380 ? 2 : 4;
+                    final List<Widget> cells = <Widget>[
+                      for (final m in metrics)
+                        _HeroMetric(
+                          value: m.value,
+                          label: m.label,
+                          highlight: m.highlight,
+                        ),
+                    ];
+                    return Column(
+                      children: <Widget>[
+                        for (int i = 0; i < cells.length; i += perRow)
+                          Padding(
+                            padding: EdgeInsets.only(top: i == 0 ? 0 : 10),
+                            child: Row(
+                              children: <Widget>[
+                                for (
+                                  int j = i;
+                                  j < i + perRow;
+                                  j++
+                                ) ...<Widget>[
+                                  if (j > i) const SizedBox(width: 10),
+                                  Expanded(
+                                    child: j < cells.length
+                                        ? cells[j]
+                                        : const SizedBox(),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroMetric extends StatelessWidget {
+  const _HeroMetric({
     required this.value,
     required this.label,
-    this.highlight = false,
+    required this.highlight,
   });
 
   final String value;
@@ -658,46 +807,42 @@ class _MetricCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppTokens tokens = context.tokens;
-    final Color primary = Theme.of(context).colorScheme.primary;
-    Widget dot = Container(
-      width: 7,
-      height: 7,
-      decoration: BoxDecoration(color: primary, shape: BoxShape.circle),
-    );
-    if (AppMotion.loopsEnabled(context)) {
-      dot = Pulse(
-        infinite: true,
-        duration: const Duration(milliseconds: 1800),
-        child: dot,
-      );
-    }
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          children: <Widget>[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: highlight ? primary : tokens.textPrimary,
-                  ),
-                ),
-                if (highlight) ...<Widget>[const SizedBox(width: 5), dot],
-              ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: highlight ? Colors.white : Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.6,
+                color: highlight ? const Color(0xFF0B0F19) : Colors.white,
+              ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(fontSize: 12, color: tokens.textTertiary),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: highlight
+                  ? const Color(0xFF5B6472)
+                  : Colors.white.withValues(alpha: 0.8),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -720,16 +865,6 @@ class _FadeInStep extends StatelessWidget {
       child: child,
     );
   }
-}
-
-class _Divider extends StatelessWidget {
-  const _Divider({required this.tokens});
-
-  final AppTokens tokens;
-
-  @override
-  Widget build(BuildContext context) =>
-      Container(width: 1, color: tokens.border);
 }
 
 class _OrderRow extends StatelessWidget {

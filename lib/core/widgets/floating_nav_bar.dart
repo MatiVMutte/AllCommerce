@@ -1,3 +1,4 @@
+import 'package:all_commerce/core/theme/app_brand.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/utils/app_motion.dart';
@@ -183,27 +184,41 @@ class _CenterButton extends StatelessWidget {
     final Widget button = Badge(
       isLabelVisible: badgeCount > 0,
       label: Text('$badgeCount'),
-      child: Material(
-        color: enabled ? scheme.primary : scheme.surfaceContainerHighest,
-        elevation: 6,
-        shadowColor: scheme.primary.withValues(alpha: 0.4),
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: enabled
-              ? () {
-                  AppHaptics.medium();
-                  onTap?.call();
-                }
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: enabled ? AppBrand.gradient(scheme.primary) : null,
+          color: enabled ? null : scheme.surfaceContainerHighest,
+          boxShadow: enabled
+              ? <BoxShadow>[
+                  BoxShadow(
+                    color: scheme.primary.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
               : null,
-          child: SizedBox(
-            width: 56,
-            height: 56,
-            child: Icon(
-              icon,
-              color: enabled
-                  ? scheme.onPrimary
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: enabled
+                ? () {
+                    AppHaptics.medium();
+                    onTap?.call();
+                  }
+                : null,
+            child: SizedBox(
+              width: 56,
+              height: 56,
+              child: Icon(
+                icon,
+                color: enabled
+                    ? scheme.onPrimary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ),

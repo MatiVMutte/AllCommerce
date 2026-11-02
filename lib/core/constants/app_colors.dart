@@ -7,11 +7,14 @@ abstract final class AppColors {
   static const Color primary = Color(0xFF0052FF);
   static const Color primaryDark = Color(0xFF3D7BFF);
 
-  // Light
-  static const Color background = Color(0xFFFFFFFF);
+  /// Second brand stop: primary → violet gradients (hero, badges, logo).
+  static const Color violet = Color(0xFF7C3AED);
+
+  // Light — soft cool background so white cards read as raised surfaces.
+  static const Color background = Color(0xFFF6F7FB);
   static const Color card = Color(0xFFFFFFFF);
-  static const Color surfaceMutedLight = Color(0xFFF5F6F8);
-  static const Color border = Color(0xFFE5E7EB);
+  static const Color surfaceMutedLight = Color(0xFFEEF1F6);
+  static const Color border = Color(0xFFE4E7EE);
   static const Color textPrimary = Color(0xFF0B0F19);
   static const Color textSecondary = Color(0xFF5B6472);
   static const Color textTertiary = Color(0xFF98A2B3);

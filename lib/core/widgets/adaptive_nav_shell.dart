@@ -1,4 +1,6 @@
+import 'package:all_commerce/core/theme/app_brand.dart';
 import 'package:all_commerce/core/utils/app_haptics.dart';
+import 'package:all_commerce/core/widgets/brand_logo.dart';
 import 'package:all_commerce/core/utils/app_motion.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:animate_do/animate_do.dart';
@@ -69,13 +71,19 @@ class AdaptiveNavShell extends StatelessWidget {
             labelType: NavigationRailLabelType.all,
             groupAlignment: -0.85,
             leading: Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _RailCenterButton(
-                icon: centerIcon,
-                badgeCount: centerBadgeCount,
-                enabled: centerEnabled,
-                tooltip: centerTooltip,
-                onTap: onCenterTap,
+              padding: const EdgeInsets.only(top: 8, bottom: 12),
+              child: Column(
+                children: <Widget>[
+                  const BrandLogo(size: 36, showWordmark: false),
+                  const SizedBox(height: 24),
+                  _RailCenterButton(
+                    icon: centerIcon,
+                    badgeCount: centerBadgeCount,
+                    enabled: centerEnabled,
+                    tooltip: centerTooltip,
+                    onTap: onCenterTap,
+                  ),
+                ],
               ),
             ),
             destinations: <NavigationRailDestination>[
@@ -127,26 +135,31 @@ class _RailCenterButton extends StatelessWidget {
       isLabelVisible: badgeCount > 0,
       label: Text('$badgeCount'),
       child: Material(
-        color: enabled ? scheme.primary : scheme.surfaceContainerHighest,
-        elevation: 4,
-        shadowColor: scheme.primary.withValues(alpha: 0.35),
+        color: enabled ? null : scheme.surfaceContainerHighest,
+        type: enabled ? MaterialType.transparency : MaterialType.canvas,
         shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: enabled
-              ? () {
-                  AppHaptics.medium();
-                  onTap?.call();
-                }
-              : null,
-          child: Tooltip(
-            message: tooltip ?? '',
-            child: SizedBox(
-              width: 56,
-              height: 56,
-              child: Icon(
-                icon,
-                color: enabled ? scheme.onPrimary : scheme.onSurfaceVariant,
+        child: Ink(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: enabled ? AppBrand.gradient(scheme.primary) : null,
+          ),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: enabled
+                ? () {
+                    AppHaptics.medium();
+                    onTap?.call();
+                  }
+                : null,
+            child: Tooltip(
+              message: tooltip ?? '',
+              child: SizedBox(
+                width: 56,
+                height: 56,
+                child: Icon(
+                  icon,
+                  color: enabled ? scheme.onPrimary : scheme.onSurfaceVariant,
+                ),
               ),
             ),
           ),

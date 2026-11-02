@@ -1,5 +1,6 @@
 import 'package:all_commerce/core/router/customer_mode.dart';
 import 'package:all_commerce/core/router/return_to.dart';
+import 'package:all_commerce/core/theme/app_brand.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
@@ -67,72 +68,76 @@ class ProfileView extends ConsumerWidget {
     final Session? session = ref.watch(sessionProvider);
     if (session == null) {
       return Scaffold(
-        body: SafeArea(
-          bottom: false,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: tokens.surfaceMuted,
-                    child: Icon(
-                      Icons.person_outline_rounded,
-                      size: 36,
-                      color: tokens.textTertiary,
+        body: BrandBackground(
+          intensity: 0.7,
+          child: SafeArea(
+            bottom: false,
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 420),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const BrandIconBadge(
+                      icon: Icons.person_outline_rounded,
+                      size: 80,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Tu perfil',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Ingresá para ver tus pedidos y guardar tus datos',
-                    style: TextStyle(color: tokens.textSecondary),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () {
-                        ref.read(returnToProvider.notifier).set('/profile');
-                        context.push('/login');
-                      },
-                      child: const Text('Ingresar'),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Tu perfil',
+                      style: Theme.of(context).textTheme.headlineMedium,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        ref.read(returnToProvider.notifier).set('/profile');
-                        context.push('/register');
-                      },
-                      child: const Text('Crear cuenta'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8,
-                    children: <Widget>[
-                      TextButton(
-                        onPressed: () => context.push('/terms'),
-                        child: const Text('Términos y condiciones'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Ingresá para ver tus pedidos, repetir compras y '
+                      'guardar tus locales favoritos',
+                      style: TextStyle(
+                        fontSize: 15,
+                        height: 1.45,
+                        color: tokens.textSecondary,
                       ),
-                      TextButton(
-                        onPressed: () => context.push('/privacy'),
-                        child: const Text('Privacidad'),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () {
+                          ref.read(returnToProvider.notifier).set('/profile');
+                          context.push('/login');
+                        },
+                        child: const Text('Ingresar'),
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          ref.read(returnToProvider.notifier).set('/profile');
+                          context.push('/register');
+                        },
+                        child: const Text('Crear cuenta'),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      children: <Widget>[
+                        TextButton(
+                          onPressed: () => context.push('/terms'),
+                          child: const Text('Términos y condiciones'),
+                        ),
+                        TextButton(
+                          onPressed: () => context.push('/privacy'),
+                          child: const Text('Privacidad'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -157,27 +162,42 @@ class ProfileView extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(24, 32, 24, 120),
               children: <Widget>[
                 Center(
-                  child: CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    child: Text(
-                      name.characters.first.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 30,
-                        fontWeight: FontWeight.w700,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: AppBrand.softGradient(
+                        Theme.of(context).colorScheme.primary,
+                        alpha: 0.12,
+                      ),
+                    ),
+                    child: Container(
+                      width: 88,
+                      height: 88,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: AppBrand.gradient(
+                          Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      child: Text(
+                        name.characters.first.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 36,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 Center(
                   child: Text(
                     name,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
                 Center(
@@ -204,14 +224,9 @@ class ProfileView extends ConsumerWidget {
                     },
                     child: Row(
                       children: <Widget>[
-                        CircleAvatar(
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .primary,
-                          child: const Icon(
-                            Icons.storefront_rounded,
-                            color: Colors.white,
-                          ),
+                        const BrandIconBadge(
+                          icon: Icons.storefront_rounded,
+                          size: 44,
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -245,14 +260,9 @@ class ProfileView extends ConsumerWidget {
                     onTap: () => context.push('/onboarding/business'),
                     child: Row(
                       children: <Widget>[
-                        CircleAvatar(
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .primary,
-                          child: const Icon(
-                            Icons.auto_awesome_rounded,
-                            color: Colors.white,
-                          ),
+                        const BrandIconBadge(
+                          icon: Icons.auto_awesome_rounded,
+                          size: 44,
                         ),
                         const SizedBox(width: 14),
                         Expanded(

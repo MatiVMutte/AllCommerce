@@ -1,5 +1,7 @@
+import 'package:all_commerce/core/theme/app_brand.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/widgets/app_back_button.dart';
+import 'package:all_commerce/core/widgets/brand_logo.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -52,23 +54,19 @@ class _WelcomeViewState extends State<WelcomeView> {
     final Color primary = Theme.of(context).colorScheme.primary;
     final bool isLast = _page == _slides.length - 1;
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.center,
-            colors: <Color>[
-              primary.withValues(alpha: 0.08),
-              Theme.of(context).scaffoldBackgroundColor,
-            ],
-          ),
-        ),
+      body: BrandBackground(
         child: SafeArea(
           child: Column(
             children: <Widget>[
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: AppBackButton(fallback: '/'),
+              const Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: Row(
+                  children: <Widget>[
+                    AppBackButton(fallback: '/'),
+                    Spacer(),
+                    BrandLogo(size: 30),
+                  ],
+                ),
               ),
               Expanded(
                 child: PageView.builder(
@@ -77,35 +75,69 @@ class _WelcomeViewState extends State<WelcomeView> {
                   onPageChanged: (int index) => setState(() => _page = index),
                   itemBuilder: (BuildContext context, int index) {
                     final _Slide slide = _slides[index];
-                    return Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: primary.withValues(alpha: 0.1),
+                    return Center(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: AppBrand.softGradient(
+                                  primary,
+                                  alpha: 0.08,
+                                ),
+                              ),
+                              child: Container(
+                                width: 128,
+                                height: 128,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(40),
+                                  gradient: AppBrand.gradient(primary),
+                                  boxShadow: <BoxShadow>[
+                                    BoxShadow(
+                                      color: primary.withValues(alpha: 0.3),
+                                      blurRadius: 32,
+                                      offset: const Offset(0, 14),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  slide.icon,
+                                  size: 56,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
-                            child: Icon(slide.icon, size: 52, color: primary),
-                          ),
-                          const SizedBox(height: 32),
-                          Text(
-                            slide.title,
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(fontWeight: FontWeight.w700),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            slide.text,
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(color: tokens.textSecondary),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                            const SizedBox(height: 40),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Column(
+                                children: <Widget>[
+                                  Text(
+                                    slide.title,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineLarge,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Text(
+                                    slide.text,
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      height: 1.5,
+                                      color: tokens.textSecondary,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -118,17 +150,21 @@ class _WelcomeViewState extends State<WelcomeView> {
                   (int index) => AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeOutCubic,
-                    width: index == _page ? 24 : 8,
+                    width: index == _page ? 28 : 8,
                     height: 8,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(999),
-                      color: index == _page ? primary : tokens.border,
+                      gradient: index == _page
+                          ? AppBrand.gradient(primary)
+                          : null,
+                      color: index == _page ? null : tokens.border,
                     ),
                   ),
                 ),
               ),
-              Padding(
+              Container(
+                constraints: const BoxConstraints(maxWidth: 460),
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

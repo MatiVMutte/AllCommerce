@@ -4,7 +4,6 @@ import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
-import 'package:all_commerce/core/widgets/app_back_button.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/auth/presentation/widgets/auth_layout.dart';
@@ -106,131 +105,114 @@ class _BusinessOnboardingViewState
     final bool slugValid =
         Validators.slug(_slug.text.trim()) == null &&
         _slug.text.trim().isNotEmpty;
-    return Scaffold(
-      appBar: hasCustomerProfile
-          ? AppBar(leading: const AppBackButton(fallback: '/profile'))
-          : null,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    const AuthHeader(
-                      title: 'Creá tu local',
-                      subtitle: 'Tu catálogo queda online en un minuto',
-                    ),
-                    const SizedBox(height: 32),
-                    LabeledField(
-                      label: 'Tu nombre',
-                      child: TextFormField(
-                        controller: _fullName,
-                        decoration: const InputDecoration(
-                          hintText: 'Ana López',
-                        ),
-                        validator: Validators.fullName,
+    return AuthScaffold(
+      showBack: hasCustomerProfile,
+      backFallback: '/profile',
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            const AuthHeader(
+              title: 'Creá tu local',
+              subtitle: 'Tu catálogo queda online en un minuto',
+            ),
+            const SizedBox(height: 32),
+            LabeledField(
+              label: 'Tu nombre',
+              child: TextFormField(
+                controller: _fullName,
+                decoration: const InputDecoration(hintText: 'Ana López'),
+                validator: Validators.fullName,
+              ),
+            ),
+            const SizedBox(height: 16),
+            LabeledField(
+              label: 'Nombre del local',
+              child: TextFormField(
+                controller: _storeName,
+                decoration: const InputDecoration(hintText: 'Bazar Don Pepe'),
+                validator: Validators.storeName,
+              ),
+            ),
+            const SizedBox(height: 16),
+            LabeledField(
+              label: 'Link de tu catálogo',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  TextFormField(
+                    controller: _slug,
+                    decoration: InputDecoration(
+                      hintText: 'tu-local',
+                      prefixIcon: Icon(
+                        Icons.link_rounded,
+                        size: 20,
+                        color: tokens.textTertiary,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    LabeledField(
-                      label: 'Nombre del local',
-                      child: TextFormField(
-                        controller: _storeName,
-                        decoration: const InputDecoration(
-                          hintText: 'Bazar Don Pepe',
-                        ),
-                        validator: Validators.storeName,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    LabeledField(
-                      label: 'Link de tu catálogo',
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: tokens.surfaceMuted,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: Row(
-                          children: <Widget>[
-                            Text(
-                              '${ShareService.linkBase}/s/',
-                              style: TextStyle(
-                                color: tokens.textTertiary,
-                                fontSize: 13,
-                              ),
-                            ),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _slug,
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  errorBorder: InputBorder.none,
-                                  focusedErrorBorder: InputBorder.none,
-                                  filled: false,
-                                  hintText: 'tu-local',
-                                  isDense: true,
-                                ),
-                                onChanged: (_) => _slugEdited = true,
-                                validator: Validators.slug,
-                              ),
-                            ),
-                            if (slugValid)
-                              Icon(
-                                Icons.check_circle_rounded,
-                                size: 20,
-                                color: tokens.success,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    LabeledField(
-                      label: 'WhatsApp del local',
-                      child: TextFormField(
-                        controller: _whatsapp,
-                        keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(
-                          hintText: '11 2233 4455',
-                          helperText: 'Con código de área, sin 0 ni 15',
-                        ),
-                        validator: Validators.phone,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    LabeledField(
-                      label: 'Dirección (opcional)',
-                      child: TextFormField(
-                        controller: _address,
-                        decoration: const InputDecoration(
-                          hintText: 'Av. Siempre Viva 742',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    FilledButton(
-                      onPressed: loading ? null : _submit,
-                      child: loading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                      suffixIcon: slugValid
+                          ? Icon(
+                              Icons.check_circle_rounded,
+                              size: 20,
+                              color: tokens.success,
                             )
-                          : const Text('Crear mi local'),
+                          : null,
                     ),
-                  ],
+                    onChanged: (_) => _slugEdited = true,
+                    validator: Validators.slug,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${ShareService.linkBase}/s/'
+                    '${_slug.text.trim().isEmpty ? 'tu-local' : _slug.text.trim()}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: slugValid
+                          ? Theme.of(context).colorScheme.primary
+                          : tokens.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            LabeledField(
+              label: 'WhatsApp del local',
+              child: TextFormField(
+                controller: _whatsapp,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  hintText: '11 2233 4455',
+                  helperText: 'Con código de área, sin 0 ni 15',
+                ),
+                validator: Validators.phone,
+              ),
+            ),
+            const SizedBox(height: 16),
+            LabeledField(
+              label: 'Dirección (opcional)',
+              child: TextFormField(
+                controller: _address,
+                decoration: const InputDecoration(
+                  hintText: 'Av. Siempre Viva 742',
                 ),
               ),
             ),
-          ),
+            const SizedBox(height: 28),
+            FilledButton(
+              onPressed: loading ? null : _submit,
+              child: loading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Crear mi local'),
+            ),
+          ],
         ),
       ),
     );

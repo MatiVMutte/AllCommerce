@@ -1,4 +1,5 @@
 import 'package:all_commerce/core/constants/plans.dart';
+import 'package:all_commerce/core/widgets/brand_logo.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/features/billing/data/models/plan_model.dart';
@@ -155,65 +156,6 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _Logo extends StatelessWidget {
-  const _Logo();
-
-  @override
-  Widget build(BuildContext context) {
-    final Color primary = Theme.of(context).colorScheme.primary;
-    final Color text = context.tokens.textPrimary;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Container(
-          width: 32,
-          height: 32,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(9),
-            gradient: LinearGradient(
-              colors: <Color>[primary, const Color(0xFF7C3AED)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: const Text(
-            'A',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: 17,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Flexible(
-          child: Text.rich(
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            TextSpan(
-              children: <InlineSpan>[
-                const TextSpan(
-                  text: 'ALL',
-                  style: TextStyle(fontWeight: FontWeight.w900),
-                ),
-                TextSpan(
-                  text: 'Commerce',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: text.withValues(alpha: 0.8),
-                  ),
-                ),
-              ],
-            ),
-            style: TextStyle(fontSize: 18, color: text, letterSpacing: -0.3),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Hero
 // ---------------------------------------------------------------------------
@@ -306,7 +248,7 @@ class _NavBar extends StatelessWidget {
                 onTap: () => context.go('/'),
                 child: const Padding(
                   padding: EdgeInsets.all(4),
-                  child: _Logo(),
+                  child: BrandLogo(),
                 ),
               ),
             ),
@@ -1887,7 +1829,7 @@ class _Footer extends StatelessWidget {
           spacing: 24,
           runSpacing: 16,
           children: <Widget>[
-            const _Logo(),
+            const BrandLogo(),
             Wrap(
               spacing: 20,
               runSpacing: 8,
