@@ -97,7 +97,9 @@ Future<Uint8List> buildOrderTicketPdf({
                         ),
                         decoration: pw.BoxDecoration(
                           color: onBrand,
-                          borderRadius: pw.BorderRadius.circular(999),
+                          // radius 999 genera curvas degeneradas que pintan
+                          // un blob blanco gigante tapando el encabezado.
+                          borderRadius: pw.BorderRadius.circular(7),
                         ),
                         child: pw.Text(
                           order.status.label.toUpperCase(),
