@@ -63,10 +63,11 @@ class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
       final List<OrderItemModel> items = await ref.read(
         orderItemsProvider(order.id).future,
       );
-      final String? tenantId = ref.read(currentProfileProvider).value?.tenantId;
-      final TenantModel? tenant = tenantId == null
-          ? null
-          : ref.read(tenantByIdProvider(tenantId)).value;
+      // Usar el tenant DEL PEDIDO (no el del perfil): cubre admin y vistas
+      // ajenas, y espera el Future en vez de leer el snapshot.
+      final TenantModel? tenant = await ref.read(
+        tenantByIdProvider(order.tenantId).future,
+      );
       if (!mounted) return;
       final bytes = await buildOrderTicketPdf(
         order: order,
