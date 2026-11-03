@@ -6,7 +6,6 @@ import 'package:all_commerce/core/utils/app_haptics.dart';
 import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
 import 'package:all_commerce/core/widgets/app_card.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
-import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/features/ai_chat/data/models/ai_chat_message.dart';
 import 'package:all_commerce/features/ai_chat/presentation/view_models/ai_chat_controller.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
@@ -243,8 +242,9 @@ class _OwnerAiViewState extends ConsumerState<OwnerAiView> {
                     16,
                     6,
                     16,
-                    (wide ? 16 : FloatingNavBar.height) +
-                        MediaQuery.of(context).padding.bottom,
+                    // Scaffold already injects the FloatingNavBar height into
+                    // padding.bottom — only add a small gap on top of it.
+                    wide ? 16 : MediaQuery.of(context).padding.bottom + 10,
                   ),
                   child: Container(
                     padding: const EdgeInsets.symmetric(

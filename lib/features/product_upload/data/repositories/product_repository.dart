@@ -189,8 +189,8 @@ class ProductRepository {
           .from('products')
           .update(<String, dynamic>{
             'price': newPrice,
-            if (newCompare != null) 'compare_at_price': newCompare,
-            if (newWholesale != null) 'wholesale_price': newWholesale,
+            'compare_at_price': ?newCompare,
+            'wholesale_price': ?newWholesale,
           })
           .eq('id', p.id)
           .eq('tenant_id', tenantId);
