@@ -1,7 +1,4 @@
-import 'package:all_commerce/core/tenant/tenant_model.dart';
-import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/widgets/adaptive_nav_shell.dart';
-import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/floating_nav_bar.dart';
 import 'package:all_commerce/features/auth/data/models/user_model.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
@@ -12,19 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 /// Bottom-bar shell for the owner side:
-/// [Panel] [Productos] (● Subir) [Pedidos] [Local]
+/// [Panel] [Productos] (● IA) [Pedidos] [Local]
 class OwnerShell extends ConsumerWidget {
   const OwnerShell({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
-
-  void _upload(BuildContext context, TenantModel? tenant) {
-    if (tenant == null || !tenant.canPublish) {
-      showAppSnackBar(context, 'Llegaste al límite de tu plan');
-      return;
-    }
-    context.push('/owner/products/new');
-  }
 
   void _goBranch(int index) {
     navigationShell.goBranch(
@@ -37,18 +26,17 @@ class OwnerShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final UserModel? profile = ref.watch(currentProfileProvider).value;
     final String? tenantId = profile?.tenantId;
-    final TenantModel? tenant = tenantId == null
-        ? null
-        : ref.watch(tenantByIdProvider(tenantId)).value;
     final List<OrderModel>? orders = tenantId == null
         ? null
         : ref.watch(ownerOrdersProvider(tenantId)).value;
-    final int pending = orders == null ? 0 : pendingCount(orders);
+    final int pending = orders == null
+        ? 0
+        : pendingCount(orders.where((OrderModel o) => !o.isArchived).toList());
 
     return AdaptiveNavShell(
-      centerIcon: Icons.add_a_photo_outlined,
-      centerTooltip: 'Subir producto',
-      onCenterTap: () => _upload(context, tenant),
+      centerIcon: Icons.auto_awesome,
+      centerTooltip: 'Asistente IA',
+      onCenterTap: () => _goBranch(4),
       items: <FloatingNavItem>[
         FloatingNavItem(
           icon: Icons.dashboard_outlined,
@@ -79,13 +67,6 @@ class OwnerShell extends ConsumerWidget {
           label: 'Local',
           selected: navigationShell.currentIndex == 3,
           onTap: () => _goBranch(3),
-        ),
-        FloatingNavItem(
-          icon: Icons.auto_awesome_outlined,
-          activeIcon: Icons.auto_awesome,
-          label: 'IA',
-          selected: navigationShell.currentIndex == 4,
-          onTap: () => _goBranch(4),
         ),
       ],
       child: navigationShell,

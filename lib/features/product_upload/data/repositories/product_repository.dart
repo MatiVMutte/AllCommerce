@@ -143,6 +143,62 @@ class ProductRepository {
         .eq('tenant_id', tenantId);
   }
 
+  /// Put a product on sale ([compareAtPrice] > [price]) or clear its discount
+  /// ([compareAtPrice] == null).
+  Future<void> setDiscount(
+    String productId,
+    String tenantId, {
+    required double price,
+    double? compareAtPrice,
+  }) async {
+    await _client
+        .from('products')
+        .update(<String, dynamic>{
+          'price': price,
+          'compare_at_price': compareAtPrice,
+        })
+        .eq('id', productId)
+        .eq('tenant_id', tenantId);
+  }
+
+  /// Adjusts every product's price (or only [category]) by [percent]%,
+  /// rounding to whole pesos and scaling `compare_at_price` / `wholesale_price`
+  /// proportionally when present. Returns the count of updated rows.
+  Future<int> adjustPricesByPercent(
+    String tenantId, {
+    required double percent,
+    String? category,
+  }) async {
+    final double factor = 1 + (percent / 100);
+    if (factor <= 0) return 0;
+    final List<ProductModel> all = await listAll(tenantId);
+    final Iterable<ProductModel> targets = category == null || category.isEmpty
+        ? all
+        : all.where((ProductModel p) => p.category == category);
+    int updated = 0;
+    for (final ProductModel p in targets) {
+      final double newPrice = (p.price * factor).roundToDouble();
+      if (newPrice <= 0) continue;
+      final double? newCompare = p.compareAtPrice != null
+          ? (p.compareAtPrice! * factor).roundToDouble()
+          : null;
+      final double? newWholesale = p.wholesalePrice != null
+          ? (p.wholesalePrice! * factor).roundToDouble()
+          : null;
+      await _client
+          .from('products')
+          .update(<String, dynamic>{
+            'price': newPrice,
+            if (newCompare != null) 'compare_at_price': newCompare,
+            if (newWholesale != null) 'wholesale_price': newWholesale,
+          })
+          .eq('id', p.id)
+          .eq('tenant_id', tenantId);
+      updated++;
+    }
+    return updated;
+  }
+
   Future<void> setStock(
     String productId,
     String tenantId, {

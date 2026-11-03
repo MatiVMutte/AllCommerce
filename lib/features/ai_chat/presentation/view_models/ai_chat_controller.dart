@@ -176,6 +176,29 @@ class AiChatController extends Notifier<AiChatState> {
         done = featured
             ? '"${action.productTitle}" destacado'
             : '"${action.productTitle}" ya no es destacado';
+      case AiActionType.productDiscount:
+        final double price = (action.data['price'] as num).toDouble();
+        final double? compareAt = (action.data['compare_at_price'] as num?)
+            ?.toDouble();
+        await repo.setDiscount(
+          action.data['product_id'] as String,
+          tenantId,
+          price: price,
+          compareAtPrice: compareAt,
+        );
+        done = compareAt != null
+            ? 'Oferta aplicada en "${action.productTitle}"'
+            : 'Oferta quitada de "${action.productTitle}"';
+      case AiActionType.bulkPriceChange:
+        final double pct = (action.data['percent'] as num).toDouble();
+        final String? category = action.data['category'] as String?;
+        final int count = await repo.adjustPricesByPercent(
+          tenantId,
+          percent: pct,
+          category: category,
+        );
+        final String sign = pct >= 0 ? '+$pct%' : '$pct%';
+        done = 'Precios ajustados ($sign) en $count productos';
     }
     action.status = AiActionStatus.done;
     ref.invalidate(ownerProductsProvider(tenantId));

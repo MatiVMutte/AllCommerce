@@ -7,7 +7,9 @@ enum AiActionType {
   stockUpdate,
   priceUpdate,
   productActive,
-  productFeatured;
+  productFeatured,
+  productDiscount,
+  bulkPriceChange;
 
   static AiActionType fromId(String id) {
     return switch (id) {
@@ -15,6 +17,8 @@ enum AiActionType {
       'price_update' => AiActionType.priceUpdate,
       'product_active' => AiActionType.productActive,
       'product_featured' => AiActionType.productFeatured,
+      'product_discount' => AiActionType.productDiscount,
+      'bulk_price_change' => AiActionType.bulkPriceChange,
       _ => AiActionType.product,
     };
   }
@@ -69,7 +73,25 @@ class AiAction {
         data['is_featured'] == true
             ? 'Destacar "${data['product_title']}"'
             : 'Quitar "${data['product_title']}" de destacados',
+      AiActionType.productDiscount =>
+        data['compare_at_price'] != null
+            ? 'Oferta en "${data['product_title']}": \$${data['price']} '
+                  '(antes \$${data['compare_at_price']})'
+            : 'Quitar oferta de "${data['product_title']}" → \$${data['price']}',
+      AiActionType.bulkPriceChange => _describeBulkPrice(data),
     };
+  }
+
+  static String _describeBulkPrice(Map<String, dynamic> data) {
+    final num pct = (data['percent'] as num?) ?? 0;
+    final String sign = pct >= 0 ? '+$pct%' : '$pct%';
+    final String? cat = data['category'] as String?;
+    final int? count = (data['affected_count'] as num?)?.toInt();
+    final String scope = cat != null && cat.isNotEmpty
+        ? 'categoría "$cat"'
+        : 'todos los productos';
+    final String suffix = count != null ? ' ($count)' : '';
+    return 'Ajustar precios $sign en $scope$suffix';
   }
 }
 

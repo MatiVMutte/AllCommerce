@@ -10,6 +10,8 @@ void main() {
         'price_update': AiActionType.priceUpdate,
         'product_active': AiActionType.productActive,
         'product_featured': AiActionType.productFeatured,
+        'product_discount': AiActionType.productDiscount,
+        'bulk_price_change': AiActionType.bulkPriceChange,
       };
       for (final MapEntry<String, AiActionType> e in cases.entries) {
         final AiAction a = AiAction.fromJson(<String, dynamic>{
@@ -64,6 +66,23 @@ void main() {
           'is_featured': true,
         }).describe(),
         'Destacar "Coca"',
+      );
+      expect(
+        AiAction.fromJson(<String, dynamic>{
+          'type': 'product_discount',
+          'product_title': 'Coca',
+          'price': 1500,
+          'compare_at_price': 2000,
+        }).describe(),
+        'Oferta en "Coca": \$1500 (antes \$2000)',
+      );
+      expect(
+        AiAction.fromJson(<String, dynamic>{
+          'type': 'bulk_price_change',
+          'percent': 10,
+          'affected_count': 24,
+        }).describe(),
+        'Ajustar precios +10% en todos los productos (24)',
       );
     });
 

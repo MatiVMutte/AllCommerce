@@ -9,7 +9,8 @@
 //   list_products, get_store_summary, get_recent_orders
 // Herramientas de propuesta (se validan contra la base y se devuelven):
 //   propose_product, propose_stock_update, propose_price_update,
-//   propose_product_active, propose_product_featured
+//   propose_product_active, propose_product_featured,
+//   propose_product_discount, propose_bulk_price_change
 
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
@@ -37,10 +38,10 @@ Podés:
 Reglas:
 - NUNCA inventes un product_id. Para referirte a un producto existente llamá primero a list_products y usá el id real.
 - Cuando el dueño pida agregar/publicar/crear un producto (con o sin foto), usá propose_product con todos los campos que puedas inferir. Precio: si la foto o el texto no dan pista, proponé un precio razonable del retail argentino y aclaralo.
-- Para cambios de stock, precio, pausa o destacado usá las propose_ correspondientes.
+- Para cambios de stock, precio, pausa, destacado, oferta de un producto (propose_product_discount) o aumento/baja porcentual de precios en bloque (propose_bulk_price_change), usá las propose_ correspondientes.
 - Después de emitir propuestas, explicale al dueño en una oración qué propusiste y que lo confirme con el botón de la tarjeta.
 - Si te piden algo fuera del catálogo/pedidos/métricas (config del local, cupones, estados de pedidos), explicá que eso lo hace desde su panel — no tenés herramienta para eso.
-- Números con formato argentino ($1.500). Sin markdown pesado: negritas simples y listas cortas están bien.`;
+- Números con formato argentino ($1.500). Podés usar **negritas** y listas con guión (- ítem), pero evitá encabezados (#), tablas o código.`;
 
 const CATEGORIES = [
   "clothing", "footwear", "accessories", "electronics", "home",
@@ -167,6 +168,51 @@ const PROPOSE_TOOLS = [
       required: ["product_id", "is_featured"],
     },
   },
+  {
+    name: "propose_product_discount",
+    description:
+      "Propone poner un producto en oferta (nuevo precio menor + precio anterior tachado compare_at_price) o quitarlo de oferta (remove_discount=true, vuelve a su precio de lista).",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        product_id: { type: "STRING" },
+        product_title: { type: "STRING" },
+        sale_price: {
+          type: "NUMBER",
+          description: "Precio de oferta en ARS (menor al precio regular)",
+        },
+        compare_at_price: {
+          type: "NUMBER",
+          description:
+            "Precio regular tachado en ARS (si se omite se usa el precio actual del producto)",
+        },
+        remove_discount: {
+          type: "BOOLEAN",
+          description: "true para sacar el producto de oferta y restaurar su precio",
+        },
+      },
+      required: ["product_id"],
+    },
+  },
+  {
+    name: "propose_bulk_price_change",
+    description:
+      "Propone subir o bajar todos los precios del catálogo (o los de una categoría) en un porcentaje. Ej: percent=10 sube 10%, percent=-15 baja 15%.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        percent: {
+          type: "NUMBER",
+          description: "Porcentaje a aplicar (positivo sube, negativo baja; entre -80 y 200)",
+        },
+        category: {
+          type: "STRING",
+          description: "Categoría opcional para limitar el ajuste; vacío = todos los productos",
+        },
+      },
+      required: ["percent"],
+    },
+  },
 ];
 
 const PROPOSE_NAMES = new Set(PROPOSE_TOOLS.map((t) => t.name));
@@ -220,7 +266,7 @@ async function runReadTool(
       const limit = Math.min(Number(args.limit) || 40, 60);
       let q = supabase
         .from("products")
-        .select("id, title, price, stock, track_stock, unit, is_active, is_featured, category")
+        .select("id, title, price, compare_at_price, stock, track_stock, unit, is_active, is_featured, category")
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false })
         .limit(limit);
@@ -321,11 +367,47 @@ async function validateProposal(
     };
   }
 
+  if (name === "propose_bulk_price_change") {
+    const pct = Number(args.percent);
+    if (!Number.isFinite(pct) || pct === 0 || pct < -80 || pct > 200) {
+      return {
+        ok: false,
+        error: "El porcentaje debe ser distinto de 0 y estar entre -80% y +200%",
+      };
+    }
+    const category = typeof args.category === "string" && args.category.trim()
+      ? args.category.trim()
+      : null;
+    let countQuery = supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId);
+    if (category) countQuery = countQuery.eq("category", category);
+    const { count } = await countQuery;
+    if (!count || count === 0) {
+      return {
+        ok: false,
+        error: category
+          ? `No tenés productos en la categoría "${category}"`
+          : "No tenés productos cargados para ajustar",
+      };
+    }
+    return {
+      ok: true,
+      action: {
+        type: "bulk_price_change",
+        percent: Math.round(pct * 100) / 100,
+        category,
+        affected_count: count,
+      },
+    };
+  }
+
   // El resto de propuestas apuntan a un producto existente: validar que sea del tenant.
   const productId = String(args.product_id ?? "");
   const { data: product } = await supabase
     .from("products")
-    .select("id, title, stock, price, is_active, is_featured")
+    .select("id, title, stock, price, compare_at_price, is_active, is_featured")
     .eq("id", productId)
     .eq("tenant_id", tenantId)
     .maybeSingle();
@@ -389,6 +471,45 @@ async function validateProposal(
           is_featured: args.is_featured !== false,
         },
       };
+    case "propose_product_discount": {
+      if (args.remove_discount === true) {
+        const restored = Number(product.compare_at_price) > Number(product.price)
+          ? Math.round(Number(product.compare_at_price))
+          : Math.round(Number(product.price));
+        return {
+          ok: true,
+          action: {
+            type: "product_discount",
+            product_id: product.id,
+            product_title: product.title,
+            price: restored,
+            compare_at_price: null,
+          },
+        };
+      }
+      const sale = Number(args.sale_price);
+      const regular = Number(args.compare_at_price) > 0
+        ? Number(args.compare_at_price)
+        : Number(product.compare_at_price) > Number(product.price)
+        ? Number(product.compare_at_price)
+        : Number(product.price);
+      if (!Number.isFinite(sale) || sale <= 0 || sale >= regular) {
+        return {
+          ok: false,
+          error: `El precio de oferta debe ser mayor a 0 y menor al precio regular ($${regular})`,
+        };
+      }
+      return {
+        ok: true,
+        action: {
+          type: "product_discount",
+          product_id: product.id,
+          product_title: product.title,
+          price: Math.round(sale),
+          compare_at_price: Math.round(regular),
+        },
+      };
+    }
     default:
       return { ok: false, error: "Herramienta desconocida" };
   }
