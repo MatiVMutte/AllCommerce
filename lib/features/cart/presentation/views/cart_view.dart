@@ -909,12 +909,31 @@ class _CartTile extends ConsumerWidget {
                       .setQuantity(item.lineKey, qty),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  Formatters.price(item.lineTotal),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: tokens.textPrimary,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () =>
+                          ref.read(cartProvider.notifier).remove(item.lineKey),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.delete_outline,
+                          size: 16,
+                          color: tokens.danger.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      Formatters.price(item.lineTotal),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: tokens.textPrimary,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

@@ -80,6 +80,13 @@ class OwnerShell extends ConsumerWidget {
           selected: navigationShell.currentIndex == 3,
           onTap: () => _goBranch(3),
         ),
+        FloatingNavItem(
+          icon: Icons.auto_awesome_outlined,
+          activeIcon: Icons.auto_awesome,
+          label: 'IA',
+          selected: navigationShell.currentIndex == 4,
+          onTap: () => _goBranch(4),
+        ),
       ],
       child: navigationShell,
     );

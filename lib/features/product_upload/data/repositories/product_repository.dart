@@ -130,6 +130,19 @@ class ProductRepository {
         .eq('tenant_id', tenantId);
   }
 
+  /// Single-field price update — used by the AI chat confirmation card.
+  Future<void> setPrice(
+    String productId,
+    String tenantId, {
+    required double price,
+  }) async {
+    await _client
+        .from('products')
+        .update(<String, dynamic>{'price': price})
+        .eq('id', productId)
+        .eq('tenant_id', tenantId);
+  }
+
   Future<void> setStock(
     String productId,
     String tenantId, {

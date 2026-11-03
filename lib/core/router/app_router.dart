@@ -30,6 +30,7 @@ import 'package:all_commerce/features/orders/presentation/views/my_orders_view.d
 import 'package:all_commerce/features/orders/presentation/views/order_success_view.dart';
 import 'package:all_commerce/features/orders/presentation/views/owner_order_detail_view.dart';
 import 'package:all_commerce/features/orders/presentation/views/owner_orders_view.dart';
+import 'package:all_commerce/features/ai_chat/presentation/views/owner_ai_view.dart';
 import 'package:all_commerce/features/product_upload/presentation/views/bulk_upload_view.dart';
 import 'package:all_commerce/features/product_upload/presentation/views/product_upload_view.dart';
 import 'package:all_commerce/features/store/presentation/views/owner_products_view.dart';
@@ -235,6 +236,15 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
                 path: '/owner/coupons',
                 builder: (BuildContext context, GoRouterState state) =>
                     const CouponsView(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: '/owner/ia',
+                builder: (BuildContext context, GoRouterState state) =>
+                    const OwnerAiView(),
               ),
             ],
           ),
