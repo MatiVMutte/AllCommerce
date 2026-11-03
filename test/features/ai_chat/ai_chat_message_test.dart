@@ -12,6 +12,7 @@ void main() {
         'product_featured': AiActionType.productFeatured,
         'product_discount': AiActionType.productDiscount,
         'bulk_price_change': AiActionType.bulkPriceChange,
+        'product_image': AiActionType.productImage,
       };
       for (final MapEntry<String, AiActionType> e in cases.entries) {
         final AiAction a = AiAction.fromJson(<String, dynamic>{
@@ -83,6 +84,35 @@ void main() {
           'affected_count': 24,
         }).describe(),
         'Ajustar precios +10% en todos los productos (24)',
+      );
+      expect(
+        AiAction.fromJson(<String, dynamic>{
+          'type': 'product_image',
+          'product_title': 'Coca',
+        }).describe(),
+        'Cambiar la foto de "Coca"',
+      );
+    });
+
+    test('title labels each proposal kind for the card header', () {
+      expect(
+        AiAction.fromJson(<String, dynamic>{'type': 'product'}).title,
+        'Producto nuevo',
+      );
+      expect(
+        AiAction.fromJson(<String, dynamic>{'type': 'price_update'}).title,
+        'Cambio de precio',
+      );
+      expect(
+        AiAction.fromJson(<String, dynamic>{'type': 'product_image'}).title,
+        'Cambiar foto',
+      );
+      expect(
+        AiAction.fromJson(<String, dynamic>{
+          'type': 'product_discount',
+          'compare_at_price': 2000,
+        }).title,
+        'Poner en oferta',
       );
     });
 

@@ -9,7 +9,8 @@ enum AiActionType {
   productActive,
   productFeatured,
   productDiscount,
-  bulkPriceChange;
+  bulkPriceChange,
+  productImage;
 
   static AiActionType fromId(String id) {
     return switch (id) {
@@ -19,6 +20,7 @@ enum AiActionType {
       'product_featured' => AiActionType.productFeatured,
       'product_discount' => AiActionType.productDiscount,
       'bulk_price_change' => AiActionType.bulkPriceChange,
+      'product_image' => AiActionType.productImage,
       _ => AiActionType.product,
     };
   }
@@ -79,8 +81,25 @@ class AiAction {
                   '(antes \$${data['compare_at_price']})'
             : 'Quitar oferta de "${data['product_title']}" → \$${data['price']}',
       AiActionType.bulkPriceChange => _describeBulkPrice(data),
+      AiActionType.productImage =>
+        'Cambiar la foto de "${data['product_title']}"',
     };
   }
+
+  /// Human label shown as the card header.
+  String get title => switch (type) {
+    AiActionType.product => 'Producto nuevo',
+    AiActionType.stockUpdate => 'Cambio de stock',
+    AiActionType.priceUpdate => 'Cambio de precio',
+    AiActionType.productActive =>
+      data['is_active'] == true ? 'Reactivar producto' : 'Pausar producto',
+    AiActionType.productFeatured =>
+      data['is_featured'] == true ? 'Marcar destacado' : 'Quitar destacado',
+    AiActionType.productDiscount =>
+      data['compare_at_price'] != null ? 'Poner en oferta' : 'Quitar oferta',
+    AiActionType.bulkPriceChange => 'Ajuste masivo de precios',
+    AiActionType.productImage => 'Cambiar foto',
+  };
 
   static String _describeBulkPrice(Map<String, dynamic> data) {
     final num pct = (data['percent'] as num?) ?? 0;

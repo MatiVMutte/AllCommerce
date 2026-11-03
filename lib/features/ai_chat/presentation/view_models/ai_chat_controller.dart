@@ -71,7 +71,9 @@ class AiChatController extends Notifier<AiChatState> {
                   (AiAction a) => AiAction(
                     type: a.type,
                     data: a.data,
-                    imageBytes: a.type == AiActionType.product
+                    imageBytes:
+                        a.type == AiActionType.product ||
+                            a.type == AiActionType.productImage
                         ? imageBytes
                         : null,
                   ),
@@ -199,6 +201,19 @@ class AiChatController extends Notifier<AiChatState> {
         );
         final String sign = pct >= 0 ? '+$pct%' : '$pct%';
         done = 'Precios ajustados ($sign) en $count productos';
+      case AiActionType.productImage:
+        final Uint8List? img = action.imageBytes;
+        if (img == null) {
+          throw StateError('La propuesta no tiene imagen adjunta');
+        }
+        final String productId = action.data['product_id'] as String;
+        final String url = await repo.uploadImage(
+          tenantId: tenantId,
+          productId: productId,
+          jpegBytes: img,
+        );
+        await repo.setImageUrl(productId, url);
+        done = 'Foto de "${action.productTitle}" actualizada';
     }
     action.status = AiActionStatus.done;
     ref.invalidate(ownerProductsProvider(tenantId));

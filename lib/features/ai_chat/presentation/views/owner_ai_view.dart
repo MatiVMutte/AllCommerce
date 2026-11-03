@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:all_commerce/core/constants/categories.dart';
 import 'package:all_commerce/core/theme/app_brand.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_haptics.dart';
@@ -767,7 +768,8 @@ class _FormattedAiText extends StatelessWidget {
   }
 }
 
-/// Confirmation card — the "propone y yo confirmo" contract.
+/// Confirmation card — the "propone y yo confirmo" contract. Shows the
+/// full detail of the proposed change (fields, before → after, photo).
 class _ActionCard extends StatelessWidget {
   const _ActionCard({
     required this.action,
@@ -788,94 +790,589 @@ class _ActionCard extends StatelessWidget {
     final bool pending = action.status == AiActionStatus.pending;
     return Container(
       margin: const EdgeInsets.only(top: 6),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: tokens.surfaceMuted,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: tokens.border),
+        border: Border.all(
+          color: pending
+              ? scheme.primary.withValues(alpha: 0.35)
+              : tokens.border,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Icon(Icons.auto_awesome, size: 16, color: scheme.primary),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  action.describe(),
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: tokens.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (pending)
-            Row(
+          // Header: kind of change + AI mark.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+            child: Row(
               children: <Widget>[
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(0, 38),
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      textStyle: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    onPressed: enabled ? onConfirm : null,
-                    child: const Text('Confirmar y aplicar'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: TextButton(
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(0, 38),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      textStyle: const TextStyle(fontSize: 13),
-                    ),
-                    onPressed: onDismiss,
-                    child: Text(
-                      'Descartar',
-                      style: TextStyle(color: tokens.textTertiary),
-                    ),
-                  ),
-                ),
-              ],
-            )
-          else
-            Row(
-              children: <Widget>[
-                Icon(
-                  action.status == AiActionStatus.done
-                      ? Icons.check_circle_rounded
-                      : Icons.cancel_outlined,
-                  size: 16,
-                  color: action.status == AiActionStatus.done
-                      ? tokens.success
-                      : tokens.textTertiary,
-                ),
+                Icon(Icons.auto_awesome, size: 15, color: scheme.primary),
                 const SizedBox(width: 6),
-                Text(
-                  action.status == AiActionStatus.done
-                      ? 'Aplicado'
-                      : 'Descartado',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: action.status == AiActionStatus.done
-                        ? tokens.success
-                        : tokens.textTertiary,
+                Expanded(
+                  child: Text(
+                    action.title.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
+                      color: scheme.primary,
+                    ),
                   ),
                 ),
               ],
             ),
+          ),
+          Divider(height: 1, color: tokens.border),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: _ActionDetail(action: action),
+          ),
+          Divider(height: 1, color: tokens.border),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: pending
+                ? Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, 38),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            textStyle: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onPressed: enabled ? onConfirm : null,
+                          icon: const Icon(Icons.check_rounded, size: 16),
+                          label: const Text('Confirmar y aplicar'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(0, 38),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            textStyle: const TextStyle(fontSize: 13),
+                          ),
+                          onPressed: onDismiss,
+                          child: Text(
+                            'Descartar',
+                            style: TextStyle(color: tokens.textTertiary),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: <Widget>[
+                      Icon(
+                        action.status == AiActionStatus.done
+                            ? Icons.check_circle_rounded
+                            : Icons.cancel_outlined,
+                        size: 16,
+                        color: action.status == AiActionStatus.done
+                            ? tokens.success
+                            : tokens.textTertiary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        action.status == AiActionStatus.done
+                            ? 'Aplicado'
+                            : 'Descartado',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: action.status == AiActionStatus.done
+                              ? tokens.success
+                              : tokens.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+/// Body of the proposal card — renders the detail of each action type.
+class _ActionDetail extends StatelessWidget {
+  const _ActionDetail({required this.action});
+
+  final AiAction action;
+
+  static String _money(num? v) => v == null ? '—' : '\$${v.toInt()}';
+
+  @override
+  Widget build(BuildContext context) {
+    final Map<String, dynamic> d = action.data;
+    return switch (action.type) {
+      AiActionType.product => _ProductProposal(action: action),
+      AiActionType.productImage => _ImageProposal(action: action),
+      AiActionType.stockUpdate => _EditProposal(
+        product: action.productTitle,
+        rows: <_FieldChange>[
+          _FieldChange(
+            'Stock',
+            d['track_stock'] == false ? 'sin control' : '${d['stock']}',
+            previous:
+                d['previous_stock'] != null &&
+                    '${d['previous_stock']}' != '${d['stock']}'
+                ? '${d['previous_stock']}'
+                : null,
+          ),
+          if (d['previous_track_stock'] == false && d['track_stock'] != false)
+            const _FieldChange('Control de stock', 'activado'),
+        ],
+      ),
+      AiActionType.priceUpdate => _EditProposal(
+        product: action.productTitle,
+        rows: <_FieldChange>[
+          _FieldChange(
+            'Precio',
+            _money(d['price'] as num?),
+            previous: d['previous_price'] != null
+                ? _money(d['previous_price'] as num?)
+                : null,
+          ),
+        ],
+      ),
+      AiActionType.productActive => _EditProposal(
+        product: action.productTitle,
+        rows: <_FieldChange>[
+          _FieldChange(
+            'Estado',
+            d['is_active'] == true ? 'activo' : 'pausado',
+            previous: d['previous_is_active'] != null
+                ? (d['previous_is_active'] == true ? 'activo' : 'pausado')
+                : null,
+          ),
+        ],
+      ),
+      AiActionType.productFeatured => _EditProposal(
+        product: action.productTitle,
+        rows: <_FieldChange>[
+          _FieldChange(
+            'Destacado',
+            d['is_featured'] == true ? 'sí' : 'no',
+            previous: d['previous_is_featured'] != null
+                ? (d['previous_is_featured'] == true ? 'sí' : 'no')
+                : null,
+          ),
+        ],
+      ),
+      AiActionType.productDiscount => _EditProposal(
+        product: action.productTitle,
+        rows: d['compare_at_price'] != null
+            ? <_FieldChange>[
+                _FieldChange(
+                  'Precio de oferta',
+                  _money(d['price'] as num?),
+                  previous: _money(d['previous_price'] as num?),
+                ),
+                _FieldChange(
+                  'Precio anterior (tachado)',
+                  _money(d['compare_at_price'] as num?),
+                ),
+              ]
+            : <_FieldChange>[
+                _FieldChange(
+                  'Precio',
+                  _money(d['price'] as num?),
+                  previous: _money(d['previous_price'] as num?),
+                ),
+                const _FieldChange('Oferta', 'quitada'),
+              ],
+      ),
+      AiActionType.bulkPriceChange => _BulkProposal(data: d),
+    };
+  }
+}
+
+class _FieldChange {
+  const _FieldChange(this.label, this.value, {this.previous});
+
+  final String label;
+  final String? value;
+  final String? previous;
+}
+
+/// Detail for edits on an existing product: name + before → after rows.
+class _EditProposal extends StatelessWidget {
+  const _EditProposal({required this.product, required this.rows});
+
+  final String product;
+  final List<_FieldChange> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          '"$product"',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: tokens.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        for (final _FieldChange r in rows)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: <Widget>[
+                SizedBox(
+                  width: 110,
+                  child: Text(
+                    r.label,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: tokens.textTertiary,
+                    ),
+                  ),
+                ),
+                if (r.previous != null) ...<Widget>[
+                  Text(
+                    r.previous!,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: tokens.textTertiary,
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 13,
+                      color: tokens.textTertiary,
+                    ),
+                  ),
+                ],
+                Expanded(
+                  child: Text(
+                    r.value ?? '—',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Detail for a brand-new product — a mini preview of what gets published.
+class _ProductProposal extends StatelessWidget {
+  const _ProductProposal({required this.action});
+
+  final AiAction action;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final Map<String, dynamic> d = action.data;
+    final List<String> tags =
+        (d['tags'] as List<dynamic>?)?.whereType<String>().toList() ??
+        const <String>[];
+    final String desc = (d['description'] as String? ?? '').trim();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            if (action.imageBytes != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.memory(
+                  action.imageBytes!,
+                  width: 62,
+                  height: 62,
+                  fit: BoxFit.cover,
+                ),
+              )
+            else
+              Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.image_outlined,
+                  color: scheme.primary,
+                  size: 26,
+                ),
+              ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    '${d['title']}',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${_ActionDetail._money(d['price'] as num?)}'
+                    ' · ${d['unit'] ?? 'unidad'}'
+                    ' · ${ProductCategory.labelOf('${d['category']}')}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (desc.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 8),
+          Text(
+            desc,
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.35,
+              color: tokens.textSecondary,
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: <Widget>[
+            if (d['track_stock'] == true)
+              _Chip(label: 'Stock: ${d['stock'] ?? 0}'),
+            if (d['sku'] != null && '${d['sku']}'.isNotEmpty)
+              _Chip(label: 'SKU ${d['sku']}'),
+            for (final String t in tags) _Chip(label: '#$t'),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Detail for replacing a product's photo: old (if any) → new attached image.
+class _ImageProposal extends StatelessWidget {
+  const _ImageProposal({required this.action});
+
+  final AiAction action;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final Map<String, dynamic> d = action.data;
+    final String? currentUrl = d['current_image_url'] as String?;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          '"${action.productTitle}"',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: tokens.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: <Widget>[
+            _Thumb(label: 'Actual', url: currentUrl),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Icon(
+                Icons.arrow_forward_rounded,
+                size: 18,
+                color: tokens.textTertiary,
+              ),
+            ),
+            if (action.imageBytes != null)
+              Column(
+                children: <Widget>[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.memory(
+                      action.imageBytes!,
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Nueva',
+                    style: TextStyle(fontSize: 11, color: tokens.textTertiary),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _Thumb extends StatelessWidget {
+  const _Thumb({required this.label, this.url});
+
+  final String label;
+  final String? url;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Column(
+      children: <Widget>[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: url != null && url!.isNotEmpty
+              ? Image.network(
+                  url!,
+                  width: 72,
+                  height: 72,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _placeholder(context),
+                )
+              : _placeholder(context),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(fontSize: 11, color: tokens.textTertiary)),
+      ],
+    );
+  }
+
+  Widget _placeholder(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: tokens.border),
+      ),
+      child: Icon(Icons.image_outlined, color: tokens.textTertiary, size: 24),
+    );
+  }
+}
+
+/// Detail for a bulk percent price change.
+class _BulkProposal extends StatelessWidget {
+  const _BulkProposal({required this.data});
+
+  final Map<String, dynamic> data;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final num pct = (data['percent'] as num?) ?? 0;
+    final bool up = pct >= 0;
+    final String sign = up ? '+$pct%' : '$pct%';
+    final String? cat = data['category'] as String?;
+    final String scope = cat != null && cat.isNotEmpty
+        ? 'categoría "${ProductCategory.labelOf(cat)}"'
+        : 'todos los productos';
+    final int? count = (data['affected_count'] as num?)?.toInt();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: (up ? tokens.success : tokens.danger).withValues(
+                  alpha: 0.12,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                sign,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: up ? tokens.success : tokens.danger,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'en $scope',
+                style: TextStyle(fontSize: 13.5, color: tokens.textPrimary),
+              ),
+            ),
+          ],
+        ),
+        if (count != null) ...<Widget>[
+          const SizedBox(height: 8),
+          Row(
+            children: <Widget>[
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 14,
+                color: tokens.textTertiary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '$count producto${count == 1 ? '' : 's'} afectado${count == 1 ? '' : 's'}',
+                style: TextStyle(fontSize: 12.5, color: tokens.textSecondary),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 4),
+        Text(
+          'Se ajustan precio de venta, precio tachado y mayorista.',
+          style: TextStyle(fontSize: 11.5, color: tokens.textTertiary),
+        ),
+      ],
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tokens.border),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 11, color: tokens.textSecondary),
       ),
     );
   }

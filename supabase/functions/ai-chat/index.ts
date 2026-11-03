@@ -10,7 +10,8 @@
 // Herramientas de propuesta (se validan contra la base y se devuelven):
 //   propose_product, propose_stock_update, propose_price_update,
 //   propose_product_active, propose_product_featured,
-//   propose_product_discount, propose_bulk_price_change
+//   propose_product_discount, propose_bulk_price_change,
+//   propose_product_image
 
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
@@ -40,6 +41,7 @@ Reglas:
 - Cuando el dueño pida agregar/publicar/crear un producto (con o sin foto), usá propose_product con todos los campos que puedas inferir. Precio: si la foto o el texto no dan pista, proponé un precio razonable del retail argentino y aclaralo.
 - Para cambios de stock, precio, pausa, destacado, oferta de un producto (propose_product_discount) o aumento/baja porcentual de precios en bloque (propose_bulk_price_change), usá las propose_ correspondientes.
 - Después de emitir propuestas, explicale al dueño en una oración qué propusiste y que lo confirme con el botón de la tarjeta.
+- Si el dueño quiere cambiar la foto de un producto existente y ADJUNTÓ una imagen nueva, usá propose_product_image. NO podés retocar, recortar ni generar imágenes: si te piden "editar/mejorar la foto", explicá que solo podés reemplazarla por una foto nueva que te mande adjunta.
 - Si te piden algo fuera del catálogo/pedidos/métricas (config del local, cupones, estados de pedidos), explicá que eso lo hace desde su panel — no tenés herramienta para eso.
 - Números con formato argentino ($1.500). Podés usar **negritas** y listas con guión (- ítem), pero evitá encabezados (#), tablas o código.`;
 
@@ -195,6 +197,19 @@ const PROPOSE_TOOLS = [
     },
   },
   {
+    name: "propose_product_image",
+    description:
+      "Propone reemplazar la foto de un producto existente por la imagen que el dueño adjuntó en su último mensaje. Requiere que el mensaje traiga una imagen adjunta.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        product_id: { type: "STRING" },
+        product_title: { type: "STRING" },
+      },
+      required: ["product_id"],
+    },
+  },
+  {
     name: "propose_bulk_price_change",
     description:
       "Propone subir o bajar todos los precios del catálogo (o los de una categoría) en un porcentaje. Ej: percent=10 sube 10%, percent=-15 baja 15%.",
@@ -332,6 +347,7 @@ async function validateProposal(
   tenantId: string,
   name: string,
   args: Record<string, unknown>,
+  hasImage: boolean,
 ): Promise<{ ok: boolean; action?: Record<string, unknown>; error?: string }> {
   if (name === "propose_product") {
     const title = String(args.title ?? "").trim().slice(0, 120);
@@ -407,7 +423,7 @@ async function validateProposal(
   const productId = String(args.product_id ?? "");
   const { data: product } = await supabase
     .from("products")
-    .select("id, title, stock, price, compare_at_price, is_active, is_featured")
+    .select("id, title, stock, track_stock, price, compare_at_price, is_active, is_featured, image_url")
     .eq("id", productId)
     .eq("tenant_id", tenantId)
     .maybeSingle();
@@ -432,6 +448,8 @@ async function validateProposal(
           product_title: product.title,
           stock,
           track_stock: args.track_stock === false ? false : true,
+          previous_stock: product.stock,
+          previous_track_stock: product.track_stock === true,
         },
       };
     }
@@ -459,6 +477,7 @@ async function validateProposal(
           product_id: product.id,
           product_title: product.title,
           is_active: args.is_active !== false,
+          previous_is_active: product.is_active === true,
         },
       };
     case "propose_product_featured":
@@ -469,8 +488,27 @@ async function validateProposal(
           product_id: product.id,
           product_title: product.title,
           is_featured: args.is_featured !== false,
+          previous_is_featured: product.is_featured === true,
         },
       };
+    case "propose_product_image": {
+      if (!hasImage) {
+        return {
+          ok: false,
+          error:
+            "NO_IMAGE: no hay imagen adjunta en el mensaje. Pedile al dueño que adjunte la foto nueva del producto.",
+        };
+      }
+      return {
+        ok: true,
+        action: {
+          type: "product_image",
+          product_id: product.id,
+          product_title: product.title,
+          current_image_url: product.image_url ?? null,
+        },
+      };
+    }
     case "propose_product_discount": {
       if (args.remove_discount === true) {
         const restored = Number(product.compare_at_price) > Number(product.price)
@@ -484,6 +522,8 @@ async function validateProposal(
             product_title: product.title,
             price: restored,
             compare_at_price: null,
+            previous_price: product.price,
+            previous_compare_at_price: product.compare_at_price ?? null,
           },
         };
       }
@@ -507,6 +547,8 @@ async function validateProposal(
           product_title: product.title,
           price: Math.round(sale),
           compare_at_price: Math.round(regular),
+          previous_price: product.price,
+          previous_compare_at_price: product.compare_at_price ?? null,
         },
       };
     }
@@ -691,7 +733,9 @@ Deno.serve(async (req: Request) => {
       const args = fc.args ?? {};
       let result: unknown;
       if (PROPOSE_NAMES.has(fc.name)) {
-        const v = await validateProposal(supabase, tenantId, fc.name, args);
+        const v = await validateProposal(
+          supabase, tenantId, fc.name, args, imageBase64.length > 0,
+        );
         if (v.ok && v.action) {
           actions.push(v.action);
           result = {
