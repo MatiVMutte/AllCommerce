@@ -24,13 +24,20 @@ TenantModel _tenant({String id = 't1', String slug = 'local-uno'}) {
   );
 }
 
-ProductModel _product(String id, {double price = 100}) {
+ProductModel _product(
+  String id, {
+  double price = 100,
+  double stock = 0,
+  bool trackStock = false,
+}) {
   return ProductModel(
     id: id,
     tenantId: 't1',
     title: 'Producto $id',
     category: 'otros',
     price: price,
+    stock: stock,
+    trackStock: trackStock,
     isActive: true,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
@@ -200,6 +207,33 @@ void main() {
     final ProviderContainer container2 = makeContainer();
     addTearDown(container2.dispose);
     expect(container2.read(cartProvider).couponCode, isNull);
+  });
+
+  test('setQuantity clamps to the tracked stock snapshot', () {
+    final ProviderContainer container = makeContainer();
+    addTearDown(container.dispose);
+    final CartController cart = container.read(cartProvider.notifier);
+
+    cart.add(
+      _product('p1', stock: 3, trackStock: true),
+      _tenant(),
+      quantity: 2,
+    );
+    cart.setQuantity('p1|', 10);
+    expect(container.read(cartProvider).items.single.quantity, 3);
+
+    cart.setQuantity('p1|', 2);
+    expect(container.read(cartProvider).items.single.quantity, 2);
+  });
+
+  test('setQuantity stays uncapped when the product does not track stock', () {
+    final ProviderContainer container = makeContainer();
+    addTearDown(container.dispose);
+    final CartController cart = container.read(cartProvider.notifier);
+
+    cart.add(_product('p1'), _tenant());
+    cart.setQuantity('p1|', 99);
+    expect(container.read(cartProvider).items.single.quantity, 99);
   });
 
   test('cart persists across containers sharing prefs', () async {

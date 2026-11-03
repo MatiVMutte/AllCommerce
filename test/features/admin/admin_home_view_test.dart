@@ -20,6 +20,7 @@ void main() {
     tenantsFree: 1,
     tenantsExpired: 1,
     tenantsUnclaimed: 0,
+    tenantsComped: 1,
     mrrArs: 19900,
     customersTotal: 9,
     ordersMonth: 4,

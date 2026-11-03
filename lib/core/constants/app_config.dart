@@ -4,7 +4,7 @@ abstract final class AppConfig {
   static String get supabaseUrl => dotenv.env['SUPABASE_URL'] ?? '';
   static String get supabaseAnonKey => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
   static const String defaultPublicBaseUrl =
-      'https://allcommerce.mativmutte.workers.dev';
+      'https://allcommerce.allgl.workers.dev';
 
   static String get publicBaseUrl {
     final String raw = dotenv.isInitialized

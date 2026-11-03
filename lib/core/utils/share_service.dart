@@ -13,11 +13,11 @@ class ShareService {
 
   final ShareSender _sender;
 
-  /// Public web base for links ('allcommerce.mativmutte.workers.dev' by default).
+  /// Public web base for links ('allcommerce.allgl.workers.dev' by default).
   /// Accepts either a bare host or a full URL.
   static String get linkBase {
     final String raw = AppConfig.publicBaseUrl.trim();
-    if (raw.isEmpty) return 'allcommerce.mativmutte.workers.dev';
+    if (raw.isEmpty) return 'allcommerce.allgl.workers.dev';
     return raw
         .replaceFirst(RegExp(r'^https?://'), '')
         .replaceAll(RegExp(r'/+$'), '');

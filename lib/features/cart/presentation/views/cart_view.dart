@@ -903,6 +903,7 @@ class _CartTile extends ConsumerWidget {
                   quantity: item.quantity,
                   step: ProductUnit.isFractional(item.unit) ? 0.25 : 1,
                   unit: item.unit,
+                  maxQuantity: item.trackStock ? item.stock : null,
                   onChanged: (double qty) => ref
                       .read(cartProvider.notifier)
                       .setQuantity(item.lineKey, qty),

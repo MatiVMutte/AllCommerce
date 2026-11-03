@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-enum _TenantFilter { all, paying, trial, expired, inactive }
+enum _TenantFilter { all, paying, comped, trial, expired, inactive }
 
 class AdminHomeView extends ConsumerStatefulWidget {
   const AdminHomeView({super.key});
@@ -38,6 +38,7 @@ class _AdminHomeViewState extends ConsumerState<AdminHomeView> {
       final bool filterOk = switch (_filter) {
         _TenantFilter.all => true,
         _TenantFilter.paying => status == AdminTenantStatus.paying,
+        _TenantFilter.comped => status == AdminTenantStatus.comped,
         _TenantFilter.trial => status == AdminTenantStatus.trial,
         _TenantFilter.expired => status == AdminTenantStatus.expired,
         _TenantFilter.inactive => status == AdminTenantStatus.inactive,
@@ -159,6 +160,7 @@ class _AdminHomeViewState extends ConsumerState<AdminHomeView> {
                             in <(_TenantFilter, String)>[
                               (_TenantFilter.all, 'Todos'),
                               (_TenantFilter.paying, 'Pagando'),
+                              (_TenantFilter.comped, 'Cortesía'),
                               (_TenantFilter.trial, 'Prueba'),
                               (_TenantFilter.expired, 'Vencidos'),
                               (_TenantFilter.inactive, 'Inactivos'),
@@ -291,6 +293,7 @@ class _MetricsGrid extends StatelessWidget {
               value: '${metrics.tenantsPaying}',
               color: scheme.primary,
             ),
+            _MetricCell(label: 'Cortesía', value: '${metrics.tenantsComped}'),
             _MetricCell(label: 'En prueba', value: '${metrics.tenantsTrial}'),
             _MetricCell(
               label: 'Vencidos',
@@ -389,6 +392,7 @@ class _TenantRow extends StatelessWidget {
   ) {
     return switch (status) {
       AdminTenantStatus.paying => tokens.success,
+      AdminTenantStatus.comped => const Color(0xFF9333EA),
       AdminTenantStatus.trial => scheme.primary,
       AdminTenantStatus.expired => tokens.danger,
       AdminTenantStatus.inactive => tokens.textTertiary,
@@ -398,6 +402,7 @@ class _TenantRow extends StatelessWidget {
   String _statusLabel(AdminTenantStatus status) {
     return switch (status) {
       AdminTenantStatus.paying => row.plan.label,
+      AdminTenantStatus.comped => 'Cortesía · ${row.plan.label}',
       AdminTenantStatus.trial => 'Prueba',
       AdminTenantStatus.expired => 'Vencido',
       AdminTenantStatus.inactive => 'Inactivo',

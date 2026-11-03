@@ -55,6 +55,8 @@ class CartController extends Notifier<CartState> {
           imageUrl: product.imageUrl,
           unit: product.unit,
           quantity: quantity,
+          trackStock: product.trackStock,
+          stock: product.stock,
         ),
       );
     }
@@ -88,6 +90,8 @@ class CartController extends Notifier<CartState> {
           imageUrl: product.imageUrl,
           unit: product.unit,
           quantity: quantity,
+          trackStock: product.trackStock,
+          stock: product.stock,
         ),
       ],
     );
@@ -101,12 +105,15 @@ class CartController extends Notifier<CartState> {
       return;
     }
     state = state.copyWith(
-      items: state.items
-          .map(
-            (CartItem i) =>
-                i.lineKey == lineKey ? i.copyWith(quantity: quantity) : i,
-          )
-          .toList(),
+      items: state.items.map((CartItem i) {
+        if (i.lineKey != lineKey) return i;
+        // Clamp against the stock snapshot — the server re-checks in
+        // place_order anyway, but the stepper shouldn't exceed it.
+        final double capped = i.trackStock && i.stock != null
+            ? quantity.clamp(0, i.stock!).toDouble()
+            : quantity;
+        return i.copyWith(quantity: capped);
+      }).toList(),
     );
     _persist();
   }

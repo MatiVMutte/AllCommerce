@@ -68,6 +68,15 @@ class AdminRepository {
     );
   }
 
+  /// Marks a tenant as courtesy (family/own store): keeps its plan but is
+  /// excluded from `tenants_paying` and MRR in `admin_metrics`.
+  Future<void> setComped({required String tenantId, required bool comped}) {
+    return _client.rpc<void>(
+      'admin_set_comped',
+      params: <String, dynamic>{'p_tenant_id': tenantId, 'p_is_comped': comped},
+    );
+  }
+
   Future<void> updateTenantLocation({
     required String tenantId,
     required String? zone,

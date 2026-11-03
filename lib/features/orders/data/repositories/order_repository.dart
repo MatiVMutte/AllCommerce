@@ -159,6 +159,15 @@ class OrderRepository {
         .toList();
   }
 
+  /// Owner-side archive via security-definer RPC (RLS grants `update` only
+  /// on the `status` column). The customer still sees archived orders.
+  Future<void> setArchived(String orderId, bool archived) async {
+    await _client.rpc<void>(
+      'set_order_archived',
+      params: <String, dynamic>{'p_order_id': orderId, 'p_archived': archived},
+    );
+  }
+
   /// RLS only allows the owner to update the `status` column.
   Future<OrderModel> updateStatus(
     String orderId,

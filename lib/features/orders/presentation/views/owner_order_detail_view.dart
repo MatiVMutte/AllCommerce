@@ -91,6 +91,31 @@ class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
     }
   }
 
+  Future<void> _toggleArchived(OrderModel order) async {
+    final bool next = !order.isArchived;
+    final bool ok = await ref
+        .read(ownerOrdersControllerProvider.notifier)
+        .setArchived(order, next);
+    if (!mounted) return;
+    if (ok) {
+      AppHaptics.success();
+      setState(() {
+        _order = order.copyWith(archivedAt: () => next ? DateTime.now() : null);
+      });
+      showAppSnackBar(
+        context,
+        next ? 'Pedido archivado' : 'Pedido restaurado',
+        clearNavBar: false,
+      );
+    } else {
+      showErrorSnackBar(
+        context,
+        ref.read(ownerOrdersControllerProvider).error ?? Exception('unknown'),
+        clearNavBar: false,
+      );
+    }
+  }
+
   Future<void> _changeStatus(OrderStatus next) async {
     final OrderModel order = _order!;
     if (next == OrderStatus.rejected) {
@@ -570,6 +595,15 @@ class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
                   tooltip: 'Ticket PDF',
                   onPressed: _shareTicket,
                 ),
+                IconButton(
+                  icon: Icon(
+                    order.isArchived
+                        ? Icons.unarchive_outlined
+                        : Icons.archive_outlined,
+                  ),
+                  tooltip: order.isArchived ? 'Desarchivar' : 'Archivar',
+                  onPressed: () => _toggleArchived(order),
+                ),
                 if (widget.onClose != null)
                   IconButton(
                     icon: const Icon(Icons.close_rounded),
@@ -600,6 +634,15 @@ class _OwnerOrderDetailViewState extends ConsumerState<OwnerOrderDetailView> {
             icon: const Icon(Icons.print_outlined),
             tooltip: 'Ticket PDF',
             onPressed: _shareTicket,
+          ),
+          IconButton(
+            icon: Icon(
+              order.isArchived
+                  ? Icons.unarchive_outlined
+                  : Icons.archive_outlined,
+            ),
+            tooltip: order.isArchived ? 'Desarchivar' : 'Archivar',
+            onPressed: () => _toggleArchived(order),
           ),
         ],
       ),

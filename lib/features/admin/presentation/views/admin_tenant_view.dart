@@ -31,9 +31,14 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
   PlanType? _plan;
   DateTime? _expiresAt;
   bool? _isActive;
+  bool? _isComped;
   bool _saving = false;
 
-  bool get _dirty => _plan != null || _expiresAt != null || _isActive != null;
+  bool get _dirty =>
+      _plan != null ||
+      _expiresAt != null ||
+      _isActive != null ||
+      _isComped != null;
 
   Future<void> _pickDate(AdminTenantRow row) async {
     final DateTime initial = _expiresAt ?? row.planExpiresAt;
@@ -79,6 +84,11 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
             expiresAt: _expiresAt ?? row.planExpiresAt,
             isActive: isActive,
           );
+      if (_isComped != null && _isComped != row.isComped) {
+        await ref
+            .read(adminRepositoryProvider)
+            .setComped(tenantId: row.id, comped: _isComped!);
+      }
       ref.invalidate(adminTenantsProvider);
       ref.invalidate(adminMetricsProvider);
       ref.invalidate(tenantByIdProvider(row.id));
@@ -387,6 +397,16 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
                       title: const Text('Local activo'),
                       value: isActive,
                       onChanged: (bool v) => setState(() => _isActive = v),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Cortesía'),
+                      subtitle: const Text(
+                        'Tiene el plan pero no cuenta como pago en las '
+                        'métricas (familia, uso propio)',
+                      ),
+                      value: _isComped ?? row.isComped,
+                      onChanged: (bool v) => setState(() => _isComped = v),
                     ),
                   ],
                 ),

@@ -28,6 +28,7 @@ class OrderModel {
     this.paymentMethod = PaymentMethod.cash,
     this.paymentNotes,
     required this.createdAt,
+    this.archivedAt,
   });
 
   final String id;
@@ -54,6 +55,10 @@ class OrderModel {
   final PaymentMethod paymentMethod;
   final String? paymentNotes;
   final DateTime createdAt;
+
+  /// Owner-side hide. The customer still sees the order in "Mis pedidos".
+  final DateTime? archivedAt;
+  bool get isArchived => archivedAt != null;
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     return OrderModel(
@@ -87,6 +92,9 @@ class OrderModel {
       ),
       paymentNotes: json['payment_notes'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
+      archivedAt: json['archived_at'] == null
+          ? null
+          : DateTime.parse(json['archived_at'] as String),
     );
   }
 
@@ -118,6 +126,7 @@ class OrderModel {
     PaymentMethod? paymentMethod,
     String? Function()? paymentNotes,
     DateTime? createdAt,
+    DateTime? Function()? archivedAt,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -147,6 +156,7 @@ class OrderModel {
       paymentMethod: paymentMethod ?? this.paymentMethod,
       paymentNotes: paymentNotes != null ? paymentNotes() : this.paymentNotes,
       createdAt: createdAt ?? this.createdAt,
+      archivedAt: archivedAt != null ? archivedAt() : this.archivedAt,
     );
   }
 }

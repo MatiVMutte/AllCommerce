@@ -9,6 +9,8 @@ class CartItem {
     this.imageUrl,
     this.unit = 'unidad',
     this.quantity = 1,
+    this.trackStock = false,
+    this.stock,
   });
 
   final String productId;
@@ -29,6 +31,11 @@ class CartItem {
   /// Sellable unit of the product ('unidad', 'kg'...) — snapshot.
   final String unit;
   final double quantity;
+
+  /// Stock snapshot at add time — lets the cart cap the stepper. The
+  /// server re-validates authoritatively in `place_order`.
+  final bool trackStock;
+  final double? stock;
 
   /// Unique key per line: same product can appear once per variant.
   String get lineKey => '$productId|${variant ?? ''}';
@@ -66,6 +73,8 @@ class CartItem {
       imageUrl: json['image_url'] as String?,
       unit: (json['unit'] as String?) ?? 'unidad',
       quantity: (json['quantity'] as num).toDouble(),
+      trackStock: json['track_stock'] as bool? ?? false,
+      stock: (json['stock'] as num?)?.toDouble(),
     );
   }
 
@@ -80,6 +89,8 @@ class CartItem {
       'image_url': imageUrl,
       'unit': unit,
       'quantity': quantity,
+      'track_stock': trackStock,
+      'stock': stock,
     };
   }
 
@@ -93,6 +104,8 @@ class CartItem {
     String? imageUrl,
     String? unit,
     double? quantity,
+    bool? trackStock,
+    double? stock,
   }) {
     return CartItem(
       productId: productId ?? this.productId,
@@ -104,6 +117,8 @@ class CartItem {
       imageUrl: imageUrl ?? this.imageUrl,
       unit: unit ?? this.unit,
       quantity: quantity ?? this.quantity,
+      trackStock: trackStock ?? this.trackStock,
+      stock: stock ?? this.stock,
     );
   }
 }

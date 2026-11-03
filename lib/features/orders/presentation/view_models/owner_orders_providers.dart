@@ -50,14 +50,30 @@ final ownerOrderStatusFilterProvider =
       OwnerOrderStatusFilterNotifier.new,
     );
 
+/// When on, the list shows only archived orders instead of active ones.
+final ownerShowArchivedProvider =
+    NotifierProvider.autoDispose<OwnerShowArchivedNotifier, bool>(
+      OwnerShowArchivedNotifier.new,
+    );
+
+class OwnerShowArchivedNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+}
+
 /// Status + accent-insensitive query over name, phone and order number.
+/// Archived orders only surface when [showArchived] is on.
 List<OrderModel> filterOrders(
   List<OrderModel> orders, {
   OrderStatus? status,
   String query = '',
+  bool showArchived = false,
 }) {
   final String q = removeDiacritics(query.trim().toLowerCase());
   return orders.where((OrderModel order) {
+    if (order.isArchived != showArchived) return false;
     if (status != null && order.status != status) return false;
     if (q.isEmpty) return true;
     final String qNoHash = q.startsWith('#') ? q.substring(1) : q;
@@ -114,6 +130,21 @@ class OwnerOrdersController extends Notifier<OwnerOrdersState> {
     } catch (e) {
       state = OwnerOrdersState(error: e);
       return null;
+    }
+  }
+
+  /// Archives/unarchives an order — owner-side visibility only.
+  /// Returns true on success.
+  Future<bool> setArchived(OrderModel order, bool archived) async {
+    state = OwnerOrdersState(busyOrderId: order.id);
+    try {
+      await ref.read(orderRepositoryProvider).setArchived(order.id, archived);
+      state = const OwnerOrdersState();
+      ref.invalidate(ownerOrdersProvider(order.tenantId));
+      return true;
+    } catch (e) {
+      state = OwnerOrdersState(error: e);
+      return false;
     }
   }
 }

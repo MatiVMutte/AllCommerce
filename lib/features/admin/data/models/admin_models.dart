@@ -9,6 +9,7 @@ class AdminMetrics {
     required this.tenantsFree,
     required this.tenantsExpired,
     required this.tenantsUnclaimed,
+    required this.tenantsComped,
     required this.mrrArs,
     required this.customersTotal,
     required this.ordersMonth,
@@ -22,6 +23,10 @@ class AdminMetrics {
   final int tenantsFree;
   final int tenantsExpired;
   final int tenantsUnclaimed;
+
+  /// Courtesy tenants (family/own stores) — have a paid plan but must not
+  /// count as revenue.
+  final int tenantsComped;
   final num mrrArs;
   final int customersTotal;
   final int ordersMonth;
@@ -37,6 +42,7 @@ class AdminMetrics {
       tenantsFree: num_('tenants_free'),
       tenantsExpired: num_('tenants_expired'),
       tenantsUnclaimed: num_('tenants_unclaimed'),
+      tenantsComped: num_('tenants_comped'),
       mrrArs: json['mrr_ars'] as num? ?? 0,
       customersTotal: num_('customers_total'),
       ordersMonth: num_('orders_month'),
@@ -60,6 +66,7 @@ class AdminTenantRow {
     required this.planExpiresAt,
     required this.isActive,
     required this.isClaimed,
+    this.isComped = false,
     required this.createdAt,
     this.ownerName,
     this.ownerEmail,
@@ -82,6 +89,9 @@ class AdminTenantRow {
   final DateTime planExpiresAt;
   final bool isActive;
   final bool isClaimed;
+
+  /// Courtesy plan (family/own stores) — excluded from paying metrics/MRR.
+  final bool isComped;
   final DateTime createdAt;
   final String? ownerName;
   final String? ownerEmail;
@@ -112,6 +122,7 @@ class AdminTenantRow {
           DateTime.fromMillisecondsSinceEpoch(0),
       isActive: json['is_active'] as bool? ?? false,
       isClaimed: json['is_claimed'] as bool? ?? true,
+      isComped: json['is_comped'] as bool? ?? false,
       createdAt:
           dateOrNull('created_at') ?? DateTime.fromMillisecondsSinceEpoch(0),
       ownerName: json['owner_name'] as String?,

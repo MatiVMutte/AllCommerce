@@ -49,9 +49,12 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
       ownerOrdersProvider(tenantId),
     );
     final OrderStatus? statusFilter = ref.watch(ownerOrderStatusFilterProvider);
+    final bool showArchived = ref.watch(ownerShowArchivedProvider);
     final int pending = ordersAsync.value == null
         ? 0
-        : pendingCount(ordersAsync.value!);
+        : pendingCount(
+            ordersAsync.value!.where((OrderModel o) => !o.isArchived).toList(),
+          );
 
     final bool wide = AdaptiveNavShell.isWide(context);
     final String? selectedId = ref.watch(selectedOwnerOrderProvider);
@@ -134,6 +137,12 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                       .read(ownerOrderStatusFilterProvider.notifier)
                       .select(status),
                 ),
+              _StatusChip(
+                label: 'Archivados',
+                selected: showArchived,
+                onTap: () =>
+                    ref.read(ownerShowArchivedProvider.notifier).toggle(),
+              ),
             ],
           ),
         ),
@@ -149,11 +158,18 @@ class _OwnerOrdersViewState extends ConsumerState<OwnerOrdersView> {
                 orders,
                 status: statusFilter,
                 query: _query,
+                showArchived: showArchived,
               );
               if (orders.isEmpty) {
                 return const AppEmptyState(
                   icon: Icons.receipt_long_outlined,
                   title: 'Todavía no recibiste pedidos',
+                );
+              }
+              if (filtered.isEmpty && showArchived && statusFilter == null) {
+                return const AppEmptyState(
+                  icon: Icons.archive_outlined,
+                  title: 'No hay pedidos archivados',
                 );
               }
               if (filtered.isEmpty) {
