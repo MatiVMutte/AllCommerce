@@ -17,9 +17,13 @@ class AuthRepository {
   /// Returns true when the user is logged in, false when Supabase requires
   /// email confirmation (session == null).
   Future<bool> signUp({required String email, required String password}) async {
+    final String base = AppConfig.publicBaseUrl;
     final AuthResponse response = await _client.auth.signUp(
       email: email,
       password: password,
+      // Sin esto el mail de confirmación redirige al Site URL del proyecto
+      // (localhost en dev), que en producción es una página que no existe.
+      emailRedirectTo: base.isEmpty ? null : '$base/',
     );
     return response.session != null;
   }

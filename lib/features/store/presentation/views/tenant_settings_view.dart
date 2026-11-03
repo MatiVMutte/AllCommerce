@@ -354,6 +354,8 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                                     _SettingsAvatar(
                                       tenant: tenant,
                                       pendingLogo: state.pendingLogo,
+                                      loading:
+                                          state.pickingLogo || state.saving,
                                     ),
                                     Positioned(
                                       right: 0,
@@ -411,6 +413,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                             tenant: tenant,
                             pendingCover: state.pendingCover,
                             enabled: !state.saving,
+                            loading: state.pickingCover || state.saving,
                             onPick: () => ref
                                 .read(tenantSettingsControllerProvider.notifier)
                                 .pickCover(),
@@ -906,12 +909,14 @@ class _CoverPicker extends StatelessWidget {
     required this.tenant,
     required this.pendingCover,
     required this.enabled,
+    required this.loading,
     required this.onPick,
   });
 
   final TenantModel tenant;
   final Uint8List? pendingCover;
   final bool enabled;
+  final bool loading;
   final VoidCallback onPick;
 
   @override
@@ -937,36 +942,61 @@ class _CoverPicker extends StatelessWidget {
               children: <Widget>[
                 if (hasCover) image,
                 Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Icon(
-                        hasCover
-                            ? Icons.photo_library_outlined
-                            : Icons.add_photo_alternate_outlined,
-                        size: 28,
-                        color: hasCover ? Colors.white : tokens.textTertiary,
-                        shadows: hasCover
-                            ? const <Shadow>[
-                                Shadow(blurRadius: 8, color: Colors.black45),
-                              ]
-                            : null,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        hasCover ? 'Cambiar portada' : 'Agregar portada',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: hasCover ? Colors.white : tokens.textTertiary,
-                          fontWeight: FontWeight.w600,
-                          shadows: hasCover
-                              ? const <Shadow>[
-                                  Shadow(blurRadius: 8, color: Colors.black45),
-                                ]
-                              : null,
+                  child: loading
+                      ? Container(
+                          width: 44,
+                          height: 44,
+                          decoration: const BoxDecoration(
+                            color: Colors.black38,
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(10),
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 3,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Icon(
+                              hasCover
+                                  ? Icons.photo_library_outlined
+                                  : Icons.add_photo_alternate_outlined,
+                              size: 28,
+                              color: hasCover
+                                  ? Colors.white
+                                  : tokens.textTertiary,
+                              shadows: hasCover
+                                  ? const <Shadow>[
+                                      Shadow(
+                                        blurRadius: 8,
+                                        color: Colors.black45,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              hasCover ? 'Cambiar portada' : 'Agregar portada',
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(
+                                    color: hasCover
+                                        ? Colors.white
+                                        : tokens.textTertiary,
+                                    fontWeight: FontWeight.w600,
+                                    shadows: hasCover
+                                        ? const <Shadow>[
+                                            Shadow(
+                                              blurRadius: 8,
+                                              color: Colors.black45,
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                 ),
                 Material(
                   color: Colors.transparent,
@@ -988,10 +1018,15 @@ class _CoverPicker extends StatelessWidget {
 }
 
 class _SettingsAvatar extends StatelessWidget {
-  const _SettingsAvatar({required this.tenant, this.pendingLogo});
+  const _SettingsAvatar({
+    required this.tenant,
+    this.pendingLogo,
+    this.loading = false,
+  });
 
   final TenantModel tenant;
   final Uint8List? pendingLogo;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -1029,7 +1064,26 @@ class _SettingsAvatar extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       clipBehavior: Clip.antiAlias,
-      child: child,
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          child,
+          if (loading)
+            const ColoredBox(
+              color: Colors.black38,
+              child: Center(
+                child: SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

@@ -11,12 +11,18 @@ import 'package:image_picker/image_picker.dart';
 class TenantSettingsState {
   const TenantSettingsState({
     this.saving = false,
+    this.pickingLogo = false,
+    this.pickingCover = false,
     this.pendingLogo,
     this.pendingCover,
     this.error,
   });
 
   final bool saving;
+
+  /// Pick+compress in flight — the picker zones show a spinner.
+  final bool pickingLogo;
+  final bool pickingCover;
 
   /// Picked + compressed logo waiting to be uploaded on save.
   final Uint8List? pendingLogo;
@@ -37,6 +43,11 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
           .read(imageServiceProvider)
           .pick(ImageSource.gallery);
       if (picked == null) return;
+      state = TenantSettingsState(
+        pickingLogo: true,
+        pendingLogo: state.pendingLogo,
+        pendingCover: state.pendingCover,
+      );
       final Uint8List jpeg = await ref
           .read(imageServiceProvider)
           .compressLogo(picked.bytes);
@@ -45,6 +56,12 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
         pendingCover: state.pendingCover,
       );
     } finally {
+      if (state.pickingLogo) {
+        state = TenantSettingsState(
+          pendingLogo: state.pendingLogo,
+          pendingCover: state.pendingCover,
+        );
+      }
       keepAlive.close();
     }
   }
@@ -56,6 +73,11 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
           .read(imageServiceProvider)
           .pick(ImageSource.gallery);
       if (picked == null) return;
+      state = TenantSettingsState(
+        pickingCover: true,
+        pendingLogo: state.pendingLogo,
+        pendingCover: state.pendingCover,
+      );
       final Uint8List jpeg = await ref
           .read(imageServiceProvider)
           .compress(picked.bytes);
@@ -64,6 +86,12 @@ class TenantSettingsController extends Notifier<TenantSettingsState> {
         pendingCover: jpeg,
       );
     } finally {
+      if (state.pickingCover) {
+        state = TenantSettingsState(
+          pendingLogo: state.pendingLogo,
+          pendingCover: state.pendingCover,
+        );
+      }
       keepAlive.close();
     }
   }
