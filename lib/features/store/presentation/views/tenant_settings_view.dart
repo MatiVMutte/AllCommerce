@@ -6,6 +6,7 @@ import 'package:all_commerce/core/tenant/tenant_model.dart';
 import 'package:all_commerce/core/tenant/tenant_resolver.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:all_commerce/core/utils/app_haptics.dart';
+import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/utils/snackbar.dart';
 import 'package:all_commerce/core/utils/validators.dart';
@@ -128,6 +129,8 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
       double.tryParse(c.text.trim().replaceAll(',', '.')) ?? 0;
 
   void _onChange() => setState(() {});
+
+  void _refreshDiscounts([String? _]) => _onChange();
 
   bool _isDirty(TenantModel tenant, bool hasPendingLogo) {
     final String w = tenant.whatsapp;
@@ -694,39 +697,32 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                               color: tokens.textSecondary,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _cashDisc,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Efectivo %',
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _transferDisc,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Transf. %',
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _mpDisc,
-                                  decoration: const InputDecoration(
-                                    labelText: 'M. Pago %',
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                ),
-                              ),
-                            ],
+                          const SizedBox(height: 2),
+                          Text(
+                            '% de descuento automático según el medio elegido',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: tokens.textTertiary,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _DiscountField(
+                            label: 'Efectivo',
+                            icon: Icons.payments_outlined,
+                            controller: _cashDisc,
+                            onChanged: _refreshDiscounts,
+                          ),
+                          _DiscountField(
+                            label: 'Transferencia',
+                            icon: Icons.account_balance_outlined,
+                            controller: _transferDisc,
+                            onChanged: _refreshDiscounts,
+                          ),
+                          _DiscountField(
+                            label: 'Mercado Pago',
+                            icon: Icons.qr_code_2_rounded,
+                            controller: _mpDisc,
+                            onChanged: _refreshDiscounts,
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -736,39 +732,38 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                               color: tokens.textSecondary,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _bulkMin,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Si el pedido supera \$',
-                                    hintText: '100000',
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _bulkPct,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Descuento %',
-                                    hintText: '10',
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 2),
                           Text(
-                            'Vacío o 0 = sin descuento',
+                            'Descuento automático cuando el pedido es grande',
                             style: TextStyle(
                               fontSize: 12,
                               color: tokens.textTertiary,
                             ),
+                          ),
+                          const SizedBox(height: 10),
+                          _DiscountField(
+                            label: 'Si el pedido supera',
+                            icon: Icons.shopping_cart_checkout_rounded,
+                            controller: _bulkMin,
+                            prefix: r'$',
+                            hint: '100000',
+                            onChanged: _refreshDiscounts,
+                          ),
+                          _DiscountField(
+                            label: 'Descuento',
+                            icon: Icons.percent_rounded,
+                            controller: _bulkPct,
+                            suffix: '%',
+                            hint: '10',
+                            onChanged: _refreshDiscounts,
+                          ),
+                          const SizedBox(height: 10),
+                          _DiscountsSummary(
+                            cash: _cashDisc,
+                            transfer: _transferDisc,
+                            mp: _mpDisc,
+                            bulkMin: _bulkMin,
+                            bulkPct: _bulkPct,
                           ),
                           const SizedBox(height: 8),
                           const Divider(height: 24),
@@ -1429,6 +1424,139 @@ class LocationPickerSheetState extends State<LocationPickerSheet> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One discount rule row: full label on the left, small value field right.
+class _DiscountField extends StatelessWidget {
+  const _DiscountField({
+    required this.label,
+    required this.icon,
+    required this.controller,
+    this.prefix,
+    this.suffix,
+    this.hint,
+    this.onChanged,
+  });
+
+  final String label;
+  final IconData icon;
+  final TextEditingController controller;
+  final String? prefix;
+  final String? suffix;
+  final String? hint;
+  final ValueChanged<String>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: <Widget>[
+          Icon(icon, size: 18, color: tokens.textTertiary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 14, color: tokens.textPrimary),
+            ),
+          ),
+          SizedBox(
+            width: 108,
+            child: TextFormField(
+              controller: controller,
+              onChanged: onChanged,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: tokens.textPrimary,
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 10,
+                ),
+                prefixText: prefix,
+                suffixText: suffix,
+                hintText: hint,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Live plain-language summary of the configured discounts.
+class _DiscountsSummary extends StatelessWidget {
+  const _DiscountsSummary({
+    required this.cash,
+    required this.transfer,
+    required this.mp,
+    required this.bulkMin,
+    required this.bulkPct,
+  });
+
+  final TextEditingController cash;
+  final TextEditingController transfer;
+  final TextEditingController mp;
+  final TextEditingController bulkMin;
+  final TextEditingController bulkPct;
+
+  static double _val(TextEditingController c) =>
+      double.tryParse(c.text.trim().replaceAll(',', '.')) ?? 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final List<String> parts = <String>[
+      if (_val(cash) > 0) 'Efectivo −${_val(cash).toStringAsFixed(0)}%',
+      if (_val(transfer) > 0)
+        'Transferencia −${_val(transfer).toStringAsFixed(0)}%',
+      if (_val(mp) > 0) 'Mercado Pago −${_val(mp).toStringAsFixed(0)}%',
+      if (_val(bulkMin) > 0 && _val(bulkPct) > 0)
+        'Pedidos ≥ ${Formatters.price(_val(bulkMin))} '
+            '→ −${_val(bulkPct).toStringAsFixed(0)}%',
+    ];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(
+            parts.isEmpty ? Icons.remove_circle_outline : Icons.check_circle,
+            size: 15,
+            color: parts.isEmpty ? tokens.textTertiary : tokens.success,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              parts.isEmpty
+                  ? 'Sin descuentos: dejá los campos vacíos o en 0'
+                  : parts.join('  ·  '),
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.35,
+                fontWeight: parts.isEmpty ? FontWeight.w400 : FontWeight.w600,
+                color: parts.isEmpty ? tokens.textTertiary : tokens.textPrimary,
+              ),
             ),
           ),
         ],
