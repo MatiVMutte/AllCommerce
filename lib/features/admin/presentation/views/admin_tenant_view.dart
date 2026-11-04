@@ -334,46 +334,10 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
                           setState(() => _plan = s.first),
                     ),
                     const SizedBox(height: 14),
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(14),
-                            onTap: () => _pickDate(row),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: tokens.surfaceMuted,
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: Row(
-                                children: <Widget>[
-                                  Icon(
-                                    Icons.event_outlined,
-                                    size: 18,
-                                    color: tokens.textSecondary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Vence '
-                                      '${Formatters.dateTime(expiresAt).split(' ').first}',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: tokens.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    _ExpiryField(
+                      expiresAt: expiresAt,
+                      createdAt: row.createdAt,
+                      onTap: () => _pickDate(row),
                     ),
                     const SizedBox(height: 10),
                     Wrap(
@@ -438,6 +402,101 @@ class _AdminTenantViewState extends ConsumerState<AdminTenantView> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Plan validity block: expiry date with year, days left (or overdue),
+/// and how long the store has been on the platform. Taps open the picker.
+class _ExpiryField extends StatelessWidget {
+  const _ExpiryField({
+    required this.expiresAt,
+    required this.createdAt,
+    required this.onTap,
+  });
+
+  final DateTime expiresAt;
+  final DateTime createdAt;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final int days = expiresAt.difference(DateTime.now()).inDays;
+    final bool expired = days < 0;
+    final String countdown = expired
+        ? 'venció hace ${-days} día${-days == 1 ? '' : 's'}'
+        : days == 0
+        ? 'vence hoy'
+        : 'en $days día${days == 1 ? '' : 's'}';
+    final Color countdownColor = expired
+        ? tokens.danger
+        : days <= 7
+        ? tokens.warning
+        : tokens.success;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: tokens.surfaceMuted,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.event_outlined, size: 18, color: tokens.textSecondary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Flexible(
+                        child: Text(
+                          'Vence ${Formatters.date(expiresAt)}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: tokens.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: countdownColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          countdown,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: countdownColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Local desde ${Formatters.date(createdAt)}'
+                    ' · tocar para cambiar la fecha',
+                    style: TextStyle(fontSize: 12, color: tokens.textTertiary),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

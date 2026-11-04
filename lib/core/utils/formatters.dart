@@ -27,4 +27,9 @@ abstract final class Formatters {
   static String dateTime(DateTime value) {
     return DateFormat('dd/MM HH:mm').format(value.toLocal());
   }
+
+  /// 'dd/MM/yyyy' — plain date with year (local timezone).
+  static String date(DateTime value) {
+    return DateFormat('dd/MM/yyyy').format(value.toLocal());
+  }
 }
