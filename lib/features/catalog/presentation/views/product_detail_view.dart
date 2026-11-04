@@ -8,6 +8,7 @@ import 'package:all_commerce/core/utils/formatters.dart';
 import 'package:all_commerce/core/utils/share_service.dart';
 import 'package:all_commerce/core/widgets/app_snackbar.dart';
 import 'package:all_commerce/core/widgets/app_states.dart';
+import 'package:all_commerce/core/widgets/made_with_all_commerce.dart';
 import 'package:all_commerce/core/widgets/quantity_stepper.dart';
 import 'package:all_commerce/features/cart/presentation/view_models/cart_controller.dart';
 import 'package:all_commerce/features/cart/presentation/widgets/add_to_cart.dart';
@@ -202,6 +203,10 @@ class _ProductDetailScaffold extends ConsumerWidget {
                                   product: product,
                                   tenant: tenant,
                                 ),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 24, top: 8),
+                                child: MadeWithAllCommerce(),
                               ),
                             ],
                           ),
