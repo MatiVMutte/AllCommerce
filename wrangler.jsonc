@@ -1,8 +1,14 @@
 {
   "name": "allcommerce",
   "compatibility_date": "2025-11-01",
+  "main": "worker/index.js",
   "assets": {
     "directory": "./build/web",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    "SUPABASE_URL": "https://wvpdvfgbwdiqvxmdyngn.supabase.co",
+    "SUPABASE_ANON_KEY": "sb_publishable_oRTJ77S94Er7faXSxAT74g_dkCGq8WF"
   }
 }

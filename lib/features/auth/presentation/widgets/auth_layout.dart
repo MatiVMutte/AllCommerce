@@ -12,6 +12,7 @@ class AuthScaffold extends StatelessWidget {
     required this.child,
     this.backFallback = '/',
     this.showBack = true,
+    this.leading,
     this.maxWidth = 460,
     this.useCard = true,
     super.key,
@@ -20,6 +21,10 @@ class AuthScaffold extends StatelessWidget {
   final Widget child;
   final String backFallback;
   final bool showBack;
+
+  /// Optional override for the app-bar leading widget (e.g. an in-page
+  /// back step instead of navigation).
+  final Widget? leading;
   final double maxWidth;
 
   /// Wrap the content in an [AuthCard] on wide screens.
@@ -31,7 +36,7 @@ class AuthScaffold extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: showBack
-          ? AppBar(leading: AppBackButton(fallback: backFallback))
+          ? AppBar(leading: leading ?? AppBackButton(fallback: backFallback))
           : null,
       body: BrandBackground(
         intensity: 0.8,

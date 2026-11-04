@@ -54,6 +54,7 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
   _DirectoryView _view = _DirectoryView.list;
   String? _zone;
   bool _cardOnly = false;
+  bool _openNow = false;
   bool _nearby = false;
   bool _locating = false;
   LatLng? _userPos;
@@ -97,7 +98,8 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
     setState(() => _nearby = true);
   }
 
-  int get _activeFilterCount => (_nearby ? 1 : 0) + (_cardOnly ? 1 : 0);
+  int get _activeFilterCount =>
+      (_nearby ? 1 : 0) + (_cardOnly ? 1 : 0) + (_openNow ? 1 : 0);
 
   /// Filters live in a sheet: keeps the toolbar to Lista/Mapa + one pill,
   /// and leaves room for future filters (open now, delivery...).
@@ -132,6 +134,7 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                               setState(() {
                                 _nearby = false;
                                 _cardOnly = false;
+                                _openNow = false;
                               });
                               setSheetState(() {});
                             },
@@ -171,6 +174,16 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                     value: _cardOnly,
                     onChanged: (bool v) {
                       setState(() => _cardOnly = v);
+                      setSheetState(() {});
+                    },
+                  ),
+                  SwitchListTile.adaptive(
+                    secondary: const Icon(Icons.schedule_rounded),
+                    title: const Text('Solo abiertos ahora'),
+                    subtitle: const Text('Oculta los locales pausados'),
+                    value: _openNow,
+                    onChanged: (bool v) {
+                      setState(() => _openNow = v);
                       setSheetState(() {});
                     },
                   ),
@@ -462,6 +475,11 @@ class _StoreDirectoryViewState extends ConsumerState<StoreDirectoryView> {
                             if (_cardOnly) {
                               filtered = filtered
                                   .where((TenantModel t) => t.acceptsCard)
+                                  .toList();
+                            }
+                            if (_openNow) {
+                              filtered = filtered
+                                  .where((TenantModel t) => t.isOpen)
                                   .toList();
                             }
                             final Set<String> favs = ref.watch(

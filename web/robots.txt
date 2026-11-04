@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /owner
+Disallow: /admin
+Disallow: /cart
+Disallow: /profile
+
+Sitemap: https://allcommerce.allgl.workers.dev/sitemap.xml
