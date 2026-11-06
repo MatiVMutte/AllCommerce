@@ -1,8 +1,8 @@
-import 'package:all_commerce/core/theme/app_brand.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 
-/// Gradient "A" mark, optionally followed by the **ALL**Commerce wordmark.
+/// Official AllCommerce bag+sparkles icon mark, optionally followed by the
+/// **ALL**Commerce wordmark.
 class BrandLogo extends StatelessWidget {
   const BrandLogo({this.size = 32, this.showWordmark = true, super.key});
 
@@ -11,24 +11,15 @@ class BrandLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color primary = Theme.of(context).colorScheme.primary;
     final Color text = context.tokens.textPrimary;
-    final Widget mark = Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(size * 0.28),
-        gradient: AppBrand.gradient(primary),
-      ),
-      child: Text(
-        'A',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w900,
-          fontSize: size * 0.53,
-          height: 1,
-        ),
+    final Widget mark = ClipRRect(
+      borderRadius: BorderRadius.circular(size * 0.26),
+      child: Image.asset(
+        'assets/brand_icon.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
       ),
     );
     if (!showWordmark) return mark;

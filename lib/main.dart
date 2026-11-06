@@ -341,8 +341,12 @@ class _BrandLogoTile extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF0066FF),
         borderRadius: BorderRadius.circular(radius),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.28),
+          width: 1.5,
+        ),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x33000000),
@@ -351,79 +355,14 @@ class _BrandLogoTile extends StatelessWidget {
           ),
         ],
       ),
-      child: CustomPaint(
-        size: Size.square(size),
-        painter: const _AllCommerceGlyphPainter(),
+      clipBehavior: Clip.antiAlias,
+      child: Image.asset(
+        'assets/brand_icon.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
       ),
     );
   }
-}
-
-class _AllCommerceGlyphPainter extends CustomPainter {
-  const _AllCommerceGlyphPainter();
-
-  @override
-  void paint(Canvas c, Size size) {
-    c.scale(size.width / 108, size.height / 108);
-    final Paint blueStroke = Paint()
-      ..color = const Color(0xFF0A68CC)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeJoin = StrokeJoin.round
-      ..strokeCap = StrokeCap.round;
-    final Paint blueFill = Paint()..color = const Color(0xFF0A68CC);
-    final Paint navyStroke = Paint()
-      ..color = const Color(0xFF142882)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    final Paint navyFill = Paint()..color = const Color(0xFF142882);
-
-    c.drawPath(
-      Path()
-        ..moveTo(37, 44)
-        ..lineTo(37, 64)
-        ..lineTo(54, 74)
-        ..lineTo(71, 64)
-        ..lineTo(71, 44),
-      blueStroke,
-    );
-
-    c.drawPath(
-      Path()
-        ..moveTo(36, 38)
-        ..lineTo(72, 38)
-        ..lineTo(72, 44)
-        ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-        ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-        ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-        ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-        ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-        ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-        ..close(),
-      blueFill,
-    );
-
-    c.drawPath(
-      Path()
-        ..moveTo(49.5, 58)
-        ..lineTo(49.5, 54.5)
-        ..arcTo(const Rect.fromLTWH(49.5, 50, 9, 9), math.pi, math.pi, false)
-        ..lineTo(58.5, 58),
-      navyStroke,
-    );
-
-    c.drawPath(
-      Path()
-        ..moveTo(46.5, 58)
-        ..lineTo(61.5, 58)
-        ..lineTo(60.4, 66)
-        ..lineTo(47.6, 66)
-        ..close(),
-      navyFill,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

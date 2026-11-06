@@ -1,5 +1,5 @@
-// Genera los íconos de AllCommerce (hexágono-tienda con toldo + bolsita)
-// para Android, Web y Windows.
+// Genera los íconos de AllCommerce desde assets/brand_icon.png
+// para Android (legacy + adaptive + splash), Web (favicon + PWA + maskable) y Windows (.ico).
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -12,84 +12,77 @@ const Map<String, int> _densities = <String, int>{
   'xxxhdpi': 192,
 };
 
-void paintAllCommerceGlyph(ui.Canvas c, double s) {
-  c.scale(s / 108);
-  final ui.Paint blueStroke = ui.Paint()
-    ..color = const ui.Color(0xFF0A68CC)
-    ..style = ui.PaintingStyle.stroke
-    ..strokeWidth = 4
-    ..strokeJoin = ui.StrokeJoin.round
-    ..strokeCap = ui.StrokeCap.round;
-  final ui.Paint blueFill = ui.Paint()
-    ..color = const ui.Color(0xFF0A68CC);
-  final ui.Paint navyStroke = ui.Paint()
-    ..color = const ui.Color(0xFF142882)
-    ..style = ui.PaintingStyle.stroke
-    ..strokeWidth = 4
-    ..strokeCap = ui.StrokeCap.round;
-  final ui.Paint navyFill = ui.Paint()
-    ..color = const ui.Color(0xFF142882);
+const Map<String, int> _foregroundDensities = <String, int>{
+  'mdpi': 108,
+  'hdpi': 162,
+  'xhdpi': 216,
+  'xxhdpi': 324,
+  'xxxhdpi': 432,
+};
 
-  // Lados y base del hexágono.
-  c.drawPath(ui.Path()
-    ..moveTo(37, 44)
-    ..lineTo(37, 64)
-    ..lineTo(54, 74)
-    ..lineTo(71, 64)
-    ..lineTo(71, 44), blueStroke);
+const ui.Color _brandBlue = ui.Color(0xFF0066FF);
 
-  // Toldo sólido con borde ondulado.
-  c.drawPath(ui.Path()
-    ..moveTo(36, 38)
-    ..lineTo(72, 38)
-    ..lineTo(72, 44)
-    ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-    ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-    ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-    ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-    ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-    ..relativeQuadraticBezierTo(-3, 6, -6, 0)
-    ..close(), blueFill);
-
-  // Manija de la bolsita.
-  c.drawPath(ui.Path()
-    ..moveTo(49.5, 58)
-    ..lineTo(49.5, 54.5)
-    ..arcTo(const ui.Rect.fromLTWH(49.5, 50, 9, 9), 3.14159, 3.14159, false)
-    ..lineTo(58.5, 58), navyStroke);
-
-  // Cuerpo de la bolsita (relleno).
-  c.drawPath(ui.Path()
-    ..moveTo(46.5, 58)
-    ..lineTo(61.5, 58)
-    ..lineTo(60.4, 66)
-    ..lineTo(47.6, 66)
-    ..close(), navyFill);
+Future<ui.Image> _loadSourceIcon() async {
+  final Uint8List bytes = await File('assets/brand_icon.png').readAsBytes();
+  final ui.Codec codec = await ui.instantiateImageCodec(bytes);
+  final ui.FrameInfo frame = await codec.getNextFrame();
+  return frame.image;
 }
 
 Future<Uint8List> renderIcon(
+  ui.Image source,
   int size, {
   bool round = false,
+  double cornerFactor = 0,
   double pad = 0,
-  double glyphScale = 1.1,
 }) async {
   final ui.PictureRecorder rec = ui.PictureRecorder();
   final ui.Canvas canvas = ui.Canvas(rec);
-  final ui.Paint white = ui.Paint()..color = const ui.Color(0xFFFFFFFF);
-  canvas.drawCircle(ui.Offset(size / 2, size / 2), size / 2, white);
+  final ui.Rect fullRect = ui.Rect.fromLTWH(
+    0,
+    0,
+    size.toDouble(),
+    size.toDouble(),
+  );
+
   canvas.save();
-  canvas.clipPath(ui.Path()
-    ..addOval(ui.Rect.fromCircle(
-        center: ui.Offset(size / 2, size / 2), radius: size / 2)));
-  final double base = size * (1 - pad * 2);
-  canvas.translate(size / 2, size / 2);
-  canvas.scale(glyphScale);
-  canvas.translate(-base / 2, -base / 2);
-  paintAllCommerceGlyph(canvas, base);
+  if (round) {
+    canvas.clipPath(ui.Path()..addOval(fullRect));
+  } else if (cornerFactor > 0) {
+    canvas.clipRRect(
+      ui.RRect.fromRectAndRadius(
+        fullRect,
+        ui.Radius.circular(size * cornerFactor),
+      ),
+    );
+  }
+
+  canvas.drawRect(fullRect, ui.Paint()..color = _brandBlue);
+
+  final double inset = size * pad;
+  final ui.Rect dst = ui.Rect.fromLTWH(
+    inset,
+    inset,
+    size - inset * 2,
+    size - inset * 2,
+  );
+  final ui.Rect src = ui.Rect.fromLTWH(
+    0,
+    0,
+    source.width.toDouble(),
+    source.height.toDouble(),
+  );
+  canvas.drawImageRect(
+    source,
+    src,
+    dst,
+    ui.Paint()..filterQuality = ui.FilterQuality.high,
+  );
   canvas.restore();
+
   final ui.Image img = await rec.endRecording().toImage(size, size);
-  return (await img.toByteData(format: ui.ImageByteFormat.png))!
-      .buffer.asUint8List();
+  return (await img.toByteData(format: ui.ImageByteFormat.png))!.buffer
+      .asUint8List();
 }
 
 Future<void> writeIco(
@@ -107,10 +100,18 @@ Future<void> writeIco(
     out.add(<int>[1, 0]);
     out.add(<int>[32, 0]);
     final int len = pngs[i].length;
-    out.add(<int>[len & 0xFF, (len >> 8) & 0xFF,
-        (len >> 16) & 0xFF, (len >> 24) & 0xFF]);
-    out.add(<int>[offset & 0xFF, (offset >> 8) & 0xFF,
-        (offset >> 16) & 0xFF, (offset >> 24) & 0xFF]);
+    out.add(<int>[
+      len & 0xFF,
+      (len >> 8) & 0xFF,
+      (len >> 16) & 0xFF,
+      (len >> 24) & 0xFF,
+    ]);
+    out.add(<int>[
+      offset & 0xFF,
+      (offset >> 8) & 0xFF,
+      (offset >> 16) & 0xFF,
+      (offset >> 24) & 0xFF,
+    ]);
     offset += len;
   }
   for (final Uint8List p in pngs) {
@@ -120,23 +121,40 @@ Future<void> writeIco(
 }
 
 Future<void> generateAllPlatformIcons() async {
+  final ui.Image source = await _loadSourceIcon();
+
   for (final MapEntry<String, int> e in _densities.entries) {
     final String dir = 'android/app/src/main/res/mipmap-${e.key}';
     await File('$dir/ic_launcher.png')
-        .writeAsBytes(await renderIcon(e.value));
-    await File('$dir/ic_launcher_round.png')
-        .writeAsBytes(await renderIcon(e.value));
+        .writeAsBytes(await renderIcon(source, e.value, cornerFactor: 0.22));
+    await File(
+      '$dir/ic_launcher_round.png',
+    ).writeAsBytes(await renderIcon(source, e.value, round: true, pad: 0.08));
   }
-  await File('web/favicon.png').writeAsBytes(await renderIcon(64));
-  await File('web/icons/Icon-192.png').writeAsBytes(await renderIcon(192));
-  await File('web/icons/Icon-512.png').writeAsBytes(await renderIcon(512));
+
+  for (final MapEntry<String, int> e in _foregroundDensities.entries) {
+    final String dir = 'android/app/src/main/res/mipmap-${e.key}';
+    await File('$dir/ic_launcher_foreground.png')
+        .writeAsBytes(await renderIcon(source, e.value, pad: 0.20));
+  }
+
+  await File('android/app/src/main/res/drawable-nodpi/splash_brand_logo.png')
+      .writeAsBytes(await renderIcon(source, 512, pad: 0.16));
+
+  await File('web/favicon.png')
+      .writeAsBytes(await renderIcon(source, 64, cornerFactor: 0.22));
+  await File('web/icons/Icon-192.png')
+      .writeAsBytes(await renderIcon(source, 192));
+  await File('web/icons/Icon-512.png')
+      .writeAsBytes(await renderIcon(source, 512));
   await File('web/icons/Icon-maskable-192.png')
-      .writeAsBytes(await renderIcon(192, pad: 0.18));
+      .writeAsBytes(await renderIcon(source, 192, pad: 0.12));
   await File('web/icons/Icon-maskable-512.png')
-      .writeAsBytes(await renderIcon(512, pad: 0.18));
+      .writeAsBytes(await renderIcon(source, 512, pad: 0.12));
+
   const List<int> sizes = <int>[16, 32, 48, 64, 128, 256];
   final List<Uint8List> pngs = <Uint8List>[
-    for (final int s in sizes) await renderIcon(s),
+    for (final int s in sizes) await renderIcon(source, s, cornerFactor: 0.22),
   ];
   await writeIco('windows/runner/resources/app_icon.ico', pngs, sizes);
 }

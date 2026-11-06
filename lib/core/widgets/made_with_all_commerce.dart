@@ -1,6 +1,7 @@
 import 'package:all_commerce/core/constants/app_config.dart';
 import 'package:all_commerce/core/tenant/tenant_strategy.dart';
 import 'package:all_commerce/core/theme/app_tokens.dart';
+import 'package:all_commerce/core/widgets/brand_logo.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -38,7 +39,7 @@ class MadeWithAllCommerce extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(Icons.storefront_rounded, size: 15, color: scheme.primary),
+              const BrandLogo(size: 18, showWordmark: false),
               const SizedBox(width: 7),
               Text(
                 whiteLabel
