@@ -129,17 +129,17 @@ Future<void> generateAllPlatformIcons() async {
         .writeAsBytes(await renderIcon(source, e.value, cornerFactor: 0.22));
     await File(
       '$dir/ic_launcher_round.png',
-    ).writeAsBytes(await renderIcon(source, e.value, round: true, pad: 0.08));
+    ).writeAsBytes(await renderIcon(source, e.value, round: true, pad: 0.03));
   }
 
   for (final MapEntry<String, int> e in _foregroundDensities.entries) {
     final String dir = 'android/app/src/main/res/mipmap-${e.key}';
     await File('$dir/ic_launcher_foreground.png')
-        .writeAsBytes(await renderIcon(source, e.value, pad: 0.20));
+        .writeAsBytes(await renderIcon(source, e.value, pad: 0.14));
   }
 
   await File('android/app/src/main/res/drawable-nodpi/splash_brand_logo.png')
-      .writeAsBytes(await renderIcon(source, 512, pad: 0.16));
+      .writeAsBytes(await renderIcon(source, 512, pad: 0.10));
 
   await File('web/favicon.png')
       .writeAsBytes(await renderIcon(source, 64, cornerFactor: 0.22));
@@ -148,9 +148,9 @@ Future<void> generateAllPlatformIcons() async {
   await File('web/icons/Icon-512.png')
       .writeAsBytes(await renderIcon(source, 512));
   await File('web/icons/Icon-maskable-192.png')
-      .writeAsBytes(await renderIcon(source, 192, pad: 0.12));
+      .writeAsBytes(await renderIcon(source, 192, pad: 0.06));
   await File('web/icons/Icon-maskable-512.png')
-      .writeAsBytes(await renderIcon(source, 512, pad: 0.12));
+      .writeAsBytes(await renderIcon(source, 512, pad: 0.06));
 
   const List<int> sizes = <int>[16, 32, 48, 64, 128, 256];
   final List<Uint8List> pngs = <Uint8List>[
