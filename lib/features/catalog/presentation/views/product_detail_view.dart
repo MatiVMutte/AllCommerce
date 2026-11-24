@@ -145,38 +145,46 @@ class _ProductDetailScaffold extends ConsumerWidget {
                   builder: (BuildContext context, BoxConstraints constraints) {
                     final bool wide = constraints.maxWidth >= 800;
                     if (wide) {
-                      return Padding(
+                      return SingleChildScrollView(
                         padding: const EdgeInsets.all(24),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Column(
                           children: <Widget>[
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(24),
-                                child: AspectRatio(
-                                  aspectRatio: 1,
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: <Widget>[
-                                      image,
-                                      Positioned(
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        child: overlayButtons,
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: AspectRatio(
+                                      aspectRatio: 1,
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: <Widget>[
+                                          image,
+                                          Positioned(
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            child: overlayButtons,
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ),
-                              ),
+                                const SizedBox(width: 32),
+                                Expanded(
+                                  child: _ProductPanel(
+                                    slug: slug,
+                                    product: product,
+                                    tenant: tenant,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 32),
-                            Expanded(
-                              child: _ProductPanel(
-                                slug: slug,
-                                product: product,
-                                tenant: tenant,
-                              ),
+                            const Padding(
+                              padding: EdgeInsets.only(top: 28, bottom: 12),
+                              child: MadeWithAllCommerce(),
                             ),
                           ],
                         ),

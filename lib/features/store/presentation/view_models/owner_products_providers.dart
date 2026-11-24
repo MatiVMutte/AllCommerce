@@ -38,7 +38,7 @@ final ownerProductProvider = FutureProvider.autoDispose
       return ref.watch(productRepositoryProvider).getById(tenantId, productId);
     });
 
-enum OwnerFilter { all, active, paused }
+enum OwnerFilter { all, active, paused, lowStock, onSale }
 
 /// Search text for the inventory list.
 class OwnerProductQueryNotifier extends Notifier<String> {
@@ -77,6 +77,11 @@ List<ProductModel> filterOwnerProducts(
   return products.where((ProductModel product) {
     if (filter == OwnerFilter.active && !product.isActive) return false;
     if (filter == OwnerFilter.paused && product.isActive) return false;
+    if (filter == OwnerFilter.lowStock &&
+        !(product.isOutOfStock || product.isLowStock)) {
+      return false;
+    }
+    if (filter == OwnerFilter.onSale && !product.isOnSale) return false;
     if (q.isEmpty) return true;
     bool matches(String? text) =>
         text != null && removeDiacritics(text.toLowerCase()).contains(q);
@@ -136,6 +141,31 @@ class OwnerInventoryController extends Notifier<OwnerInventoryState> {
           .read(productRepositoryProvider)
           .setStock(id, tenantId, stock: normalized, trackStock: trackStock);
     }, optimistic: product.copyWith(stock: normalized, trackStock: trackStock));
+  }
+
+  Future<bool> updatePrice(
+    ProductModel product, {
+    required double price,
+    double? compareAtPrice,
+  }) async {
+    final double? cleanCompare =
+        compareAtPrice != null && compareAtPrice > price
+        ? compareAtPrice
+        : null;
+    return _run(
+      product,
+      (String id, String tenantId) {
+        return ref
+            .read(productRepositoryProvider)
+            .setDiscount(
+              id,
+              tenantId,
+              price: price,
+              compareAtPrice: cleanCompare,
+            );
+      },
+      optimistic: product.copyWith(price: price, compareAtPrice: cleanCompare),
+    );
   }
 
   Future<bool> delete(ProductModel product) async {

@@ -200,53 +200,83 @@ class _FilterSegmented extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppTokens tokens = context.tokens;
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     final OwnerFilter filter = ref.watch(ownerFilterProvider);
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: tokens.surfaceMuted,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: SegmentedButton<OwnerFilter>(
-        showSelectedIcon: false,
-        segments: const <ButtonSegment<OwnerFilter>>[
-          ButtonSegment<OwnerFilter>(
-            value: OwnerFilter.all,
-            label: Text('Todos'),
+    const List<({OwnerFilter value, String label, IconData? icon})> items =
+        <({OwnerFilter value, String label, IconData? icon})>[
+          (value: OwnerFilter.all, label: 'Todos', icon: null),
+          (value: OwnerFilter.active, label: 'Activos', icon: null),
+          (value: OwnerFilter.paused, label: 'Pausados', icon: null),
+          (
+            value: OwnerFilter.lowStock,
+            label: 'Poco/Sin stock',
+            icon: Icons.inventory_2_outlined,
           ),
-          ButtonSegment<OwnerFilter>(
-            value: OwnerFilter.active,
-            label: Text('Activos'),
+          (
+            value: OwnerFilter.onSale,
+            label: 'En oferta',
+            icon: Icons.local_offer_outlined,
           ),
-          ButtonSegment<OwnerFilter>(
-            value: OwnerFilter.paused,
-            label: Text('Pausados'),
-          ),
+        ];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: <Widget>[
+          for (int i = 0; i < items.length; i++) ...<Widget>[
+            if (i > 0) const SizedBox(width: 8),
+            InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: () => ref
+                  .read(ownerFilterProvider.notifier)
+                  .setFilter(items[i].value),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: filter == items[i].value
+                      ? scheme.primary.withValues(alpha: 0.14)
+                      : tokens.surface,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: filter == items[i].value
+                        ? scheme.primary
+                        : tokens.border,
+                    width: filter == items[i].value ? 1.4 : 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (items[i].icon != null) ...<Widget>[
+                      Icon(
+                        items[i].icon,
+                        size: 14,
+                        color: filter == items[i].value
+                            ? scheme.primary
+                            : tokens.textSecondary,
+                      ),
+                      const SizedBox(width: 5),
+                    ],
+                    Text(
+                      items[i].label,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: filter == items[i].value
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: filter == items[i].value
+                            ? scheme.primary
+                            : tokens.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
-        selected: <OwnerFilter>{filter},
-        onSelectionChanged: (Set<OwnerFilter> selection) =>
-            ref.read(ownerFilterProvider.notifier).setFilter(selection.first),
-        style: ButtonStyle(
-          visualDensity: VisualDensity.compact,
-          backgroundColor: WidgetStateProperty.resolveWith(
-            (Set<WidgetState> states) => states.contains(WidgetState.selected)
-                ? tokens.surface
-                : Colors.transparent,
-          ),
-          foregroundColor: WidgetStateProperty.resolveWith(
-            (Set<WidgetState> states) => states.contains(WidgetState.selected)
-                ? tokens.textPrimary
-                : tokens.textSecondary,
-          ),
-          side: WidgetStateProperty.resolveWith(
-            (Set<WidgetState> states) => states.contains(WidgetState.selected)
-                ? BorderSide(color: tokens.border)
-                : BorderSide.none,
-          ),
-          shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-          ),
-        ),
       ),
     );
   }
@@ -430,6 +460,131 @@ class _OwnerProductRow extends ConsumerWidget {
     }
   }
 
+  Future<void> _adjustPrice(BuildContext context, WidgetRef ref) async {
+    final TextEditingController priceCtrl = TextEditingController(
+      text: product.price == product.price.roundToDouble()
+          ? product.price.toStringAsFixed(0)
+          : product.price.toString(),
+    );
+    final TextEditingController compareCtrl = TextEditingController(
+      text: product.compareAtPrice == null
+          ? ''
+          : (product.compareAtPrice == product.compareAtPrice!.roundToDouble()
+                ? product.compareAtPrice!.toStringAsFixed(0)
+                : product.compareAtPrice.toString()),
+    );
+    String? errorText;
+    final ({double price, double? compareAt})? result =
+        await showModalBottomSheet<({double price, double? compareAt})>(
+          context: context,
+          useRootNavigator: true,
+          useSafeArea: true,
+          isScrollControlled: true,
+          builder: (BuildContext sheetContext) {
+            return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setSheetState) {
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    20,
+                    20,
+                    MediaQuery.viewInsetsOf(context).bottom +
+                        MediaQuery.viewPaddingOf(context).bottom +
+                        20,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Text(
+                        'Precio · ${product.title}',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: priceCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          labelText: 'Precio actual (\$)',
+                          errorText: errorText,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: compareCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Precio anterior tachado / oferta (opc)',
+                          helperText: 'Dejalo vacío si no está en oferta',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      FilledButton(
+                        onPressed: () {
+                          final double? parsedPrice = double.tryParse(
+                            priceCtrl.text
+                                .trim()
+                                .replaceAll('.', '')
+                                .replaceAll(',', '.'),
+                          );
+                          if (parsedPrice == null || parsedPrice <= 0) {
+                            setSheetState(
+                              () => errorText = 'Ingresá un precio válido',
+                            );
+                            return;
+                          }
+                          final String rawCompare = compareCtrl.text
+                              .trim()
+                              .replaceAll('.', '')
+                              .replaceAll(',', '.');
+                          final double? parsedCompare = rawCompare.isEmpty
+                              ? null
+                              : double.tryParse(rawCompare);
+                          if (parsedCompare != null &&
+                              parsedCompare <= parsedPrice) {
+                            setSheetState(
+                              () => errorText = 'El precio tachado debe ser mayor al precio actual',
+                            );
+                            return;
+                          }
+                          Navigator.of(
+                            sheetContext,
+                          ).pop((price: parsedPrice, compareAt: parsedCompare));
+                        },
+                        child: const Text('Guardar precio'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+    priceCtrl.dispose();
+    compareCtrl.dispose();
+    if (result == null || !context.mounted) return;
+    final bool ok = await ref
+        .read(ownerInventoryControllerProvider.notifier)
+        .updatePrice(
+          product,
+          price: result.price,
+          compareAtPrice: result.compareAt,
+        );
+    if (!context.mounted) return;
+    if (ok) {
+      showAppSnackBar(context, 'Precio actualizado');
+    } else {
+      final Object? error = ref.read(ownerInventoryControllerProvider).error;
+      if (error != null) showErrorSnackBar(context, error);
+    }
+  }
+
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     final bool? confirmed = await showAppConfirmSheet(
       context,
@@ -599,36 +754,58 @@ class _OwnerProductRow extends ConsumerWidget {
                 ],
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                if (product.isOnSale)
-                  Text(
-                    Formatters.price(product.compareAtPrice!),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: tokens.textTertiary,
-                      decoration: TextDecoration.lineThrough,
+            InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: busyId == product.id
+                  ? null
+                  : () => _adjustPrice(context, ref),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (product.isOnSale)
+                      Text(
+                        Formatters.price(product.compareAtPrice!),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: tokens.textTertiary,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          Formatters.price(product.price),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: paused
+                                ? tokens.textTertiary
+                                : tokens.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Icon(
+                          Icons.edit_outlined,
+                          size: 12,
+                          color: tokens.textTertiary,
+                        ),
+                      ],
                     ),
-                  ),
-                Text(
-                  Formatters.price(product.price),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: paused ? tokens.textTertiary : tokens.textPrimary,
-                  ),
+                    if (product.hasWholesale)
+                      Text(
+                        'Mayor. ${Formatters.price(product.wholesalePrice!)} '
+                        '(${Formatters.qtyLabel(product.wholesaleMinQty!, product.unit)}+)',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                  ],
                 ),
-                if (product.hasWholesale)
-                  Text(
-                    'Mayor. ${Formatters.price(product.wholesalePrice!)} '
-                    '(${Formatters.qtyLabel(product.wholesaleMinQty!, product.unit)}+)',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-              ],
+              ),
             ),
             const SizedBox(width: 4),
             IconButton(
@@ -695,6 +872,8 @@ class _OwnerProductRow extends ConsumerWidget {
                     '/owner/products/${product.id}/edit',
                     extra: product,
                   );
+                } else if (value == 'price') {
+                  _adjustPrice(context, ref);
                 } else if (value == 'stock') {
                   _adjustStock(context, ref);
                 } else if (value == 'delete') {
@@ -704,6 +883,10 @@ class _OwnerProductRow extends ConsumerWidget {
               itemBuilder: (BuildContext context) =>
                   const <PopupMenuEntry<String>>[
                     PopupMenuItem<String>(value: 'edit', child: Text('Editar')),
+                    PopupMenuItem<String>(
+                      value: 'price',
+                      child: Text('Cambiar precio'),
+                    ),
                     PopupMenuItem<String>(
                       value: 'stock',
                       child: Text('Ajustar stock'),

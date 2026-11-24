@@ -67,6 +67,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
   String _unit = ProductUnit.unidad;
   final TextEditingController _category = TextEditingController();
   bool _categoryTouched = false;
+  bool _showAdvanced = false;
 
   @override
   void initState() {
@@ -101,6 +102,12 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
       _trackStock = existing.trackStock;
       _category.text = existing.categoryLabel;
       _categoryTouched = true;
+      _showAdvanced =
+          existing.compareAtPrice != null ||
+          existing.wholesalePrice != null ||
+          existing.variants.isNotEmpty ||
+          (existing.sku != null && existing.sku!.trim().isNotEmpty) ||
+          existing.unit != ProductUnit.unidad;
     }
     // Manual edits clear the AI marker on the field.
     for (final TextEditingController c in <TextEditingController>[
@@ -216,7 +223,15 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
   }
 
   Future<void> _save(TenantModel tenant) async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      if (!_showAdvanced) {
+        setState(() => _showAdvanced = true);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _formKey.currentState?.validate();
+        });
+      }
+      return;
+    }
     final String sku = _sku.text.trim();
     final String compareRaw = _compareAtPrice.text.trim().replaceAll(',', '.');
     final double? compareAt = compareRaw.isEmpty
@@ -479,8 +494,9 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                       ),
                       const SizedBox(height: 14),
                       AppSectionCard(
-                        icon: Icons.notes_rounded,
-                        title: 'Datos',
+                        icon: Icons.sell_outlined,
+                        title: 'Datos principales',
+                        subtitle: 'Nombre, precio, categoría y stock',
                         children: <Widget>[
                           if (analyzing)
                             const _FieldsSkeleton()
@@ -500,25 +516,7 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _description,
-                              maxLines: 3,
-                              decoration: const InputDecoration(
-                                labelText: AppStrings.productDescription,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      AppSectionCard(
-                        icon: Icons.sell_outlined,
-                        title: 'Precio y stock',
-                        children: <Widget>[
-                          if (analyzing)
-                            const _FieldsSkeleton()
-                          else ...<Widget>[
+                            const SizedBox(height: 14),
                             TextFormField(
                               controller: _price,
                               keyboardType:
@@ -539,7 +537,154 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 14),
+                            TextFormField(
+                              controller: _category,
+                              onChanged: (_) =>
+                                  setState(() => _categoryTouched = true),
+                              decoration: const InputDecoration(
+                                labelText: AppStrings.productCategory,
+                                hintText: 'Ej: Bebidas, Limpieza, Kiosco',
+                                helperText:
+                                    'Escribila o elegí una existente abajo',
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: <Widget>[
+                                for (final String suggestion
+                                    in _categorySuggestions(tenant))
+                                  ActionChip(
+                                    label: Text(suggestion),
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: () => setState(() {
+                                      _category.text = suggestion;
+                                      _categoryTouched = true;
+                                    }),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            TextFormField(
+                              controller: _description,
+                              maxLines: 2,
+                              decoration: const InputDecoration(
+                                labelText: AppStrings.productDescription,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              value: _trackStock,
+                              onChanged: (bool value) {
+                                setState(() {
+                                  _trackStock = value;
+                                  if (value &&
+                                      (double.tryParse(
+                                                _stock.text.trim().replaceAll(
+                                                  ',',
+                                                  '.',
+                                                ),
+                                              ) ??
+                                              0) <=
+                                          0) {
+                                    _stock.text = '1';
+                                  }
+                                });
+                              },
+                              title: const Text('Controlar stock disponible'),
+                              subtitle: const Text(
+                                'Descuenta automáticamente con cada pedido',
+                              ),
+                            ),
+                            if (_trackStock) ...<Widget>[
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _stock,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                decoration: InputDecoration(
+                                  labelText:
+                                      '${AppStrings.productStock} (${ProductUnit.labelOf(_unit)})',
+                                ),
+                                validator: (String? value) {
+                                  final double? parsed = double.tryParse(
+                                    (value ?? '').trim().replaceAll(',', '.'),
+                                  );
+                                  if (parsed == null || parsed < 0) {
+                                    return 'Ingresá un número mayor o igual a 0';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () =>
+                            setState(() => _showAdvanced = !_showAdvanced),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: context.tokens.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: context.tokens.border),
+                          ),
+                          child: Row(
+                            children: <Widget>[
+                              Icon(
+                                Icons.tune_rounded,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      'Opciones adicionales',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: context.tokens.textPrimary,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Oferta, precio mayorista, variantes, unidad y SKU',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: context.tokens.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                _showAdvanced
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
+                                color: context.tokens.textSecondary,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (_showAdvanced) ...<Widget>[
+                        const SizedBox(height: 12),
+                        AppSectionCard(
+                          icon: Icons.local_offer_outlined,
+                          title: 'Oferta, mayorista y variantes',
+                          children: <Widget>[
                             TextFormField(
                               controller: _compareAtPrice,
                               keyboardType:
@@ -677,91 +822,13 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            SwitchListTile.adaptive(
-                              contentPadding: EdgeInsets.zero,
-                              value: _trackStock,
-                              onChanged: (bool value) {
-                                setState(() {
-                                  _trackStock = value;
-                                  if (value &&
-                                      (double.tryParse(
-                                                _stock.text.trim().replaceAll(
-                                                  ',',
-                                                  '.',
-                                                ),
-                                              ) ??
-                                              0) <=
-                                          0) {
-                                    _stock.text = '1';
-                                  }
-                                });
-                              },
-                              title: const Text('Controlar stock disponible'),
-                              subtitle: const Text(
-                                'Descuenta automáticamente con cada pedido y avisa cuando quedan pocas unidades',
-                              ),
-                            ),
-                            if (_trackStock) ...<Widget>[
-                              const SizedBox(height: 8),
-                              TextFormField(
-                                controller: _stock,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
-                                decoration: InputDecoration(
-                                  labelText:
-                                      '${AppStrings.productStock} (${ProductUnit.labelOf(_unit)})',
-                                ),
-                                validator: (String? value) {
-                                  final double? parsed = double.tryParse(
-                                    (value ?? '').trim().replaceAll(',', '.'),
-                                  );
-                                  if (parsed == null || parsed < 0) {
-                                    return 'Ingresá un número mayor o igual a 0';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ],
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      AppSectionCard(
-                        icon: Icons.local_offer_outlined,
-                        title: 'Categoría y etiquetas',
-                        children: <Widget>[
-                          if (analyzing)
-                            const _FieldsSkeleton()
-                          else ...<Widget>[
                             TextFormField(
-                              controller: _category,
-                              onChanged: (_) =>
-                                  setState(() => _categoryTouched = true),
+                              controller: _variants,
                               decoration: const InputDecoration(
-                                labelText: AppStrings.productCategory,
-                                hintText: 'Ej: Bebidas, Limpieza, Kiosco',
-                                helperText:
-                                    'Escribila o elegí una existente abajo',
+                                labelText: 'Variantes (opcional)',
+                                hintText: 'S, M, L, XL o Rojo, Negro',
+                                helperText: 'Separá con comas — el cliente elige una al comprar',
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: <Widget>[
-                                for (final String suggestion
-                                    in _categorySuggestions(tenant))
-                                  ActionChip(
-                                    label: Text(suggestion),
-                                    visualDensity: VisualDensity.compact,
-                                    onPressed: () => setState(() {
-                                      _category.text = suggestion;
-                                      _categoryTouched = true;
-                                    }),
-                                  ),
-                              ],
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
@@ -780,18 +847,9 @@ class _ProductUploadViewState extends ConsumerState<ProductUploadView> {
                                 suffixIcon: _aiBadge(_sku),
                               ),
                             ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _variants,
-                              decoration: const InputDecoration(
-                                labelText: 'Variantes (opcional)',
-                                hintText: 'S, M, L, XL o Rojo, Negro',
-                                helperText: 'Separá con comas — el cliente elige una al comprar',
-                              ),
-                            ),
                           ],
-                        ],
-                      ),
+                        ),
+                      ],
                       const SizedBox(height: 24),
                     ],
                   ),
