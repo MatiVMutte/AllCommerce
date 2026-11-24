@@ -37,6 +37,8 @@ const List<String> _palette = <String>[
   '#212121',
 ];
 
+enum _SettingsSection { all, identity, contact, payments }
+
 class TenantSettingsView extends ConsumerStatefulWidget {
   const TenantSettingsView({super.key});
 
@@ -67,6 +69,7 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
   double? _lng;
   bool _initialized = false;
   String? _refreshedTenantId;
+  _SettingsSection _section = _SettingsSection.all;
 
   @override
   void dispose() {
@@ -319,9 +322,515 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
               tenant,
               state.pendingLogo != null || state.pendingCover != null,
             );
+            final bool twoCols =
+                MediaQuery.sizeOf(context).width >= 880 &&
+                _section == _SettingsSection.all;
+            final bool showIdentity =
+                _section == _SettingsSection.all ||
+                _section == _SettingsSection.identity;
+            final bool showContact =
+                _section == _SettingsSection.all ||
+                _section == _SettingsSection.contact;
+            final bool showPayments =
+                _section == _SettingsSection.all ||
+                _section == _SettingsSection.payments;
+
+            final Widget identityCard = AppSectionCard(
+              icon: Icons.storefront_outlined,
+              title: 'Identidad',
+              subtitle: 'Logo, portada, nombre y descripción',
+              children: <Widget>[
+                Center(
+                  child: Column(
+                    children: <Widget>[
+                      Stack(
+                        children: <Widget>[
+                          _SettingsAvatar(
+                            tenant: tenant,
+                            pendingLogo: state.pendingLogo,
+                            loading: state.pickingLogo || state.saving,
+                          ),
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Theme.of(context)
+                                      .scaffoldBackgroundColor,
+                                  width: 2,
+                                ),
+                              ),
+                              child: IconButton(
+                                padding: EdgeInsets.zero,
+                                tooltip: 'Cambiar logo',
+                                iconSize: 16,
+                                icon: const Icon(
+                                  Icons.photo_camera_outlined,
+                                  color: Colors.white,
+                                ),
+                                onPressed: state.saving
+                                    ? null
+                                    : () => ref
+                                          .read(
+                                            tenantSettingsControllerProvider
+                                                .notifier,
+                                          )
+                                          .pickLogo(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _name.text.trim().isEmpty
+                            ? tenant.name
+                            : _name.text.trim(),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: tokens.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _CoverPicker(
+                  tenant: tenant,
+                  pendingCover: state.pendingCover,
+                  enabled: !state.saving,
+                  loading: state.pickingCover || state.saving,
+                  onPick: () => ref
+                      .read(tenantSettingsControllerProvider.notifier)
+                      .pickCover(),
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _name,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre del local',
+                  ),
+                  validator: Validators.storeName,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _description,
+                  decoration: const InputDecoration(
+                    labelText: 'Descripción (opcional)',
+                  ),
+                  maxLines: 3,
+                  maxLength: 200,
+                ),
+              ],
+            );
+
+            final Widget visibilityCard = AppSectionCard(
+              icon: Icons.visibility_outlined,
+              title: 'Visibilidad',
+              subtitle: 'Quién encuentra tu catálogo',
+              children: <Widget>[
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  value: _isPublic,
+                  onChanged: (bool value) => setState(() => _isPublic = value),
+                  title: const Text('Aparecer en el directorio'),
+                  subtitle: const Text('Apagado: solo entran con tu link o QR'),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        '${ShareService.linkBase}/s/${tenant.slug}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: tokens.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.copy_outlined,
+                        size: 18,
+                        color: tokens.textSecondary,
+                      ),
+                      tooltip: 'Copiar link',
+                      onPressed: () async {
+                        await Clipboard.setData(
+                          ClipboardData(
+                            text:
+                                'https://${ShareService.linkBase}/s/${tenant.slug}',
+                          ),
+                        );
+                        if (context.mounted) {
+                          showAppSnackBar(context, 'Link copiado');
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            );
+
+            final Widget appearanceCard = AppSectionCard(
+              icon: Icons.palette_outlined,
+              title: 'Apariencia',
+              subtitle: 'El color de tu catálogo',
+              children: <Widget>[
+                Wrap(
+                  spacing: 14,
+                  runSpacing: 14,
+                  children: <Widget>[
+                    for (final String hex in colors)
+                      _ColorDot(
+                        hex: hex,
+                        selected: hex == _color,
+                        onTap: () => setState(() => _color = hex),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Live preview of the catalog header.
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: tokens.border),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Container(height: 64, color: preview),
+                      Transform.translate(
+                        offset: const Offset(0, -20),
+                        child: Column(
+                          children: <Widget>[
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Theme.of(context)
+                                      .scaffoldBackgroundColor,
+                                  width: 3,
+                                ),
+                              ),
+                              child: CircleAvatar(
+                                radius: 24,
+                                backgroundColor: preview,
+                                child: Text(
+                                  (_name.text.trim().isEmpty
+                                          ? tenant.name
+                                          : _name.text.trim())
+                                      .characters
+                                      .first
+                                      .toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _name.text.trim().isEmpty
+                                  ? tenant.name
+                                  : _name.text.trim(),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: tokens.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+
+            final Widget contactCard = AppSectionCard(
+              icon: Icons.place_outlined,
+              title: 'Contacto',
+              children: <Widget>[
+                TextFormField(
+                  controller: _address,
+                  decoration: const InputDecoration(
+                    labelText: 'Dirección (opcional)',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: state.saving ? null : _pickLocation,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: tokens.border),
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          Icons.pin_drop_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              const Text(
+                                'Ubicación en el mapa',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              Text(
+                                _lat != null && _lng != null
+                                    ? 'Marcada · tocá para cambiarla'
+                                    : 'Sin marcar · tu local no aparece en el mapa del directorio',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: tokens.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: tokens.textTertiary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _whatsapp,
+                  decoration: const InputDecoration(
+                    labelText: 'WhatsApp',
+                    hintText: '11 2233 4455',
+                  ),
+                  keyboardType: TextInputType.phone,
+                  validator: Validators.phone,
+                ),
+              ],
+            );
+
+            final Widget hoursCard = AppSectionCard(
+              icon: Icons.schedule_outlined,
+              title: 'Atención',
+              children: <Widget>[
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  value: _isOpen,
+                  onChanged: (bool value) => setState(() => _isOpen = value),
+                  title: const Text('Local abierto ahora'),
+                  subtitle: const Text(
+                    'Se muestra como Abierto o Cerrado en el directorio y en tu catálogo',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _openingHours,
+                  decoration: const InputDecoration(
+                    labelText: 'Horarios de atención (opcional)',
+                    hintText: 'Ej: Lun a Vie 9 a 19 hs · Sáb 9 a 13 hs',
+                  ),
+                ),
+              ],
+            );
+
+            final Widget paymentCard = AppSectionCard(
+              icon: Icons.payments_outlined,
+              title: 'Cobro',
+              subtitle: 'Cómo te pagan',
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: TextFormField(
+                        controller: _transferAlias,
+                        decoration: const InputDecoration(
+                          labelText: 'Alias/CBU para transferencias',
+                          hintText: 'Ej: mateo.dietetica.mp',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: 'Info',
+                      icon: const Icon(Icons.help_outline, size: 20),
+                      onPressed: () => showDialog<void>(
+                        context: context,
+                        builder: (BuildContext context) => AlertDialog(
+                          title: const Text('Pagos'),
+                          content: const Text(
+                            'Escribí tu alias de Mercado Pago, CVU o CBU. '
+                            'Los clientes lo verán al elegir "Transferencia".',
+                          ),
+                          actions: <Widget>[
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Entendido'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _mercadoPagoLink,
+                  decoration: const InputDecoration(
+                    labelText: 'Link de pago Mercado Pago (opcional)',
+                    hintText: 'https://mpago.la/...',
+                  ),
+                  keyboardType: TextInputType.url,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        'Aceptar pago en efectivo',
+                        style: TextStyle(color: tokens.textSecondary),
+                      ),
+                    ),
+                    Switch(
+                      value: _acceptsCash,
+                      onChanged: (bool value) {
+                        setState(() => _acceptsCash = value);
+                        _savePaymentFlags(tenant);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        'Aceptar tarjetas (crédito/débito)',
+                        style: TextStyle(color: tokens.textSecondary),
+                      ),
+                    ),
+                    Switch(
+                      value: _acceptsCard,
+                      onChanged: (bool value) {
+                        setState(() => _acceptsCard = value);
+                        _savePaymentFlags(tenant);
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            );
+
+            final Widget discountsCard = AppSectionCard(
+              icon: Icons.percent_rounded,
+              title: 'Descuentos',
+              subtitle: 'Se aplican solos al confirmar el pedido',
+              children: <Widget>[
+                Text(
+                  'Por forma de pago',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: tokens.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '% de descuento automático según el medio elegido',
+                  style: TextStyle(fontSize: 12, color: tokens.textTertiary),
+                ),
+                const SizedBox(height: 10),
+                _DiscountField(
+                  label: 'Efectivo',
+                  icon: Icons.payments_outlined,
+                  controller: _cashDisc,
+                  onChanged: _refreshDiscounts,
+                ),
+                _DiscountField(
+                  label: 'Transferencia',
+                  icon: Icons.account_balance_outlined,
+                  controller: _transferDisc,
+                  onChanged: _refreshDiscounts,
+                ),
+                _DiscountField(
+                  label: 'Mercado Pago',
+                  icon: Icons.qr_code_2_rounded,
+                  controller: _mpDisc,
+                  onChanged: _refreshDiscounts,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Por total del pedido',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: tokens.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Descuento automático cuando el pedido es grande',
+                  style: TextStyle(fontSize: 12, color: tokens.textTertiary),
+                ),
+                const SizedBox(height: 10),
+                _DiscountField(
+                  label: 'Si el pedido supera',
+                  icon: Icons.shopping_cart_checkout_rounded,
+                  controller: _bulkMin,
+                  prefix: r'$',
+                  hint: '100000',
+                  onChanged: _refreshDiscounts,
+                ),
+                _DiscountField(
+                  label: 'Descuento',
+                  icon: Icons.percent_rounded,
+                  controller: _bulkPct,
+                  suffix: '%',
+                  hint: '10',
+                  onChanged: _refreshDiscounts,
+                ),
+                const SizedBox(height: 10),
+                _DiscountsSummary(
+                  cash: _cashDisc,
+                  transfer: _transferDisc,
+                  mp: _mpDisc,
+                  bulkMin: _bulkMin,
+                  bulkPct: _bulkPct,
+                ),
+                const SizedBox(height: 8),
+                const Divider(height: 24),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.local_offer_outlined),
+                  title: const Text('Cupones de descuento'),
+                  subtitle: const Text(
+                    'Creá códigos como PROMO10 para tus clientes',
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.push('/owner/coupons'),
+                ),
+              ],
+            );
+
             return Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 920),
+                constraints: BoxConstraints(maxWidth: twoCols ? 1100 : 820),
                 child: Form(
                   key: _formKey,
                   child: ListView(
@@ -335,529 +844,141 @@ class _TenantSettingsViewState extends ConsumerState<TenantSettingsView> {
                               : FloatingNavBar.height),
                     ),
                     children: <Widget>[
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Mi local',
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.w700),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              'Mi local',
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          if (dirty)
+                            Flexible(
+                              child: FilledButton.icon(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size(0, 40),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                onPressed: state.saving
+                                    ? null
+                                    : () => _save(tenant),
+                                icon: state.saving
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Icon(Icons.check_rounded, size: 18),
+                                label: const Text('Guardar cambios'),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: <Widget>[
+                            _SettingsSectionChip(
+                              label: 'Todo',
+                              icon: Icons.apps_rounded,
+                              selected: _section == _SettingsSection.all,
+                              onTap: () => setState(
+                                () => _section = _SettingsSection.all,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _SettingsSectionChip(
+                              label: 'Identidad y Color',
+                              icon: Icons.storefront_outlined,
+                              selected: _section == _SettingsSection.identity,
+                              onTap: () => setState(
+                                () => _section = _SettingsSection.identity,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _SettingsSectionChip(
+                              label: 'Contacto y Horario',
+                              icon: Icons.place_outlined,
+                              selected: _section == _SettingsSection.contact,
+                              onTap: () => setState(
+                                () => _section = _SettingsSection.contact,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _SettingsSectionChip(
+                              label: 'Pagos y Descuentos',
+                              icon: Icons.payments_outlined,
+                              selected: _section == _SettingsSection.payments,
+                              onTap: () => setState(
+                                () => _section = _SettingsSection.payments,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      AppSectionCard(
-                        icon: Icons.storefront_outlined,
-                        title: 'Identidad',
-                        subtitle: 'Logo, portada, nombre y descripción',
-                        children: <Widget>[
-                          Center(
-                            child: Column(
-                              children: <Widget>[
-                                Stack(
-                                  children: <Widget>[
-                                    _SettingsAvatar(
-                                      tenant: tenant,
-                                      pendingLogo: state.pendingLogo,
-                                      loading:
-                                          state.pickingLogo || state.saving,
-                                    ),
-                                    Positioned(
-                                      right: 0,
-                                      bottom: 0,
-                                      child: Container(
-                                        width: 32,
-                                        height: 32,
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Theme.of(context)
-                                                .scaffoldBackgroundColor,
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: IconButton(
-                                          padding: EdgeInsets.zero,
-                                          tooltip: 'Cambiar logo',
-                                          iconSize: 16,
-                                          icon: const Icon(
-                                            Icons.photo_camera_outlined,
-                                            color: Colors.white,
-                                          ),
-                                          onPressed: state.saving
-                                              ? null
-                                              : () => ref
-                                                    .read(
-                                                      tenantSettingsControllerProvider
-                                                          .notifier,
-                                                    )
-                                                    .pickLogo(),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _name.text.trim().isEmpty
-                                      ? tenant.name
-                                      : _name.text.trim(),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: tokens.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          _CoverPicker(
-                            tenant: tenant,
-                            pendingCover: state.pendingCover,
-                            enabled: !state.saving,
-                            loading: state.pickingCover || state.saving,
-                            onPick: () => ref
-                                .read(tenantSettingsControllerProvider.notifier)
-                                .pickCover(),
-                          ),
-                          const SizedBox(height: 20),
-                          TextFormField(
-                            controller: _name,
-                            decoration: const InputDecoration(
-                              labelText: 'Nombre del local',
-                            ),
-                            validator: Validators.storeName,
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _description,
-                            decoration: const InputDecoration(
-                              labelText: 'Descripción (opcional)',
-                            ),
-                            maxLines: 3,
-                            maxLength: 200,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      AppSectionCard(
-                        icon: Icons.visibility_outlined,
-                        title: 'Visibilidad',
-                        subtitle: 'Quién encuentra tu catálogo',
-                        children: <Widget>[
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            value: _isPublic,
-                            onChanged: (bool value) =>
-                                setState(() => _isPublic = value),
-                            title: const Text('Aparecer en el directorio'),
-                            subtitle: const Text(
-                              'Apagado: solo entran con tu link o QR',
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: Text(
-                                  '${ShareService.linkBase}/s/${tenant.slug}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: tokens.textSecondary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  Icons.copy_outlined,
-                                  size: 18,
-                                  color: tokens.textSecondary,
-                                ),
-                                tooltip: 'Copiar link',
-                                onPressed: () async {
-                                  await Clipboard.setData(
-                                    ClipboardData(
-                                      text:
-                                          'https://${ShareService.linkBase}/s/${tenant.slug}',
-                                    ),
-                                  );
-                                  if (context.mounted) {
-                                    showAppSnackBar(context, 'Link copiado');
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      AppSectionCard(
-                        icon: Icons.place_outlined,
-                        title: 'Contacto',
-                        children: <Widget>[
-                          TextFormField(
-                            controller: _address,
-                            decoration: const InputDecoration(
-                              labelText: 'Dirección (opcional)',
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: state.saving ? null : _pickLocation,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: tokens.border),
-                              ),
-                              child: Row(
+                      const SizedBox(height: 18),
+                      if (twoCols)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(
+                              child: Column(
                                 children: <Widget>[
-                                  Icon(
-                                    Icons.pin_drop_outlined,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: <Widget>[
-                                        const Text(
-                                          'Ubicación en el mapa',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        Text(
-                                          _lat != null && _lng != null
-                                              ? 'Marcada · tocá para cambiarla'
-                                              : 'Sin marcar · tu local no aparece en el mapa del directorio',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: tokens.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    color: tokens.textTertiary,
-                                  ),
+                                  identityCard,
+                                  const SizedBox(height: 14),
+                                  appearanceCard,
+                                  const SizedBox(height: 14),
+                                  visibilityCard,
                                 ],
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _whatsapp,
-                            decoration: const InputDecoration(
-                              labelText: 'WhatsApp',
-                              hintText: '11 2233 4455',
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Column(
+                                children: <Widget>[
+                                  contactCard,
+                                  const SizedBox(height: 14),
+                                  hoursCard,
+                                  const SizedBox(height: 14),
+                                  paymentCard,
+                                  const SizedBox(height: 14),
+                                  discountsCard,
+                                ],
+                              ),
                             ),
-                            keyboardType: TextInputType.phone,
-                            validator: Validators.phone,
-                          ),
+                          ],
+                        )
+                      else ...<Widget>[
+                        if (showIdentity) ...<Widget>[
+                          identityCard,
+                          const SizedBox(height: 14),
+                          appearanceCard,
+                          const SizedBox(height: 14),
+                          visibilityCard,
+                          const SizedBox(height: 14),
                         ],
-                      ),
-                      const SizedBox(height: 14),
-                      AppSectionCard(
-                        icon: Icons.schedule_outlined,
-                        title: 'Atención',
-                        children: <Widget>[
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            value: _isOpen,
-                            onChanged: (bool value) =>
-                                setState(() => _isOpen = value),
-                            title: const Text('Local abierto ahora'),
-                            subtitle: const Text(
-                              'Se muestra como Abierto o Cerrado en el directorio y en tu catálogo',
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _openingHours,
-                            decoration: const InputDecoration(
-                              labelText: 'Horarios de atención (opcional)',
-                              hintText:
-                                  'Ej: Lun a Vie 9 a 19 hs · Sáb 9 a 13 hs',
-                            ),
-                          ),
+                        if (showContact) ...<Widget>[
+                          contactCard,
+                          const SizedBox(height: 14),
+                          hoursCard,
+                          const SizedBox(height: 14),
                         ],
-                      ),
-                      const SizedBox(height: 14),
-                      AppSectionCard(
-                        icon: Icons.payments_outlined,
-                        title: 'Cobro',
-                        subtitle: 'Cómo te pagan',
-                        children: <Widget>[
-                          Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _transferAlias,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Alias/CBU para transferencias',
-                                    hintText: 'Ej: mateo.dietetica.mp',
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                tooltip: 'Info',
-                                icon: const Icon(Icons.help_outline, size: 20),
-                                onPressed: () => showDialog<void>(
-                                  context: context,
-                                  builder: (BuildContext context) =>
-                                      AlertDialog(
-                                        title: const Text('Pagos'),
-                                        content: const Text(
-                                          'Escribí tu alias de Mercado Pago, CVU o CBU. '
-                                          'Los clientes lo verán al elegir "Transferencia".',
-                                        ),
-                                        actions: <Widget>[
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.of(context).pop(),
-                                            child: const Text('Entendido'),
-                                          ),
-                                        ],
-                                      ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _mercadoPagoLink,
-                            decoration: const InputDecoration(
-                              labelText: 'Link de pago Mercado Pago (opcional)',
-                              hintText: 'https://mpago.la/...',
-                            ),
-                            keyboardType: TextInputType.url,
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: Text(
-                                  'Aceptar pago en efectivo',
-                                  style: TextStyle(color: tokens.textSecondary),
-                                ),
-                              ),
-                              Switch(
-                                value: _acceptsCash,
-                                onChanged: (bool value) {
-                                  setState(() => _acceptsCash = value);
-                                  _savePaymentFlags(tenant);
-                                },
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: Text(
-                                  'Aceptar tarjetas (crédito/débito)',
-                                  style: TextStyle(color: tokens.textSecondary),
-                                ),
-                              ),
-                              Switch(
-                                value: _acceptsCard,
-                                onChanged: (bool value) {
-                                  setState(() => _acceptsCard = value);
-                                  _savePaymentFlags(tenant);
-                                },
-                              ),
-                            ],
-                          ),
+                        if (showPayments) ...<Widget>[
+                          paymentCard,
+                          const SizedBox(height: 14),
+                          discountsCard,
+                          const SizedBox(height: 14),
                         ],
-                      ),
-                      const SizedBox(height: 14),
-                      AppSectionCard(
-                        icon: Icons.percent_rounded,
-                        title: 'Descuentos',
-                        subtitle: 'Se aplican solos al confirmar el pedido',
-                        children: <Widget>[
-                          Text(
-                            'Por forma de pago',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: tokens.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '% de descuento automático según el medio elegido',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: tokens.textTertiary,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          _DiscountField(
-                            label: 'Efectivo',
-                            icon: Icons.payments_outlined,
-                            controller: _cashDisc,
-                            onChanged: _refreshDiscounts,
-                          ),
-                          _DiscountField(
-                            label: 'Transferencia',
-                            icon: Icons.account_balance_outlined,
-                            controller: _transferDisc,
-                            onChanged: _refreshDiscounts,
-                          ),
-                          _DiscountField(
-                            label: 'Mercado Pago',
-                            icon: Icons.qr_code_2_rounded,
-                            controller: _mpDisc,
-                            onChanged: _refreshDiscounts,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Por total del pedido',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: tokens.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Descuento automático cuando el pedido es grande',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: tokens.textTertiary,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          _DiscountField(
-                            label: 'Si el pedido supera',
-                            icon: Icons.shopping_cart_checkout_rounded,
-                            controller: _bulkMin,
-                            prefix: r'$',
-                            hint: '100000',
-                            onChanged: _refreshDiscounts,
-                          ),
-                          _DiscountField(
-                            label: 'Descuento',
-                            icon: Icons.percent_rounded,
-                            controller: _bulkPct,
-                            suffix: '%',
-                            hint: '10',
-                            onChanged: _refreshDiscounts,
-                          ),
-                          const SizedBox(height: 10),
-                          _DiscountsSummary(
-                            cash: _cashDisc,
-                            transfer: _transferDisc,
-                            mp: _mpDisc,
-                            bulkMin: _bulkMin,
-                            bulkPct: _bulkPct,
-                          ),
-                          const SizedBox(height: 8),
-                          const Divider(height: 24),
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: const Icon(Icons.local_offer_outlined),
-                            title: const Text('Cupones de descuento'),
-                            subtitle: const Text(
-                              'Creá códigos como PROMO10 para tus clientes',
-                            ),
-                            trailing: const Icon(Icons.chevron_right_rounded),
-                            onTap: () => context.push('/owner/coupons'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      AppSectionCard(
-                        icon: Icons.palette_outlined,
-                        title: 'Apariencia',
-                        subtitle: 'El color de tu catálogo',
-                        children: <Widget>[
-                          Wrap(
-                            spacing: 14,
-                            runSpacing: 14,
-                            children: <Widget>[
-                              for (final String hex in colors)
-                                _ColorDot(
-                                  hex: hex,
-                                  selected: hex == _color,
-                                  onTap: () => setState(() => _color = hex),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // Live preview of the catalog header.
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: tokens.border),
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                Container(height: 64, color: preview),
-                                Transform.translate(
-                                  offset: const Offset(0, -20),
-                                  child: Column(
-                                    children: <Widget>[
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Theme.of(context)
-                                                .scaffoldBackgroundColor,
-                                            width: 3,
-                                          ),
-                                        ),
-                                        child: CircleAvatar(
-                                          radius: 24,
-                                          backgroundColor: preview,
-                                          child: Text(
-                                            (_name.text.trim().isEmpty
-                                                    ? tenant.name
-                                                    : _name.text.trim())
-                                                .characters
-                                                .first
-                                                .toUpperCase(),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        _name.text.trim().isEmpty
-                                            ? tenant.name
-                                            : _name.text.trim(),
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          color: tokens.textPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
+                      ],
+                      const SizedBox(height: 6),
                       FilledButton(
                         onPressed: state.saving || !dirty
                             ? null
@@ -1078,6 +1199,62 @@ class _SettingsAvatar extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _SettingsSectionChip extends StatelessWidget {
+  const _SettingsSectionChip({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected
+              ? scheme.primary.withValues(alpha: 0.14)
+              : tokens.surface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? scheme.primary : tokens.border,
+            width: selected ? 1.4 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              icon,
+              size: 15,
+              color: selected ? scheme.primary : tokens.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected ? scheme.primary : tokens.textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

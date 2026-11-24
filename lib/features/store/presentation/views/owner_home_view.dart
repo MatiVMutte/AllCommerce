@@ -1,4 +1,6 @@
 import 'package:all_commerce/core/constants/app_config.dart';
+import 'package:all_commerce/core/constants/delivery_method.dart';
+import 'package:all_commerce/core/constants/payment_method.dart';
 import 'package:all_commerce/core/constants/plans.dart';
 import 'package:all_commerce/core/router/customer_mode.dart';
 import 'package:all_commerce/core/tenant/tenant_model.dart';
@@ -385,10 +387,18 @@ class _OwnerPanel extends ConsumerWidget {
                       metricsAsync: ref.watch(
                         ownerSalesMetricsProvider(tenant.id),
                       ),
+                      orders: orders ?? const <OrderModel>[],
                     ),
                   ),
                   const SizedBox(height: 16),
                   _WeeklySalesCard(orders: orders ?? const <OrderModel>[]),
+                  const SizedBox(height: 16),
+                  _StoreInsightsCard(
+                    orders: orders ?? const <OrderModel>[],
+                    visitsAsync: ref.watch(
+                      catalogVisitCountsProvider(tenant.id),
+                    ),
+                  ),
                   Align(
                     alignment: Alignment.centerRight,
                     child: _ExportCsvButton(tenant: tenant),
@@ -990,23 +1000,44 @@ const List<String> _monthNames = <String>[
   'diciembre',
 ];
 
-/// "Ventas del mes": total del mes, comparativa con el mes anterior y
-/// top 3 productos más pedidos.
+/// "Ventas del mes": total del mes, comparativa con el mes anterior,
+/// desglose rápido (hoy, compra promedio, mes anterior) y top productos.
 class _SalesCard extends StatelessWidget {
-  const _SalesCard({required this.metricsAsync});
+  const _SalesCard({required this.metricsAsync, required this.orders});
 
   final AsyncValue<SalesMetrics> metricsAsync;
+  final List<OrderModel> orders;
 
   @override
   Widget build(BuildContext context) {
     final AppTokens tokens = context.tokens;
+    final DateTime now = DateTime.now();
+    double todayTotal = 0;
+    int todayCount = 0;
+    for (final OrderModel o in orders) {
+      if (o.status == OrderStatus.rejected) continue;
+      final DateTime d = o.createdAt.toLocal();
+      if (d.year == now.year && d.month == now.month && d.day == now.day) {
+        todayTotal += o.total;
+        todayCount++;
+      }
+    }
+
     return metricsAsync.when(
       loading: () => const AppSkeleton(height: 120),
       error: (Object e, StackTrace s) => const SizedBox.shrink(),
       data: (SalesMetrics m) {
         final double? delta = m.monthOverMonthDelta;
+        final double avgTicket = m.monthCount > 0
+            ? m.monthTotal / m.monthCount
+            : 0;
+        final double maxProductRev = m.topProducts.isEmpty
+            ? 0
+            : m.topProducts
+                  .map((SalesTopProduct p) => p.revenue)
+                  .reduce((double a, double b) => a > b ? a : b);
         return AppCard(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -1056,12 +1087,42 @@ class _SalesCard extends StatelessWidget {
                     ),
                 ],
               ),
+              const SizedBox(height: 14),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: _MiniStatBox(
+                      label: 'Vendido hoy',
+                      value: Formatters.price(todayTotal),
+                      helper: todayCount == 1
+                          ? '1 pedido hoy'
+                          : '$todayCount pedidos hoy',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _MiniStatBox(
+                      label: 'Compra prom.',
+                      value: Formatters.price(avgTicket),
+                      helper: 'gasto por pedido',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _MiniStatBox(
+                      label: 'Mes pasado',
+                      value: Formatters.price(m.prevTotal),
+                      helper: '${m.prevCount} pedidos',
+                    ),
+                  ),
+                ],
+              ),
               if (m.topProducts.isNotEmpty) ...<Widget>[
                 const SizedBox(height: 14),
                 Divider(height: 1, color: tokens.border),
                 const SizedBox(height: 10),
                 Text(
-                  'MÁS PEDIDOS',
+                  'MÁS VENDIDOS DEL MES',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -1072,55 +1133,77 @@ class _SalesCard extends StatelessWidget {
                 for (final (int i, SalesTopProduct p) in m.topProducts.indexed)
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Container(
-                          width: 22,
-                          height: 22,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: tokens.surfaceMuted,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Text(
-                            '${i + 1}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: tokens.textSecondary,
+                        Row(
+                          children: <Widget>[
+                            Container(
+                              width: 22,
+                              height: 22,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: tokens.surfaceMuted,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                '${i + 1}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: tokens.textSecondary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                p.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: tokens.textPrimary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              Formatters.qtyLabel(p.quantity, p.unit),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: tokens.textTertiary,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              Formatters.price(p.revenue),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: tokens.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (maxProductRev > 0) ...<Widget>[
+                          const SizedBox(height: 4),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 32),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(999),
+                              child: LinearProgressIndicator(
+                                value: (p.revenue / maxProductRev).clamp(
+                                  0.06,
+                                  1.0,
+                                ),
+                                minHeight: 4,
+                                backgroundColor: tokens.surfaceMuted,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            p.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: tokens.textPrimary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          Formatters.qtyLabel(p.quantity, p.unit),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: tokens.textTertiary,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          Formatters.price(p.revenue),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: tokens.textPrimary,
-                          ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
@@ -1129,6 +1212,374 @@ class _SalesCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _MiniStatBox extends StatelessWidget {
+  const _MiniStatBox({
+    required this.label,
+    required this.value,
+    required this.helper,
+  });
+
+  final String label;
+  final String value;
+  final String helper;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: tokens.surfaceMuted.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: tokens.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: tokens.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 3),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: tokens.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            helper,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 10.5, color: tokens.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Desglose claro del mes: conversión de visitas en pedidos, estados de los
+/// pedidos y preferencias de pago/entrega de los clientes.
+class _StoreInsightsCard extends StatelessWidget {
+  const _StoreInsightsCard({required this.orders, required this.visitsAsync});
+
+  final List<OrderModel> orders;
+  final AsyncValue<CatalogVisitCounts> visitsAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final DateTime now = DateTime.now();
+
+    final List<OrderModel> monthOrders = orders.where((OrderModel o) {
+      final DateTime d = o.createdAt.toLocal();
+      return d.year == now.year && d.month == now.month;
+    }).toList();
+
+    final DateTime today = DateTime(now.year, now.month, now.day);
+    int weekOrdersCount = 0;
+    for (final OrderModel o in orders) {
+      if (o.status == OrderStatus.rejected) continue;
+      final DateTime d = o.createdAt.toLocal();
+      final int daysAgo = today
+          .difference(DateTime(d.year, d.month, d.day))
+          .inDays;
+      if (daysAgo >= 0 && daysAgo < 7) weekOrdersCount++;
+    }
+
+    int requestedCount = 0;
+    int inProgressCount = 0;
+    int deliveredCount = 0;
+    int rejectedCount = 0;
+
+    int cashCount = 0;
+    int transferCount = 0;
+    int mpCount = 0;
+    int pickupCount = 0;
+    int deliveryCount = 0;
+
+    for (final OrderModel o in monthOrders) {
+      switch (o.status) {
+        case OrderStatus.requested:
+          requestedCount++;
+        case OrderStatus.preparing:
+        case OrderStatus.ready:
+          inProgressCount++;
+        case OrderStatus.delivered:
+          deliveredCount++;
+        case OrderStatus.rejected:
+          rejectedCount++;
+      }
+      if (o.status == OrderStatus.rejected) continue;
+      switch (o.paymentMethod) {
+        case PaymentMethod.cash:
+          cashCount++;
+        case PaymentMethod.transfer:
+          transferCount++;
+        case PaymentMethod.mercadoPago:
+          mpCount++;
+      }
+      switch (o.deliveryMethod) {
+        case DeliveryMethod.pickup:
+          pickupCount++;
+        case DeliveryMethod.delivery:
+          deliveryCount++;
+      }
+    }
+
+    final int validMonthCount = cashCount + transferCount + mpCount;
+    final CatalogVisitCounts? visits = visitsAsync.value;
+    final int weekVisits = visits?.week ?? 0;
+    final double? conversionPct = weekVisits > 0
+        ? (weekOrdersCount / weekVisits * 100).clamp(0.0, 100.0)
+        : null;
+
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(Icons.insights_rounded, size: 18, color: scheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Resumen de actividad del mes',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: tokens.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 1. Conversión de visitas -> pedidos
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: scheme.primary.withValues(alpha: 0.18)),
+            ),
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  Icons.visibility_outlined,
+                  size: 20,
+                  color: scheme.primary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        '$weekVisits ${weekVisits == 1 ? 'visita' : 'visitas'} '
+                        'al catálogo → $weekOrdersCount '
+                        '${weekOrdersCount == 1 ? 'pedido' : 'pedidos'} (7 días)',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: tokens.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        conversionPct == null
+                            ? 'Compartí tu link o QR para sumar visitas'
+                            : 'El ${conversionPct.toStringAsFixed(0)}% de las visitas de la semana terminó en pedido',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: tokens.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          // 2. Estados de pedidos del mes
+          Text(
+            'ESTADOS DE PEDIDOS ESTE MES',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.6,
+              color: tokens.textTertiary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: _StatusCountChip(
+                  label: 'Nuevos',
+                  count: requestedCount,
+                  color: scheme.primary,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _StatusCountChip(
+                  label: 'En curso',
+                  count: inProgressCount,
+                  color: tokens.warning,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _StatusCountChip(
+                  label: 'Entregados',
+                  count: deliveredCount,
+                  color: tokens.success,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _StatusCountChip(
+                  label: 'Rechazados',
+                  count: rejectedCount,
+                  color: tokens.danger,
+                ),
+              ),
+            ],
+          ),
+          if (validMonthCount > 0) ...<Widget>[
+            const SizedBox(height: 14),
+            Divider(height: 1, color: tokens.border),
+            const SizedBox(height: 10),
+            Text(
+              'CÓMO TE PAGAN Y CÓMO RECIBEN',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.6,
+                color: tokens.textTertiary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _PreferenceLine(
+              icon: Icons.payments_outlined,
+              items: <({String label, int count})>[
+                (label: 'Efectivo', count: cashCount),
+                (label: 'Transferencia', count: transferCount),
+                (label: 'Mercado Pago', count: mpCount),
+              ],
+              total: validMonthCount,
+            ),
+            const SizedBox(height: 6),
+            _PreferenceLine(
+              icon: Icons.local_shipping_outlined,
+              items: <({String label, int count})>[
+                (label: 'Retiro en local', count: pickupCount),
+                (label: 'Envío a domicilio', count: deliveryCount),
+              ],
+              total: validMonthCount,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusCountChip extends StatelessWidget {
+  const _StatusCountChip({
+    required this.label,
+    required this.count,
+    required this.color,
+  });
+
+  final String label;
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+      decoration: BoxDecoration(
+        color: count > 0 ? color.withValues(alpha: 0.1) : tokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: <Widget>[
+          Text(
+            '$count',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: count > 0 ? color : tokens.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 10.5, color: tokens.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreferenceLine extends StatelessWidget {
+  const _PreferenceLine({
+    required this.icon,
+    required this.items,
+    required this.total,
+  });
+
+  final IconData icon;
+  final List<({String label, int count})> items;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppTokens tokens = context.tokens;
+    final List<String> parts = <String>[
+      for (final item in items)
+        if (item.count > 0)
+          '${item.label} ${(item.count / total * 100).round()}% (${item.count})',
+    ];
+    return Row(
+      children: <Widget>[
+        Icon(icon, size: 15, color: tokens.textTertiary),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            parts.isEmpty ? 'Sin datos todavía' : parts.join(' · '),
+            style: TextStyle(fontSize: 12, color: tokens.textSecondary),
+          ),
+        ),
+      ],
     );
   }
 }

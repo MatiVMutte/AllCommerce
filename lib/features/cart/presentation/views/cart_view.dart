@@ -49,6 +49,7 @@ class _CartViewState extends ConsumerState<CartView> {
   String? _couponError;
   bool _checkingCoupon = false;
   bool _restoredCoupon = false;
+  bool _itemsCollapsed = false;
 
   /// Re-validates the persisted coupon once per visit so the applied chip
   /// and the discount show up again when the user comes back to the cart.
@@ -254,322 +255,419 @@ class _CartViewState extends ConsumerState<CartView> {
         }
         return TenantTheme(
           brandColor: tenant.primaryColorValue,
-          child: Scaffold(
-            appBar: AppBar(
-              title: const Text('Tu pedido'),
-              leading: AppBackButton(fallback: '/s/${widget.slug}'),
-            ),
-            body: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: empty
-                    ? AppEmptyState(
-                        icon: Icons.shopping_cart_outlined,
-                        title: 'Tu carrito está vacío',
-                        subtitle: 'Agregá productos de ${tenant.name}',
-                        actionLabel: 'Ver catálogo',
-                        onAction: () => context.go('/s/${widget.slug}'),
-                      )
-                    : ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        children: <Widget>[
-                          if (!tenant.isOpen)
-                            Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: tokens.warning.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: tokens.warning.withValues(alpha: 0.35),
-                                ),
-                              ),
-                              child: Row(
-                                children: <Widget>[
-                                  Icon(
-                                    Icons.schedule_rounded,
-                                    color: tokens.warning,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      tenant.openingHours != null &&
-                                              tenant.openingHours!
-                                                  .trim()
-                                                  .isNotEmpty
-                                          ? '${tenant.name} figura como cerrado ahora (${tenant.openingHours}). Podés enviar el pedido igual y lo verán cuando abran.'
-                                          : '${tenant.name} figura como cerrado ahora. Podés enviar el pedido igual y lo verán cuando abran.',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: tokens.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 4, bottom: 8),
-                            child: Text(
-                              tenant.name,
-                              style: TextStyle(
-                                color: tokens.textSecondary,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          for (final CartItem item in cart.items)
-                            _CartTile(item: item),
-                          const SizedBox(height: 8),
-                          AppCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
-                                TextField(
-                                  controller: _notes,
-                                  maxLines: 2,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Notas para el local (opcional)',
-                                  ),
-                                ),
-                                if (_appliedCode != null)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: tokens.success.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: tokens.success),
-                                    ),
-                                    child: Row(
-                                      children: <Widget>[
-                                        Icon(
-                                          Icons.local_offer_rounded,
-                                          color: tokens.success,
-                                          size: 18,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            '$_appliedCode · '
-                                            '${_appliedPreview!.label}',
-                                            style: TextStyle(
-                                              color: tokens.success,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ),
-                                        IconButton(
-                                          tooltip: 'Quitar cupón',
-                                          icon: const Icon(
-                                            Icons.close_rounded,
-                                            size: 18,
-                                          ),
-                                          onPressed: () => setState(() {
-                                            _appliedCode = null;
-                                            _appliedPreview = null;
-                                            _coupon.clear();
-                                            ref
-                                                .read(cartProvider.notifier)
-                                                .setCoupon(null);
-                                          }),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                else
-                                  ExpansionTile(
-                                    title: const Text('¿Tenés un cupón?'),
-                                    tilePadding: EdgeInsets.zero,
-                                    children: <Widget>[
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: <Widget>[
-                                          TextField(
-                                            controller: _coupon,
-                                            textCapitalization:
-                                                TextCapitalization.characters,
-                                            onSubmitted: (_) =>
-                                                _applyCoupon(tenant),
-                                            decoration: InputDecoration(
-                                              labelText: 'Código de cupón',
-                                              errorText: _couponError,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 10),
-                                          FilledButton.icon(
-                                            icon: _checkingCoupon
-                                                ? const SizedBox(
-                                                    width: 16,
-                                                    height: 16,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                        ),
-                                                  )
-                                                : const Icon(
-                                                    Icons.local_offer_rounded,
-                                                  ),
-                                            label: Text(
-                                              _checkingCoupon
-                                                  ? 'Validando…'
-                                                  : 'Aplicar cupón',
-                                            ),
-                                            onPressed: _checkingCoupon
-                                                ? null
-                                                : () => _applyCoupon(tenant),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _DeliverySection(tenant: tenant),
-                          const SizedBox(height: 16),
-                          _PaymentSection(tenant: tenant),
-                        ],
-                      ),
-              ),
-            ),
-            bottomNavigationBar: empty
-                ? null
-                : SafeArea(
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-                      decoration: BoxDecoration(
-                        color: tokens.surface,
-                        border: Border(top: BorderSide(color: tokens.border)),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: <Widget>[
-                              Text(
-                                'Subtotal',
-                                style: TextStyle(color: tokens.textSecondary),
-                              ),
-                              Text(Formatters.price(cart.subtotal)),
-                            ],
-                          ),
-                          if (_appliedPreview != null)
-                            _TotalRow(
-                              label: 'Descuento ($_appliedCode)',
-                              amount:
-                                  '−${Formatters.price(_appliedPreview!.discountFor(cart.subtotal))}',
-                              color: tokens.success,
-                            ),
-                          if (tenant.bulkDiscountFor(cart.subtotal) > 0)
-                            _TotalRow(
-                              label:
-                                  'Descuento por volumen '
-                                  '(${tenant.bulkDiscountPct.round()}%)',
-                              amount:
-                                  '−${Formatters.price(tenant.bulkDiscountFor(cart.subtotal))}',
-                              color: tokens.success,
-                            )
-                          else if (tenant.bulkDiscountPct > 0 &&
-                              tenant.bulkDiscountMin > cart.subtotal)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Text(
-                                'Te faltan '
-                                '${Formatters.price(tenant.bulkDiscountMin - cart.subtotal)} '
-                                'para el ${tenant.bulkDiscountPct.round()}% de descuento',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: tokens.textTertiary,
-                                ),
-                              ),
-                            ),
-                          if (tenant.paymentDiscountFor(
-                                cart.subtotal,
-                                ref
-                                    .watch(checkoutControllerProvider)
-                                    .paymentMethod
-                                    .id,
-                              ) >
-                              0)
-                            _TotalRow(
-                              label:
-                                  'Desc. por pago '
-                                  '(${tenant.paymentDiscountPct(ref.watch(checkoutControllerProvider).paymentMethod.id).round()}%)',
-                              amount:
-                                  '−${Formatters.price(tenant.paymentDiscountFor(cart.subtotal, ref.watch(checkoutControllerProvider).paymentMethod.id))}',
-                              color: tokens.success,
-                            ),
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: <Widget>[
-                              const Text(
-                                'Total',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              Text(
-                                Formatters.price(
-                                  cart.subtotal -
-                                      ((_appliedPreview?.discountFor(
-                                                    cart.subtotal,
-                                                  ) ??
-                                                  0) +
-                                              tenant.bulkDiscountFor(
-                                                cart.subtotal,
-                                              ) +
-                                              tenant.paymentDiscountFor(
-                                                cart.subtotal,
-                                                ref
-                                                    .watch(
-                                                      checkoutControllerProvider,
-                                                    )
-                                                    .paymentMethod
-                                                    .id,
-                                              ))
-                                          .clamp(0, cart.subtotal),
-                                ),
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton.icon(
-                              icon: const Icon(Icons.chat_bubble_rounded),
-                              label: const Text('Confirmar por WhatsApp'),
-                              onPressed:
-                                  ref.watch(checkoutControllerProvider).sending
-                                  ? null
-                                  : () => _confirm(tenant),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Se guarda el pedido y se abre WhatsApp '
-                            'con el detalle para ${tenant.name}.',
-                            style: Theme.of(context).textTheme.bodySmall,
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+          child: Builder(
+            builder: (BuildContext context) {
+              final bool wide = MediaQuery.sizeOf(context).width >= 880;
+              final bool canCollapseItems = !wide && cart.items.length > 2;
+              final List<CartItem> visibleItems =
+                  canCollapseItems && _itemsCollapsed
+                  ? cart.items.take(2).toList()
+                  : cart.items;
+              final int hiddenCount = cart.items.length - visibleItems.length;
+
+              Widget buildClosedBanner() => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: tokens.warning.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: tokens.warning.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Icon(
+                      Icons.schedule_rounded,
+                      color: tokens.warning,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        tenant.openingHours != null &&
+                                tenant.openingHours!.trim().isNotEmpty
+                            ? '${tenant.name} figura como cerrado ahora (${tenant.openingHours}). Podés enviar el pedido igual y lo verán cuando abran.'
+                            : '${tenant.name} figura como cerrado ahora. Podés enviar el pedido igual y lo verán cuando abran.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: tokens.textPrimary,
+                        ),
                       ),
                     ),
+                  ],
+                ),
+              );
+
+              Widget buildNotesAndCouponCard() => AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    TextField(
+                      controller: _notes,
+                      maxLines: 2,
+                      decoration: const InputDecoration(
+                        labelText: 'Notas para el local (opcional)',
+                      ),
+                    ),
+                    if (_appliedCode != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: tokens.success.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: tokens.success),
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            Icon(
+                              Icons.local_offer_rounded,
+                              color: tokens.success,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '$_appliedCode · '
+                                '${_appliedPreview!.label}',
+                                style: TextStyle(
+                                  color: tokens.success,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Quitar cupón',
+                              icon: const Icon(Icons.close_rounded, size: 18),
+                              onPressed: () => setState(() {
+                                _appliedCode = null;
+                                _appliedPreview = null;
+                                _coupon.clear();
+                                ref.read(cartProvider.notifier).setCoupon(null);
+                              }),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ExpansionTile(
+                        title: const Text('¿Tenés un cupón?'),
+                        tilePadding: EdgeInsets.zero,
+                        children: <Widget>[
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              TextField(
+                                controller: _coupon,
+                                textCapitalization:
+                                    TextCapitalization.characters,
+                                onSubmitted: (_) => _applyCoupon(tenant),
+                                decoration: InputDecoration(
+                                  labelText: 'Código de cupón',
+                                  errorText: _couponError,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              FilledButton.icon(
+                                icon: _checkingCoupon
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.local_offer_rounded),
+                                label: Text(
+                                  _checkingCoupon
+                                      ? 'Validando…'
+                                      : 'Aplicar cupón',
+                                ),
+                                onPressed: _checkingCoupon
+                                    ? null
+                                    : () => _applyCoupon(tenant),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              );
+
+              Widget buildSummaryContent() => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Text(
+                        'Subtotal',
+                        style: TextStyle(color: tokens.textSecondary),
+                      ),
+                      Text(Formatters.price(cart.subtotal)),
+                    ],
                   ),
+                  if (_appliedPreview != null)
+                    _TotalRow(
+                      label: 'Descuento ($_appliedCode)',
+                      amount:
+                          '−${Formatters.price(_appliedPreview!.discountFor(cart.subtotal))}',
+                      color: tokens.success,
+                    ),
+                  if (tenant.bulkDiscountFor(cart.subtotal) > 0)
+                    _TotalRow(
+                      label:
+                          'Descuento por volumen '
+                          '(${tenant.bulkDiscountPct.round()}%)',
+                      amount:
+                          '−${Formatters.price(tenant.bulkDiscountFor(cart.subtotal))}',
+                      color: tokens.success,
+                    )
+                  else if (tenant.bulkDiscountPct > 0 &&
+                      tenant.bulkDiscountMin > cart.subtotal)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        'Te faltan '
+                        '${Formatters.price(tenant.bulkDiscountMin - cart.subtotal)} '
+                        'para el ${tenant.bulkDiscountPct.round()}% de descuento',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: tokens.textTertiary,
+                        ),
+                      ),
+                    ),
+                  if (tenant.paymentDiscountFor(
+                        cart.subtotal,
+                        ref.watch(checkoutControllerProvider).paymentMethod.id,
+                      ) >
+                      0)
+                    _TotalRow(
+                      label:
+                          'Desc. por pago '
+                          '(${tenant.paymentDiscountPct(ref.watch(checkoutControllerProvider).paymentMethod.id).round()}%)',
+                      amount:
+                          '−${Formatters.price(tenant.paymentDiscountFor(cart.subtotal, ref.watch(checkoutControllerProvider).paymentMethod.id))}',
+                      color: tokens.success,
+                    ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      const Text(
+                        'Total',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        Formatters.price(
+                          cart.subtotal -
+                              ((_appliedPreview?.discountFor(cart.subtotal) ??
+                                          0) +
+                                      tenant.bulkDiscountFor(cart.subtotal) +
+                                      tenant.paymentDiscountFor(
+                                        cart.subtotal,
+                                        ref
+                                            .watch(checkoutControllerProvider)
+                                            .paymentMethod
+                                            .id,
+                                      ))
+                                  .clamp(0, cart.subtotal),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.chat_bubble_rounded),
+                      label: const Text('Confirmar por WhatsApp'),
+                      onPressed: ref.watch(checkoutControllerProvider).sending
+                          ? null
+                          : () => _confirm(tenant),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Se guarda el pedido y se abre WhatsApp '
+                    'con el detalle para ${tenant.name}.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              );
+
+              return Scaffold(
+                appBar: AppBar(
+                  title: const Text('Tu pedido'),
+                  leading: AppBackButton(fallback: '/s/${widget.slug}'),
+                ),
+                body: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: wide ? 1120 : 720),
+                    child: empty
+                        ? AppEmptyState(
+                            icon: Icons.shopping_cart_outlined,
+                            title: 'Tu carrito está vacío',
+                            subtitle: 'Agregá productos de ${tenant.name}',
+                            actionLabel: 'Ver catálogo',
+                            onAction: () => context.go('/s/${widget.slug}'),
+                          )
+                        : wide
+                        ? SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Expanded(
+                                  flex: 6,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: <Widget>[
+                                      if (!tenant.isOpen) buildClosedBanner(),
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: 4,
+                                          bottom: 8,
+                                        ),
+                                        child: Text(
+                                          '${tenant.name} · ${cart.items.length} ${cart.items.length == 1 ? 'producto' : 'productos'}',
+                                          style: TextStyle(
+                                            color: tokens.textSecondary,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      for (final CartItem item in cart.items)
+                                        _CartTile(item: item),
+                                      const SizedBox(height: 8),
+                                      buildNotesAndCouponCard(),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 24),
+                                Expanded(
+                                  flex: 5,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: <Widget>[
+                                      _DeliverySection(tenant: tenant),
+                                      const SizedBox(height: 16),
+                                      _PaymentSection(tenant: tenant),
+                                      const SizedBox(height: 16),
+                                      AppCard(child: buildSummaryContent()),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            children: <Widget>[
+                              if (!tenant.isOpen) buildClosedBanner(),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 4,
+                                  bottom: 8,
+                                ),
+                                child: Row(
+                                  children: <Widget>[
+                                    Expanded(
+                                      child: Text(
+                                        tenant.name,
+                                        style: TextStyle(
+                                          color: tokens.textSecondary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    if (canCollapseItems)
+                                      TextButton.icon(
+                                        style: TextButton.styleFrom(
+                                          visualDensity: VisualDensity.compact,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                          ),
+                                        ),
+                                        onPressed: () => setState(
+                                          () => _itemsCollapsed =
+                                              !_itemsCollapsed,
+                                        ),
+                                        icon: Icon(
+                                          _itemsCollapsed
+                                              ? Icons.unfold_more_rounded
+                                              : Icons.unfold_less_rounded,
+                                          size: 16,
+                                        ),
+                                        label: Text(
+                                          _itemsCollapsed
+                                              ? 'Ver los ${cart.items.length}'
+                                              : 'Compactar (${cart.items.length})',
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              for (final CartItem item in visibleItems)
+                                _CartTile(item: item),
+                              if (hiddenCount > 0)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: OutlinedButton.icon(
+                                    onPressed: () =>
+                                        setState(() => _itemsCollapsed = false),
+                                    icon: const Icon(
+                                      Icons.expand_more_rounded,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      'Ver $hiddenCount ${hiddenCount == 1 ? 'producto más' : 'productos más'}',
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: 8),
+                              buildNotesAndCouponCard(),
+                              const SizedBox(height: 16),
+                              _DeliverySection(tenant: tenant),
+                              const SizedBox(height: 16),
+                              _PaymentSection(tenant: tenant),
+                            ],
+                          ),
+                  ),
+                ),
+                bottomNavigationBar: empty || wide
+                    ? null
+                    : SafeArea(
+                        child: Container(
+                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                          decoration: BoxDecoration(
+                            color: tokens.surface,
+                            border: Border(
+                              top: BorderSide(color: tokens.border),
+                            ),
+                          ),
+                          child: buildSummaryContent(),
+                        ),
+                      ),
+              );
+            },
           ),
         );
       },
