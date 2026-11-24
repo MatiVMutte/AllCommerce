@@ -4,11 +4,11 @@ import 'dart:typed_data';
 import 'package:all_commerce/core/supabase/supabase_client_provider.dart';
 import 'package:all_commerce/features/auth/presentation/view_models/auth_providers.dart';
 import 'package:all_commerce/features/catalog/presentation/view_models/catalog_providers.dart';
+import 'package:all_commerce/features/product_upload/data/models/ai_product_suggestion.dart';
 import 'package:all_commerce/features/product_upload/data/models/bulk_product_draft.dart';
 import 'package:all_commerce/features/product_upload/data/models/product_input.dart';
 import 'package:all_commerce/features/product_upload/data/repositories/product_repository.dart';
 import 'package:all_commerce/features/product_upload/data/services/ai_analyze_service.dart';
-import 'package:all_commerce/features/product_upload/data/models/ai_product_suggestion.dart';
 import 'package:all_commerce/features/product_upload/data/services/image_service.dart';
 import 'package:all_commerce/features/store/presentation/view_models/owner_products_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,9 +48,17 @@ class BulkUploadState {
   }
 
   int get analyzedCount => drafts.where((d) => d.analyzed).length;
+  int get analyzingCount => drafts.where((d) => d.analyzing).length;
   int get validCount => drafts.where((d) => d.isValid).length;
+  int get errorCount =>
+      drafts.where((d) => d.analyzed && d.error != null).length;
+  int get missingPriceCount =>
+      drafts.where((d) => d.analyzed && d.error == null && !d.isValid).length;
+  int get attentionCount => errorCount + missingPriceCount;
   int get publishableCount =>
       drafts.where((d) => d.isValid && d.analyzed && d.error == null).length;
+  int get publishedCount =>
+      drafts.where((d) => d.imageUrl != null && d.imageUrl!.isNotEmpty).length;
 }
 
 final NotifierProvider<BulkUploadController, BulkUploadState>
@@ -77,6 +85,8 @@ class BulkUploadController extends Notifier<BulkUploadState> {
   }
 
   /// Pick images, compress them, and run AI analysis with bounded concurrency.
+  /// When analysis finishes, drafts with errors or missing prices are moved to
+  /// the top so the owner can fix them without scrolling.
   Future<void> pickAndAnalyze() async {
     final List<PickedImage> images = await _imageService.pickMultiple(
       limit: kBulkUploadLimit,
@@ -93,20 +103,50 @@ class BulkUploadController extends Notifier<BulkUploadState> {
     ];
     state = state.copyWith(drafts: drafts, analyzing: true, error: null);
 
+    await _runWorkersForIds(<String>[for (final d in drafts) d.id]);
+    state = state.copyWith(
+      drafts: _prioritizeDrafts(state.drafts),
+      analyzing: false,
+    );
+  }
+
+  Future<void> _runWorkersForIds(List<String> ids) async {
+    if (ids.isEmpty) return;
     int nextIndex = 0;
     Future<void> worker() async {
       while (true) {
         final int current = nextIndex++;
-        if (current >= drafts.length) break;
-        await _analyzeById(drafts[current].id);
+        if (current >= ids.length) break;
+        await _analyzeById(ids[current]);
       }
     }
 
-    final int workers = min(kBulkConcurrency, drafts.length);
+    final int workers = min(kBulkConcurrency, ids.length);
     await Future.wait(<Future<void>>[
       for (int w = 0; w < workers; w++) worker(),
     ]);
-    state = state.copyWith(analyzing: false);
+  }
+
+  /// Sorts drafts so items needing attention appear first:
+  /// 0 = error, 1 = missing title/price, 2 = ready to publish.
+  static List<BulkProductDraft> _prioritizeDrafts(
+    List<BulkProductDraft> source,
+  ) {
+    int rank(BulkProductDraft d) {
+      if (d.error != null) return 0;
+      if (!d.isValid) return 1;
+      return 2;
+    }
+
+    final List<MapEntry<int, BulkProductDraft>> indexed = source
+        .asMap()
+        .entries
+        .toList();
+    indexed.sort((a, b) {
+      final int r = rank(a.value).compareTo(rank(b.value));
+      return r != 0 ? r : a.key.compareTo(b.key);
+    });
+    return <BulkProductDraft>[for (final entry in indexed) entry.value];
   }
 
   int _indexOfId(String id) =>
@@ -217,6 +257,21 @@ class BulkUploadController extends Notifier<BulkUploadState> {
   Future<void> retryAnalysis(int index) async {
     if (index < 0 || index >= state.drafts.length) return;
     await _analyzeById(state.drafts[index].id);
+  }
+
+  /// Retries all drafts that currently have an error.
+  Future<void> retryAllFailed() async {
+    final List<String> failedIds = <String>[
+      for (final BulkProductDraft d in state.drafts)
+        if (d.error != null) d.id,
+    ];
+    if (failedIds.isEmpty) return;
+    state = state.copyWith(analyzing: true, error: null);
+    await _runWorkersForIds(failedIds);
+    state = state.copyWith(
+      drafts: _prioritizeDrafts(state.drafts),
+      analyzing: false,
+    );
   }
 
   /// Dismiss the AI error on a draft so the owner can type title/price
