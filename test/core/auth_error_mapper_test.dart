@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:all_commerce/core/utils/auth_error_mapper.dart';
+import 'package:all_commerce/features/product_upload/data/models/bulk_product_draft.dart';
 import 'package:all_commerce/features/product_upload/data/services/ai_analyze_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -54,6 +57,36 @@ void main() {
       AuthErrorMapper.toMessage(const AiAnalyzeException('AI_EMPTY', 'x')),
       'La IA no pudo analizar la foto, completá los datos a mano',
     );
+    expect(
+      AuthErrorMapper.toMessage(
+        const AiAnalyzeException('UNRECOGNIZABLE_IMAGE', 'x'),
+      ),
+      contains('no se descontó de tu cuota'),
+    );
+    expect(
+      const AiAnalyzeException('AI_RATE_LIMITED', 'x').isRetryable,
+      isTrue,
+    );
+    expect(const AiAnalyzeException('AI_TIMEOUT', 'x').isRetryable, isTrue);
+    expect(
+      const AiAnalyzeException('UNRECOGNIZABLE_IMAGE', 'x').isRetryable,
+      isFalse,
+    );
+    expect(
+      const AiAnalyzeException('AI_LIMIT_REACHED', 'x').isRetryable,
+      isFalse,
+    );
+  });
+
+  test('BulkProductDraft copyWith clearError resets previous error', () {
+    final BulkProductDraft draft = BulkProductDraft(
+      id: '1',
+      imageBytes: Uint8List(0),
+      fileName: 'a.jpg',
+      error: 'Error viejo',
+    );
+    expect(draft.copyWith(title: 'Vaso').error, 'Error viejo');
+    expect(draft.copyWith(clearError: true).error, isNull);
   });
 
   test('maps PostgrestException checkout codes', () {

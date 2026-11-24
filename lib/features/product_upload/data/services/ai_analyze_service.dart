@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -12,27 +13,55 @@ class AiAnalyzeException implements Exception {
   final String code;
   final String message;
 
+  /// True only for transient errors (rate limit, timeout, temporary upstream
+  /// failure) where an automatic retry makes sense. False for bad/blurry
+  /// images, quota limits, or auth/plan blocks so we never retry in vain.
+  bool get isRetryable {
+    switch (code) {
+      case 'AI_RATE_LIMITED':
+      case 'AI_TIMEOUT':
+      case 'AI_UNAVAILABLE':
+      case 'AI_EMPTY':
+      case 'AI_INVALID_JSON':
+      case 'UNKNOWN':
+        return true;
+      default:
+        return false;
+    }
+  }
+
   @override
   String toString() => 'AiAnalyzeException($code): $message';
 }
 
 class AiAnalyzeService {
-  const AiAnalyzeService(this._client);
+  const AiAnalyzeService(
+    this._client, {
+    this.timeout = const Duration(seconds: 30),
+  });
 
   final SupabaseClient _client;
+  final Duration timeout;
 
   Future<AiProductSuggestion> analyze(Uint8List jpegBytes) async {
     try {
-      final FunctionResponse response = await _client.functions.invoke(
-        'analyze-product',
-        body: <String, dynamic>{
-          'imageBase64': base64Encode(jpegBytes),
-          'mimeType': 'image/jpeg',
-        },
-      );
+      final FunctionResponse response = await _client.functions
+          .invoke(
+            'analyze-product',
+            body: <String, dynamic>{
+              'imageBase64': base64Encode(jpegBytes),
+              'mimeType': 'image/jpeg',
+            },
+          )
+          .timeout(timeout);
       final Map<String, dynamic> data = response.data as Map<String, dynamic>;
       return AiProductSuggestion.fromJson(
         data['product'] as Map<String, dynamic>,
+      );
+    } on TimeoutException {
+      throw const AiAnalyzeException(
+        'AI_TIMEOUT',
+        'La IA demoró demasiado en responder, intentá de nuevo',
       );
     } on FunctionException catch (e) {
       final Object? details = e.details;

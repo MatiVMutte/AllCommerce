@@ -63,6 +63,7 @@ class BulkProductDraft {
     bool? analyzing,
     bool? publishing,
     String? error,
+    bool clearError = false,
     String? imageUrl,
   }) {
     return BulkProductDraft(
@@ -83,7 +84,7 @@ class BulkProductDraft {
       analyzed: analyzed ?? this.analyzed,
       analyzing: analyzing ?? this.analyzing,
       publishing: publishing ?? this.publishing,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
       imageUrl: imageUrl ?? this.imageUrl,
     );
   }

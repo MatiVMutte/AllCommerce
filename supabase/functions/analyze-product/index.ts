@@ -5,8 +5,9 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const PRIMARY_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.5-flash-lite";
-const FALLBACK_MODEL = "gemini-2.5-flash";
+const PRIMARY_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+const FALLBACK_MODEL = "gemini-2.5-flash-lite";
+const GEMINI_TIMEOUT_MS = 22_000;
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const CATEGORIES = [
@@ -39,11 +40,12 @@ Reglas:
 - tags: 3 a 6 palabras clave en minúscula, sin acentos ni signos, útiles para buscar (ej: "vaso", "termico", "acero").
 - suggested_price_ars: precio de venta minorista estimado en pesos argentinos, solo si podés estimarlo con razonable confianza; si no, null.
 - sku: código o modelo si aparece impreso en el producto o etiqueta; si no, null.
-- Si la imagen no muestra un producto reconocible, devolvé title "Producto sin identificar", description vacía, category "other", tags vacío y precio null.`;
+- recognizable: true si se distingue algún producto comercializable en la foto (aunque no tenga marca); false únicamente si la imagen está totalmente borrosa, negra, en blanco o no muestra ningún objeto vendible.`;
 
 const RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
+    recognizable: { type: "BOOLEAN" },
     title: { type: "STRING" },
     description: { type: "STRING" },
     category: { type: "STRING", enum: CATEGORIES },
@@ -51,7 +53,7 @@ const RESPONSE_SCHEMA = {
     suggested_price_ars: { type: "NUMBER", nullable: true },
     sku: { type: "STRING", nullable: true },
   },
-  required: ["title", "description", "category", "tags"],
+  required: ["recognizable", "title", "description", "category", "tags"],
 };
 
 function json(status: number, body: unknown): Response {
@@ -75,6 +77,7 @@ async function callGemini(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   return await fetch(url, {
     method: "POST",
+    signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
     headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
       contents: [{
@@ -91,6 +94,10 @@ async function callGemini(
       },
     }),
   });
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 Deno.serve(async (req: Request) => {
@@ -188,24 +195,57 @@ Deno.serve(async (req: Request) => {
     return error(status, code, message);
   }
 
-  // 5. Gemini con fallback de modelo --------------------------------------------
+  // 5. Gemini con fallback de modelo y backoff ante 429/503/timeout ----------
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) {
     return refundAndError(500, "AI_NOT_CONFIGURED", "Falta configurar la IA");
   }
 
+  const candidateModels = PRIMARY_MODEL === FALLBACK_MODEL
+    ? [PRIMARY_MODEL]
+    : [PRIMARY_MODEL, FALLBACK_MODEL, PRIMARY_MODEL];
   let model = PRIMARY_MODEL;
-  let res = await callGemini(model, apiKey, imageBase64, mimeType);
-  if ((res.status === 429 || res.status === 404) && model !== FALLBACK_MODEL) {
-    model = FALLBACK_MODEL;
-    res = await callGemini(model, apiKey, imageBase64, mimeType);
+  let res: Response | null = null;
+
+  for (let attempt = 0; attempt < candidateModels.length; attempt++) {
+    model = candidateModels[attempt];
+    try {
+      res = await callGemini(model, apiKey, imageBase64, mimeType);
+    } catch (err) {
+      console.error("gemini fetch error/timeout", model, err);
+      res = null;
+    }
+    if (res && res.ok) break;
+    const status = res?.status ?? 0;
+    const transient = status === 0 || status === 429 || status === 404 ||
+      status >= 500;
+    if (!transient) break;
+    if (attempt < candidateModels.length - 1) {
+      await sleep(attempt === 0 ? 600 : 2500);
+    }
+  }
+
+  if (!res) {
+    return refundAndError(
+      504,
+      "AI_TIMEOUT",
+      "La IA demoró demasiado en responder, reintentá",
+    );
   }
   if (res.status === 429) {
-    return refundAndError(429, "AI_RATE_LIMITED", "La IA está ocupada, probá en un minuto");
+    return refundAndError(
+      429,
+      "AI_RATE_LIMITED",
+      "La IA está ocupada, probá en unos segundos",
+    );
   }
   if (!res.ok) {
     console.error("gemini error", model, res.status, await res.text());
-    return refundAndError(502, "AI_UNAVAILABLE", "La IA no respondió, cargá los datos a mano");
+    return refundAndError(
+      502,
+      "AI_UNAVAILABLE",
+      "La IA no respondió, cargá los datos a mano",
+    );
   }
 
   const payload = await res.json();
@@ -219,7 +259,23 @@ Deno.serve(async (req: Request) => {
   try {
     parsed = JSON.parse(text);
   } catch {
-    return refundAndError(502, "AI_INVALID_JSON", "La IA devolvió un formato inesperado");
+    return refundAndError(
+      502,
+      "AI_INVALID_JSON",
+      "La IA devolvió un formato inesperado",
+    );
+  }
+
+  const rawTitle = String(parsed.title ?? "").trim();
+  const recognizable = parsed.recognizable !== false &&
+    rawTitle.length > 0 &&
+    rawTitle.toLowerCase() !== "producto sin identificar";
+  if (!recognizable) {
+    return refundAndError(
+      422,
+      "UNRECOGNIZABLE_IMAGE",
+      "No se distingue un producto claro en la foto (no se descontó de tu cuota)",
+    );
   }
 
   // 6. Normalizar la salida (nunca confiar ciegamente en el modelo) -------------
@@ -240,7 +296,7 @@ Deno.serve(async (req: Request) => {
     model,
     quota: { used: quota?.used ?? 0, limit: quota?.limit ?? null },
     product: {
-      title: String(parsed.title ?? "").trim().slice(0, 120),
+      title: rawTitle.slice(0, 120),
       description: String(parsed.description ?? "").trim().slice(0, 1000),
       category,
       tags,

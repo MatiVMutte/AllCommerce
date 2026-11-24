@@ -361,14 +361,33 @@ class _DraftCardState extends ConsumerState<_DraftCard> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        OutlinedButton.icon(
-                          onPressed: widget.analyzing
-                              ? null
-                              : () => ref
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: widget.analyzing
+                                    ? null
+                                    : () => ref
+                                          .read(
+                                            bulkUploadControllerProvider
+                                                .notifier,
+                                          )
+                                          .retryAnalysis(widget.index),
+                                icon: const Icon(Icons.refresh, size: 18),
+                                label: const Text('Reintentar IA'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: FilledButton.tonalIcon(
+                                onPressed: () => ref
                                     .read(bulkUploadControllerProvider.notifier)
-                                    .retryAnalysis(widget.index),
-                          icon: const Icon(Icons.refresh, size: 18),
-                          label: const Text('Reintentar IA'),
+                                    .fillManually(widget.index),
+                                icon: const Icon(Icons.edit_outlined, size: 18),
+                                label: const Text('Completar a mano'),
+                              ),
+                            ),
+                          ],
                         ),
                       ] else ...<Widget>[
                         _Field(

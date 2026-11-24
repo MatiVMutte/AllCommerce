@@ -16,6 +16,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Maximum number of images allowed in one bulk upload session.
 const int kBulkUploadLimit = 20;
 
+/// Maximum concurrent AI analyses in a bulk upload session. Keeps throughput
+/// ~2x faster than sequential while respecting Gemini free-tier RPM limits.
+const int kBulkConcurrency = 2;
+
 class BulkUploadState {
   const BulkUploadState({
     this.drafts = const <BulkProductDraft>[],
@@ -72,7 +76,7 @@ class BulkUploadController extends Notifier<BulkUploadState> {
     return '${DateTime.now().millisecondsSinceEpoch}-${random.nextInt(1 << 20)}';
   }
 
-  /// Pick images, compress them, and run AI analysis one by one.
+  /// Pick images, compress them, and run AI analysis with bounded concurrency.
   Future<void> pickAndAnalyze() async {
     final List<PickedImage> images = await _imageService.pickMultiple(
       limit: kBulkUploadLimit,
@@ -89,50 +93,110 @@ class BulkUploadController extends Notifier<BulkUploadState> {
     ];
     state = state.copyWith(drafts: drafts, analyzing: true, error: null);
 
-    for (int i = 0; i < drafts.length; i++) {
-      await _analyzeIndex(i);
+    int nextIndex = 0;
+    Future<void> worker() async {
+      while (true) {
+        final int current = nextIndex++;
+        if (current >= drafts.length) break;
+        await _analyzeById(drafts[current].id);
+      }
     }
+
+    final int workers = min(kBulkConcurrency, drafts.length);
+    await Future.wait(<Future<void>>[
+      for (int w = 0; w < workers; w++) worker(),
+    ]);
     state = state.copyWith(analyzing: false);
   }
 
-  Future<void> _analyzeIndex(int index) async {
-    final BulkProductDraft draft = state.drafts[index];
-    _setDraft(index, draft.copyWith(analyzing: true));
+  int _indexOfId(String id) =>
+      state.drafts.indexWhere((BulkProductDraft d) => d.id == id);
+
+  Future<void> _analyzeById(String draftId) async {
+    final int initialIndex = _indexOfId(draftId);
+    if (initialIndex < 0) return;
+    final BulkProductDraft initial = state.drafts[initialIndex];
+    _setDraftById(draftId, initial.copyWith(analyzing: true, clearError: true));
+
+    Uint8List? compressed;
     try {
-      final Uint8List compressed = await _imageService.compress(
-        draft.imageBytes,
-      );
-      final AiProductSuggestion suggestion = await _aiService.analyze(
-        compressed,
-      );
-      _setDraft(
-        index,
-        draft.copyWith(
-          title: suggestion.title,
-          description: suggestion.description,
-          category: suggestion.category,
-          tags: suggestion.tags,
-          price: suggestion.suggestedPriceArs,
-          sku: suggestion.sku,
-          analyzed: true,
-          analyzing: false,
-          error: null,
-        ),
-      );
-    } on AiAnalyzeException catch (e) {
-      _setDraft(
-        index,
-        draft.copyWith(analyzing: false, analyzed: true, error: e.message),
-      );
-    } catch (e) {
-      _setDraft(
-        index,
-        draft.copyWith(
+      compressed = await _imageService.compress(initial.imageBytes);
+    } catch (_) {
+      final int idx = _indexOfId(draftId);
+      if (idx < 0) return;
+      _setDraftById(
+        draftId,
+        state.drafts[idx].copyWith(
           analyzing: false,
           analyzed: true,
-          error: 'No se pudo analizar la foto',
+          error: 'No se pudo procesar el archivo de imagen',
         ),
       );
+      return;
+    }
+
+    const int maxAttempts = 3;
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        final AiProductSuggestion suggestion = await _aiService.analyze(
+          compressed,
+        );
+        final int idx = _indexOfId(draftId);
+        if (idx < 0) return;
+        _setDraftById(
+          draftId,
+          state.drafts[idx].copyWith(
+            title: suggestion.title,
+            description: suggestion.description,
+            category: suggestion.category,
+            tags: suggestion.tags,
+            price: suggestion.suggestedPriceArs,
+            sku: suggestion.sku,
+            analyzed: true,
+            analyzing: false,
+            clearError: true,
+          ),
+        );
+        return;
+      } on AiAnalyzeException catch (e) {
+        final bool canRetry = e.isRetryable && attempt < maxAttempts - 1;
+        if (canRetry) {
+          final Duration wait = e.code == 'AI_RATE_LIMITED'
+              ? Duration(seconds: 4 * (attempt + 1))
+              : Duration(milliseconds: 1200 * (attempt + 1));
+          await Future<void>.delayed(wait);
+          continue;
+        }
+        final int idx = _indexOfId(draftId);
+        if (idx < 0) return;
+        _setDraftById(
+          draftId,
+          state.drafts[idx].copyWith(
+            analyzing: false,
+            analyzed: true,
+            error: e.message,
+          ),
+        );
+        return;
+      } catch (_) {
+        if (attempt < maxAttempts - 1) {
+          await Future<void>.delayed(
+            Duration(milliseconds: 1200 * (attempt + 1)),
+          );
+          continue;
+        }
+        final int idx = _indexOfId(draftId);
+        if (idx < 0) return;
+        _setDraftById(
+          draftId,
+          state.drafts[idx].copyWith(
+            analyzing: false,
+            analyzed: true,
+            error: 'No se pudo analizar la foto',
+          ),
+        );
+        return;
+      }
     }
   }
 
@@ -152,7 +216,18 @@ class BulkUploadController extends Notifier<BulkUploadState> {
 
   Future<void> retryAnalysis(int index) async {
     if (index < 0 || index >= state.drafts.length) return;
-    await _analyzeIndex(index);
+    await _analyzeById(state.drafts[index].id);
+  }
+
+  /// Dismiss the AI error on a draft so the owner can type title/price
+  /// manually and still publish the photo with the rest of the batch.
+  void fillManually(int index) {
+    if (index < 0 || index >= state.drafts.length) return;
+    final BulkProductDraft draft = state.drafts[index];
+    _setDraft(
+      index,
+      draft.copyWith(analyzing: false, analyzed: true, clearError: true),
+    );
   }
 
   /// Publish all valid drafts. Returns the number of products created.
@@ -241,5 +316,11 @@ class BulkUploadController extends Notifier<BulkUploadState> {
     final List<BulkProductDraft> updated = <BulkProductDraft>[...state.drafts];
     updated[index] = draft;
     state = state.copyWith(drafts: updated);
+  }
+
+  void _setDraftById(String id, BulkProductDraft draft) {
+    final int index = _indexOfId(id);
+    if (index < 0) return;
+    _setDraft(index, draft);
   }
 }

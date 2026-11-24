@@ -9,6 +9,11 @@ abstract final class AuthErrorMapper {
       switch (error.code) {
         case 'AI_RATE_LIMITED':
           return 'La IA está ocupada, probá en un minuto';
+        case 'AI_TIMEOUT':
+          return 'La IA demoró demasiado en responder, intentá de nuevo';
+        case 'UNRECOGNIZABLE_IMAGE':
+          return 'No se distingue un producto claro en la foto '
+              '(no se descontó de tu cuota). Completá los datos a mano.';
         case 'IMAGE_TOO_LARGE':
           return 'La imagen supera los 2 MB';
         case 'AI_NOT_CONFIGURED':
